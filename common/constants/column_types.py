@@ -1,4 +1,10 @@
 from enum import Enum, StrEnum
+from polars import Int64, Float64, String, Schema
+from common.constants.column_names import (
+    OZP_COLUMNS,
+    CPZP_COLUMNS,
+    SHARED_COLUMNS,
+)
 
 
 class TYP_UDALOSTI(StrEnum):
@@ -9,3 +15,68 @@ class TYP_UDALOSTI(StrEnum):
 class VACCINE_STATUS(Enum):
     OCKOVANY = 1
     NEOCKOVANY = 0
+
+
+CPZP_SCHEMA = Schema(
+    {
+        SHARED_COLUMNS.ID_POJISTENCE.value: Float64,
+        SHARED_COLUMNS.POHLAVI.value: String,
+        SHARED_COLUMNS.ROK_NAROZENI.value: Int64,
+        CPZP_COLUMNS.MESIC_NAROZENI.value: Int64,
+        SHARED_COLUMNS.POSLEDNI_ZAHAJENI_POJISTENI.value: String,
+        SHARED_COLUMNS.POSLEDNI_UKONCENI_POJISTENI.value: String,
+        CPZP_COLUMNS.ROK_UMRTI.value: Int64,
+        CPZP_COLUMNS.MESIC_UMRTI.value: Int64,
+        SHARED_COLUMNS.TYP_UDALOSTI.value: TYP_UDALOSTI,
+        CPZP_COLUMNS.KOD_UDALOSTI.value: String,
+        SHARED_COLUMNS.DETAIL_UDALOSTI.value: String,
+        SHARED_COLUMNS.POCET_BALENI.value: Float64,
+        SHARED_COLUMNS.DATUM_UDALOSTI.value: String,
+        CPZP_COLUMNS.SPECIALIZACE.value: String,
+        SHARED_COLUMNS.DATUM_UMRTI.value: String,
+        SHARED_COLUMNS.LEKOVA_FORMA_ZKR.value: String,
+        SHARED_COLUMNS.ATC_SKUPINA.value: String,
+        SHARED_COLUMNS.SILA.value: String,
+        SHARED_COLUMNS.DOPLNEK_NAZVU.value: String,
+        SHARED_COLUMNS.LEKOVA_FORMA.value: String,
+        SHARED_COLUMNS.LECIVE_LATKY.value: String,
+        SHARED_COLUMNS.EQUIV_SLOUCENINA.value: String,
+        SHARED_COLUMNS.PREDNISON_EQUIV.value: Float64,
+        SHARED_COLUMNS.POCET_V_BALENI.value: Float64,
+        CPZP_COLUMNS.POLOLETI.value: Int64,
+        CPZP_COLUMNS.ROK_ZAHAJENI.value: Int64,
+        CPZP_COLUMNS.PORADI.value: Int64,
+        SHARED_COLUMNS.POCET_VAKCINACI.value: Int64,
+        SHARED_COLUMNS.OCKOVANY.value: Int64,
+        SHARED_COLUMNS.POCET_PREDPISU.value: Int64,
+    }
+)
+
+
+OZP_SCHEMA = Schema(
+    {
+        SHARED_COLUMNS.ID_POJISTENCE.value: String,
+        SHARED_COLUMNS.POHLAVI.value: String,
+        SHARED_COLUMNS.ROK_NAROZENI.value: Int64,
+        SHARED_COLUMNS.POSLEDNI_ZAHAJENI_POJISTENI.value: String,
+        SHARED_COLUMNS.POSLEDNI_UKONCENI_POJISTENI.value: String,
+        SHARED_COLUMNS.DATUM_UMRTI.value: String,
+        SHARED_COLUMNS.TYP_UDALOSTI.value: String,
+        SHARED_COLUMNS.DETAIL_UDALOSTI.value: Int64,
+        OZP_COLUMNS.NAZEV.value: String,
+        SHARED_COLUMNS.POCET_BALENI.value: Float64,
+        SHARED_COLUMNS.DATUM_UDALOSTI.value: String,
+        SHARED_COLUMNS.LEKOVA_FORMA_ZKR.value: String,
+        SHARED_COLUMNS.ATC_SKUPINA.value: String,
+        SHARED_COLUMNS.SILA.value: String,
+        SHARED_COLUMNS.DOPLNEK_NAZVU.value: String,
+        SHARED_COLUMNS.LEKOVA_FORMA.value: String,
+        SHARED_COLUMNS.LECIVE_LATKY.value: String,
+        SHARED_COLUMNS.EQUIV_SLOUCENINA.value: String,
+        SHARED_COLUMNS.PREDNISON_EQUIV.value: Float64,
+        SHARED_COLUMNS.POCET_V_BALENI.value: Float64,
+        SHARED_COLUMNS.POCET_VAKCINACI.value: Int64,
+        SHARED_COLUMNS.OCKOVANY.value: Int64,
+        SHARED_COLUMNS.POCET_PREDPISU.value: Int64,
+    }
+)

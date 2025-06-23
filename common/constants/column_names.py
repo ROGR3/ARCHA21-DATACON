@@ -1,7 +1,4 @@
 from enum import StrEnum
-import polars as pl
-
-from common.constants.column_types import TYP_UDALOSTI
 
 
 class SHARED_COLUMNS(StrEnum):
@@ -42,52 +39,3 @@ class CPZP_COLUMNS(StrEnum):
 
 class OZP_COLUMNS(StrEnum):
     NAZEV = "Nazev"
-
-
-def get_shared_schema() -> dict:
-    return {
-        SHARED_COLUMNS.ID_POJISTENCE.value: pl.Float64,
-        SHARED_COLUMNS.POHLAVI.value: pl.String,
-        SHARED_COLUMNS.ROK_NAROZENI.value: pl.Int64,
-        SHARED_COLUMNS.POSLEDNI_ZAHAJENI_POJISTENI.value: pl.String,
-        SHARED_COLUMNS.POSLEDNI_UKONCENI_POJISTENI.value: pl.String,
-        SHARED_COLUMNS.DATUM_UMRTI.value: pl.String,
-        SHARED_COLUMNS.TYP_UDALOSTI.value: TYP_UDALOSTI,
-        SHARED_COLUMNS.DETAIL_UDALOSTI.value: pl.String,
-        SHARED_COLUMNS.POCET_BALENI.value: pl.Float64,
-        SHARED_COLUMNS.DATUM_UDALOSTI.value: pl.String,
-        SHARED_COLUMNS.LEKOVA_FORMA_ZKR.value: pl.String,
-        SHARED_COLUMNS.ATC_SKUPINA.value: pl.String,
-        SHARED_COLUMNS.SILA.value: pl.String,
-        SHARED_COLUMNS.DOPLNEK_NAZVU.value: pl.String,
-        SHARED_COLUMNS.LEKOVA_FORMA.value: pl.String,
-        SHARED_COLUMNS.LECIVE_LATKY.value: pl.String,
-        SHARED_COLUMNS.EQUIV_SLOUCENINA.value: pl.String,
-        SHARED_COLUMNS.PREDNISON_EQUIV.value: pl.Float64,
-        SHARED_COLUMNS.POCET_V_BALENI.value: pl.Float64,
-        SHARED_COLUMNS.POCET_VAKCINACI.value: pl.Int64,
-        SHARED_COLUMNS.OCKOVANY.value: pl.Int64,
-        SHARED_COLUMNS.POCET_PREDPISU.value: pl.Int64,
-    }
-
-
-CPZP_SCHEMA: pl.Schema = pl.Schema(
-    {
-        **get_shared_schema(),
-        CPZP_COLUMNS.MESIC_NAROZENI.value: pl.Int64,
-        CPZP_COLUMNS.ROK_UMRTI.value: pl.Int64,
-        CPZP_COLUMNS.MESIC_UMRTI.value: pl.Int64,
-        CPZP_COLUMNS.KOD_UDALOSTI.value: pl.String,
-        CPZP_COLUMNS.SPECIALIZACE.value: pl.String,
-        CPZP_COLUMNS.POLOLETI.value: pl.Int64,
-        CPZP_COLUMNS.ROK_ZAHAJENI.value: pl.Int64,
-        CPZP_COLUMNS.PORADI.value: pl.Int64,
-    }
-)
-
-OZP_SCHEMA: pl.Schema = pl.Schema(
-    {
-        **get_shared_schema(),
-        OZP_COLUMNS.NAZEV.value: pl.String,
-    }
-)

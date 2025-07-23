@@ -10,6 +10,14 @@ ozp_df = pl.read_csv(
     schema=OZP_SCHEMA,
 )
 
+cpzp_df = pl.read_csv(
+    "./DATACON_data/CPZP_preskladane.csv",
+    null_values=["NA", ""],
+    schema=CPZP_SCHEMA,
+)
+print("OZP DATA: ", ozp_df.schema)
+print("CPZP DATA: ", cpzp_df.schema)
+
 
 print("Before filtering missing DATUM_UDALOSTI: ", ozp_df.height)
 ozp_df = ozp_df.filter(pl.col(SHARED_COLUMNS.DATUM_UDALOSTI).is_not_null())

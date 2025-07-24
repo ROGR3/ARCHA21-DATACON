@@ -1,0 +1,1 @@
+1. Odtranit zemřelé pro kdy? Pro teď? Pro rozhodné datum? Max intensity?

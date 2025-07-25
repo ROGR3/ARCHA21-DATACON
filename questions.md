@@ -5,3 +5,4 @@
 5. počet úmrtí v závislosti na počtu dnů od vakcíny - na co se to vůbec dívám (+vyskočení v 100 dnu)? Kde je to HVE? Udělat to přes person-years?
 6. HVE až v 150 dnu?? Co to znamená?
 7. V CPZP jsou lidé co mají vakcínu klidně 30 dnů po smrti (např. id: 24572)
+8. Graf prvopředpis kortikoidů v závislosti na čase od první dávky vakcíny - co znamená Drtivý propad na konci ? Co znamenájí nulové prvopředpisy v okolí dalšího očkování

@@ -1,33 +1,36 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 
-def draw_chart(mapp, x_label, y_label, title):
+def draw_chart(mapp, x_label, y_label, title, save_location: str | None = None):
     plt.figure(figsize=(12, 6))
 
-    days_after_last_vax = list(mapp.keys())
-    first_prescription_counts = list(mapp.values())
+    x_data = list(mapp.keys())
+    y_data = list(mapp.values())
 
-    if len(days_after_last_vax) < 10 or len(first_prescription_counts) < 10:
+    if len(x_data) < 10 or len(y_data) < 10:
+        plt.close()
         return
-    avg = sum(first_prescription_counts) / len(first_prescription_counts)
-    print(avg)
+    avg = sum(y_data) / len(y_data)
+
     if avg < 1.3:
+        plt.close()
         return
 
     sorted_days_after_last_vax, sorted_first_prescription_counts = zip(
-        *sorted(zip(days_after_last_vax, first_prescription_counts))
+        *sorted(zip(x_data, y_data))
     )
 
-    # Calculate and plot moving average
     window_size = 7  # Adjust as needed
     smoothed_counts = moving_average(sorted_first_prescription_counts, window_size)
-    smoothed_days = sorted_days_after_last_vax[window_size - 1 :]  # Align x-axis
+    smoothed_days = sorted_days_after_last_vax[window_size - 1 :]
 
     plt.plot(
         sorted_days_after_last_vax,
         sorted_first_prescription_counts,
         label="Original data",
+        alpha=0.7,
     )
     plt.plot(
         smoothed_days,
@@ -41,7 +44,16 @@ def draw_chart(mapp, x_label, y_label, title):
     plt.ylabel(y_label)
     plt.title(title)
     plt.legend()
-    plt.show()
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    if save_location:
+        os.makedirs(os.path.dirname(save_location), exist_ok=True)
+        plt.savefig(save_location, dpi=300, bbox_inches="tight")
+        plt.close()
+        print(f"✓ Chart saved: {save_location}")
+    else:
+        plt.show()
 
 
 def moving_average(data, window_size=7):

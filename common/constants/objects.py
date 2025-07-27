@@ -1,4 +1,3 @@
-import pickle
 from dataclasses import dataclass
 from enum import StrEnum
 from datetime import datetime

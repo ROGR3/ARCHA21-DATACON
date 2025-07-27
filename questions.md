@@ -7,6 +7,7 @@
 7. V CPZP jsou lidé co mají vakcínu klidně 30 dnů po smrti (např. id: 24572)
 8. Graf prvopředpis kortikoidů v závislosti na čase od první dávky vakcíny - co znamená Drtivý propad na konci ? Co znamenájí nulové prvopředpisy v okolí dalšího očkování? Co znamená tvar křivky?
 9. Co je to RECTODEL? Co je to ASPAVELI? Proč nejsou zahrnuté v preskladanych datech?
+10. Jak určit jestli se změnila spotřeba kortikoidů u neočkovaných?
 
 
 === ANSWERS ===

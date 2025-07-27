@@ -18,6 +18,7 @@ from common.constants.objects import (
     PrescriptionType,
     Prescription,
     Person,
+    Vaccine,
 )
 
 pl.Config.set_tbl_rows(20)
@@ -184,7 +185,19 @@ class DataframeToPersonsClassConverter:
                 )
 
             # Process vaccines
-            vaccines = row["vaccine_dates"] or []
+            vaccine_dates = row["vaccine_dates"] or []
+            vaccines = []
+            for i, vaccine_date in enumerate(vaccine_dates):
+                age_cohort_at_vaccination = self.__calculate_age_cohort(
+                    born_at, vaccine_date
+                )
+                vaccines.append(
+                    Vaccine(
+                        date=vaccine_date,
+                        dose_number=i + 1,  # Dose number starts from 1
+                        age_cohort=age_cohort_at_vaccination,
+                    )
+                )
 
             # Create Person object
             person_age_cohort = (
@@ -196,7 +209,7 @@ class DataframeToPersonsClassConverter:
                 id=person_id,
                 gender=gender,
                 born_at=born_at,
-                vaccines=list(vaccines),
+                vaccines=vaccines,
                 prescriptions=prescriptions,
                 died_at=died_at,
                 age_cohort=person_age_cohort,

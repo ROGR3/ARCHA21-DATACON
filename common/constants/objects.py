@@ -38,6 +38,13 @@ class Prescription:
     atc_skupina: str | None
 
 
+@dataclass
+class Vaccine:
+    date: datetime
+    dose_number: int
+    age_cohort: AgeCohort
+
+
 class Gender(StrEnum):
     MALE = "male"
     FEMALE = "female"
@@ -49,6 +56,6 @@ class Person:
     gender: Gender
     born_at: datetime
     age_cohort: AgeCohort
-    vaccines: list[datetime]
+    vaccines: list[Vaccine]
     prescriptions: list[Prescription]
     died_at: datetime | None = None

@@ -10,11 +10,11 @@
 
 
 === ANSWERS ===
-1. ???
+1. Filtruju mrtvé pro teď.
 2. ???
 3. ???
 4. Ano máme. V obou datasetech.
-5. ???
+5. Při hodnocení počtu předpisů by se kúry injekčních/infúzních podání, které se objevují jako několik událostí v rámci např. 7 nebo 14 dnů, měly brát jako jeden předpis, ne několik (je to ekvivalent využívání jedné krabičky léku)
 6. ???
 7. V raw CPZP data jsou pouze rok a měsíc úmrtí -> tudíž v preskladane je vždy 1. den v měsíci.
 8. ???

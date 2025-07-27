@@ -36,6 +36,7 @@ class Prescription:
     prednison_equiv: float | None
     specializace_lekare: str | None
     atc_skupina: str | None
+    lekova_forma: str | None
 
 
 @dataclass

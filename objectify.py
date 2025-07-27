@@ -77,6 +77,7 @@ class DataframeToPersonsClassConverter:
                         ),
                         pl.col(CPZP_COLUMNS.SPECIALIZACE.value).alias("Specializace"),
                         pl.col(SHARED_COLUMNS.ATC_SKUPINA.value).alias("ATC_skupina"),
+                        pl.col(SHARED_COLUMNS.LEKOVA_FORMA.value).alias("léková_forma"),
                     ]
                 )
             )
@@ -100,6 +101,7 @@ class DataframeToPersonsClassConverter:
                             "prednison_equiv"
                         ),
                         pl.col(SHARED_COLUMNS.ATC_SKUPINA.value).alias("ATC_skupina"),
+                        pl.col(SHARED_COLUMNS.LEKOVA_FORMA.value).alias("léková_forma"),
                     ]
                 )
             )
@@ -155,6 +157,7 @@ class DataframeToPersonsClassConverter:
             prednison_equiv = row["prednison_equiv"] or []
             specializace_lekare = row.get("Specializace", None)
             atc_skupina = row["ATC_skupina"] or []
+            lekova_forma = row["léková_forma"] or []
             prescription_types = []
             for atc_code in atc_skupina:
                 if atc_code is None:
@@ -181,6 +184,7 @@ class DataframeToPersonsClassConverter:
                         atc_skupina=atc_skupina[i],
                         age_cohort_at_prescription=age_cohort,
                         prescription_type=prescription_types[i],
+                        lekova_forma=lekova_forma[i],
                     )
                 )
 

@@ -1,9 +1,17 @@
+from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 
 
-def draw_chart(mapp, x_label, y_label, title, save_location: str | None = None):
+def draw_chart(
+    mapp,
+    x_label,
+    y_label,
+    title,
+    save_location: str | None = None,
+    vertical_line: Any = None,
+):
     plt.figure(figsize=(12, 6))
 
     x_data = list(mapp.keys())
@@ -39,6 +47,9 @@ def draw_chart(mapp, x_label, y_label, title, save_location: str | None = None):
         linewidth=2,
         label=f"{window_size}-day Moving Average",
     )
+
+    if vertical_line:
+        plt.axvline(x=vertical_line, color="green", linestyle="--", linewidth=2)
 
     plt.xlabel(x_label)
     plt.ylabel(y_label)

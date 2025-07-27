@@ -3,7 +3,7 @@
 3. Jde počítat předpisy na osobu, když nemáme osoby bez předpisu? Stejně tak počet prvopředpisů/prednison ekvivalentů.
 4. Máme neočkované lidi co nikdy neměli předpis??
 5. Co to je za problém s injekcemi?
-6. počet úmrtí v závislosti na počtu dnů od vakcíny - na co se to vůbec dívám (+vyskočení v 100 dnu)? Kde je to HVE? Udělat to přes person-years? Jde to?
+6. počet úmrtí v závislosti na počtu dnů od vakcíny - na co se to vůbec dívám (+vyskočení v 100 dnu)? Kde je to HVE? Jen v první dávce? Udělat to přes person-years? Jde to?
 7. V CPZP jsou lidé co mají vakcínu klidně 30 dnů po smrti (např. id: 24572)
 8. Graf prvopředpis kortikoidů v závislosti na čase od první dávky vakcíny - co znamená Drtivý propad na konci ? Co znamenájí nulové prvopředpisy v okolí dalšího očkování? Co znamená tvar křivky?
 9. Co je to RECTODEL? Co je to ASPAVELI? Proč nejsou zahrnuté v preskladanych datech?

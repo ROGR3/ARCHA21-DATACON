@@ -49,7 +49,19 @@ def draw_chart(
     )
 
     if vertical_line:
-        plt.axvline(x=vertical_line, color="green", linestyle="--", linewidth=2)
+        closest_index = min(
+            range(len(sorted_days_after_last_vax)),
+            key=lambda i: abs(sorted_days_after_last_vax[i] - vertical_line),
+        )
+        closest_x = sorted_days_after_last_vax[closest_index]
+
+        plt.axvline(
+            x=vertical_line,
+            color="green",
+            linestyle="--",
+            linewidth=2,
+            label=f"Day {closest_x}",
+        )
 
     plt.xlabel(x_label)
     plt.ylabel(y_label)

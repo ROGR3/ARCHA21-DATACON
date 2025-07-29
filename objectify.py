@@ -1,12 +1,8 @@
 import pickle
-from dataclasses import dataclass
-from enum import StrEnum
-from datetime import datetime, timedelta
 import polars as pl
 from common.constants.column_types import (
     CPZP_SCHEMA,
     OZP_SCHEMA,
-    POHLAVI_CPZP,
     TYP_UDALOSTI,
 )
 from common.constants.column_names import SHARED_COLUMNS, OZP_COLUMNS, CPZP_COLUMNS
@@ -20,6 +16,7 @@ from common.constants.objects import (
     Person,
     Vaccine,
 )
+from datetime import datetime
 
 pl.Config.set_tbl_rows(20)
 pl.Config.set_tbl_cols(60)
@@ -247,35 +244,6 @@ class DataframeToPersonsClassConverter:
             return AgeCohort.BETWEEN_50_AND_70
         else:
             return AgeCohort.MORE_THAN_70
-
-        # if age < 12:
-        #     return AgeCohort.LESS_THAN_12
-        # elif age < 16:
-        #     return AgeCohort.BETWEEN_12_AND_16
-        # elif age < 30:
-        #     return AgeCohort.BETWEEN_16_AND_30
-        # elif age < 35:
-        #     return AgeCohort.BETWEEN_30_AND_35
-        # elif age < 40:
-        #     return AgeCohort.BETWEEN_35_AND_40
-        # elif age < 45:
-        #     return AgeCohort.BETWEEN_40_AND_45
-        # elif age < 50:
-        #     return AgeCohort.BETWEEN_45_AND_50
-        # elif age < 55:
-        #     return AgeCohort.BETWEEN_50_AND_55
-        # elif age < 60:
-        #     return AgeCohort.BETWEEN_55_AND_60
-        # elif age < 65:
-        #     return AgeCohort.BETWEEN_60_AND_65
-        # elif age < 70:
-        #     return AgeCohort.BETWEEN_65_AND_70
-        # elif age < 75:
-        #     return AgeCohort.BETWEEN_70_AND_75
-        # elif age < 80:
-        #     return AgeCohort.BETWEEN_75_AND_80
-        # else:
-        #     return AgeCohort.MORE_THAN_80
 
 
 cpzp_df = read_preskladane_data("./DATACON_data/CPZP_preskladane.csv", CPZP_SCHEMA)

@@ -20,3 +20,5 @@
 7. V raw CPZP data jsou pouze rok a měsíc úmrtí -> tudíž v preskladane je vždy 1. den v měsíci.
 8. ???
 9. ???
+
+383965

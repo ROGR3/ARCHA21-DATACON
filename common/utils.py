@@ -4,6 +4,42 @@ import numpy as np
 import os
 
 
+def draw_bar_chart(
+    mapp,
+    x_label,
+    y_label,
+    title,
+    save_location: str | None = None,
+):
+    # Convert enum keys to their value for display
+    x_data = [str(k.value) if hasattr(k, "value") else str(k) for k in mapp.keys()]
+    y_data = list(mapp.values())
+
+    plt.figure(figsize=(10, 6))
+    bars = plt.bar(x_data, y_data, color="skyblue", edgecolor="black")
+
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.title(title)
+    plt.tight_layout()
+
+    # Optionally annotate bars with their values
+    for bar, value in zip(bars, y_data):
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height(),
+            f"{value:,}",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+        )
+
+    if save_location:
+        plt.savefig(save_location)
+    else:
+        plt.show()
+
+
 def draw_chart(
     mapp,
     x_label,
@@ -17,15 +53,6 @@ def draw_chart(
 
     x_data = list(mapp.keys())
     y_data = list(mapp.values())
-
-    if len(x_data) < 10 or len(y_data) < 10:
-        plt.close()
-        return
-    avg = sum(y_data) / len(y_data)
-
-    if avg < 1.3:
-        plt.close()
-        return
 
     sorted_days_after_last_vax, sorted_first_prescription_counts = zip(
         *sorted(zip(x_data, y_data))
@@ -51,7 +78,6 @@ def draw_chart(
             color="red",
             linewidth=2,
             label=f"{window_size}-day Moving Average",
-            linestyle="-",
         )
 
     if vertical_line:

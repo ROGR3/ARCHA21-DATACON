@@ -39,6 +39,12 @@ class DataframeToPersonsClassConverter:
                     pl.first(SHARED_COLUMNS.ROK_NAROZENI.value).alias("birth_year"),
                     pl.first(CPZP_COLUMNS.MESIC_NAROZENI.value).alias("birth_month"),
                     pl.first(SHARED_COLUMNS.DATUM_UMRTI.value).alias("death_date"),
+                    pl.first(SHARED_COLUMNS.POSLEDNI_ZAHAJENI_POJISTENI.value).alias(
+                        "Posledni_zahajeni_pojisteni"
+                    ),
+                    pl.first(SHARED_COLUMNS.POSLEDNI_UKONCENI_POJISTENI.value).alias(
+                        "Posledni_ukonceni_pojisteni"
+                    ),
                 ]
             )
         except Exception as _e:
@@ -47,6 +53,12 @@ class DataframeToPersonsClassConverter:
                     pl.first(SHARED_COLUMNS.POHLAVI.value).alias("gender"),
                     pl.first(SHARED_COLUMNS.ROK_NAROZENI.value).alias("birth_year"),
                     pl.first(SHARED_COLUMNS.DATUM_UMRTI.value).alias("death_date"),
+                    pl.first(SHARED_COLUMNS.POSLEDNI_ZAHAJENI_POJISTENI.value).alias(
+                        "Posledni_zahajeni_pojisteni"
+                    ),
+                    pl.first(SHARED_COLUMNS.POSLEDNI_UKONCENI_POJISTENI.value).alias(
+                        "Posledni_ukonceni_pojisteni"
+                    ),
                 ]
             )
 
@@ -210,6 +222,8 @@ class DataframeToPersonsClassConverter:
                 id=person_id,
                 gender=gender,
                 born_at=born_at,
+                zahajeni_pojisteni=row["Posledni_zahajeni_pojisteni"],
+                ukonceni_pojisteni=row["Posledni_ukonceni_pojisteni"],
                 vaccines=vaccines,
                 prescriptions=prescriptions,
                 died_at=died_at,

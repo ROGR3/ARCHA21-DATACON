@@ -46,6 +46,8 @@ class Person:
     id: int | str
     gender: Gender
     born_at: datetime
+    zahajeni_pojisteni: datetime
+    ukonceni_pojisteni: datetime
     age_cohort: AgeCohort
     vaccines: list[Vaccine]
     prescriptions: list[Prescription]

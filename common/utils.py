@@ -9,6 +9,7 @@ def draw_chart(
     x_label,
     y_label,
     title,
+    average: int | None = None,
     save_location: str | None = None,
     vertical_line: Any = None,
 ):
@@ -30,23 +31,28 @@ def draw_chart(
         *sorted(zip(x_data, y_data))
     )
 
-    window_size = 7  # Adjust as needed
-    smoothed_counts = moving_average(sorted_first_prescription_counts, window_size)
-    smoothed_days = sorted_days_after_last_vax[window_size - 1 :]
-
     plt.plot(
         sorted_days_after_last_vax,
         sorted_first_prescription_counts,
         label="Original data",
         alpha=0.7,
+        marker="o",
+        linestyle="None",
     )
-    plt.plot(
-        smoothed_days,
-        smoothed_counts,
-        color="red",
-        linewidth=2,
-        label=f"{window_size}-day Moving Average",
-    )
+
+    if average:
+        window_size = average  # Adjust as needed
+        smoothed_counts = moving_average(sorted_first_prescription_counts, window_size)
+        smoothed_days = sorted_days_after_last_vax[window_size - 1 :]
+
+        plt.plot(
+            smoothed_days,
+            smoothed_counts,
+            color="red",
+            linewidth=2,
+            label=f"{window_size}-day Moving Average",
+            linestyle="-",
+        )
 
     if vertical_line:
         closest_index = min(

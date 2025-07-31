@@ -109,6 +109,7 @@ def draw_chart(
         print(f"✓ Chart saved: {save_location}")
     else:
         plt.show()
+        plt.close()
 
 
 def moving_average(data, window_size=7):

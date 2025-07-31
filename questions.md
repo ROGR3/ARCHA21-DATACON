@@ -13,13 +13,14 @@
 === ANSWERS ===
 1. Filtruju mrtvé pro teď.
 2. ???
-3. ???
+3. Jde, ale zbytečně složité. Není to tématem dataconu.
 4. Ano máme. V obou datasetech.
 5. Při hodnocení počtu předpisů by se kúry injekčních/infúzních podání, které se objevují jako několik událostí v rámci např. 7 nebo 14 dnů, měly brát jako jeden předpis, ne několik (je to ekvivalent využívání jedné krabičky léku)
-6. ???
+6. HVE vidět jde, je to ten nájezd po pár týdnech od začátku. 
 7. V raw CPZP data jsou pouze rok a měsíc úmrtí -> tudíž v preskladane je vždy 1. den v měsíci.
-8. ???
-9. ???
+8. Skok na začátku značí příchod lidí do pojišťovny/začátek dat. Pokles na konci je způsoben tím, že očkovaných nepřibývá, a ti co už očkovaní jsou a měli prvopředpis ož nemůžou mít další
+9. Chyba na straně poskytovatelů. Brát jen RECTODEL, nebo ignorovat obojí.
+10. Jen srovnat s očkovanými. Rozhodné datum +- měsíc/2 měsíce/6 měsíců/...
 
 383965
 885267

@@ -34,6 +34,7 @@ class Vaccine:
     date: datetime
     dose_number: int
     age_cohort: AgeCohort
+    nazev: str | None
 
 
 class Gender(StrEnum):

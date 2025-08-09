@@ -19,6 +19,7 @@ def draw_bar_chart(
     bars = plt.bar(x_data, y_data, color="skyblue", edgecolor="black")
 
     plt.xlabel(x_label)
+    plt.xticks(rotation=90)
     plt.ylabel(y_label)
     plt.title(title)
     plt.tight_layout()

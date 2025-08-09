@@ -2,7 +2,7 @@ import os
 from PIL import Image
 from collections import defaultdict
 
-ROOT_DIR = "./out/cpzp/max_vax_analysis"  # Adjust as needed
+ROOT_DIR = "./out/cpzp/test"  # Adjust as needed
 OUTPUT_DIR = "joined_output_vertical_cpzp"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)

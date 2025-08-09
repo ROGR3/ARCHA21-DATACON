@@ -116,14 +116,37 @@ class DataframeToPersonsClassConverter:
             )
 
     def __extract_vaccines(self, df: pl.DataFrame) -> pl.DataFrame:
-        return (
-            df.filter(
-                pl.col(SHARED_COLUMNS.TYP_UDALOSTI.value) == TYP_UDALOSTI.VAKCINACE
+        try:
+            return (
+                df.filter(
+                    pl.col(SHARED_COLUMNS.TYP_UDALOSTI.value) == TYP_UDALOSTI.VAKCINACE
+                )
+                .filter(pl.col(SHARED_COLUMNS.DATUM_UDALOSTI.value).is_not_null())
+                .group_by(SHARED_COLUMNS.ID_POJISTENCE.value)
+                .agg(
+                    [
+                        pl.col(SHARED_COLUMNS.DATUM_UDALOSTI.value).alias(
+                            "vaccine_dates"
+                        ),
+                        pl.col(CPZP_COLUMNS.KOD_UDALOSTI.value).alias("nazev"),
+                    ]
+                )
             )
-            .filter(pl.col(SHARED_COLUMNS.DATUM_UDALOSTI.value).is_not_null())
-            .group_by(SHARED_COLUMNS.ID_POJISTENCE.value)
-            .agg([pl.col(SHARED_COLUMNS.DATUM_UDALOSTI.value).alias("vaccine_dates")])
-        )
+        except Exception as _e:
+            return (
+                df.filter(
+                    pl.col(SHARED_COLUMNS.TYP_UDALOSTI.value) == TYP_UDALOSTI.VAKCINACE
+                )
+                .filter(pl.col(SHARED_COLUMNS.DATUM_UDALOSTI.value).is_not_null())
+                .group_by(SHARED_COLUMNS.ID_POJISTENCE.value)
+                .agg(
+                    [
+                        pl.col(SHARED_COLUMNS.DATUM_UDALOSTI.value).alias(
+                            "vaccine_dates"
+                        ),
+                    ]
+                )
+            )
 
     def convert(self, df: pl.DataFrame) -> list[Person]:
         persons = []
@@ -199,6 +222,7 @@ class DataframeToPersonsClassConverter:
 
             # Process vaccines
             vaccine_dates = row["vaccine_dates"] or []
+            nazev = row.get("nazev", None)
             vaccines = []
             for i, vaccine_date in enumerate(vaccine_dates):
                 age_cohort_at_vaccination = self.__calculate_age_cohort(
@@ -209,6 +233,7 @@ class DataframeToPersonsClassConverter:
                         date=vaccine_date,
                         dose_number=i + 1,  # Dose number starts from 1
                         age_cohort=age_cohort_at_vaccination,
+                        nazev=nazev[i] if nazev is not None else None,
                     )
                 )
 

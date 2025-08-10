@@ -1,7 +1,7 @@
 DATACON_data/
 __pycache__/
 */__pycache__/
-out/*
 *.csv
 .~lock.*
 *.pdf
+joined_*/

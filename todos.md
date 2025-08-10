@@ -1,1 +1,0 @@
-3. Udělat analýzu podle druhu vakcíny

@@ -2,8 +2,8 @@ import os
 from PIL import Image
 from collections import defaultdict
 
-ROOT_DIR = "./out/cpzp/sums"  # Adjust as needed
-OUTPUT_DIR = "./out/cpzp/sums_joined"
+ROOT_DIR = "./out/ozp/sums"  # Adjust as needed
+OUTPUT_DIR = "./out/ozp/sums_joined"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 

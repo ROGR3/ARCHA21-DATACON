@@ -84,6 +84,11 @@ class DataframeToPersonsClassConverter:
                         pl.col(SHARED_COLUMNS.PREDNISON_EQUIV.value).alias(
                             "prednison_equiv"
                         ),
+                        pl.col(SHARED_COLUMNS.POCET_BALENI.value).alias("pocet_baleni"),
+                        pl.col(SHARED_COLUMNS.POCET_V_BALENI.value).alias(
+                            "pocet_v_baleni"
+                        ),
+                        pl.col(SHARED_COLUMNS.SILA.value).alias("sila"),
                         pl.col(CPZP_COLUMNS.SPECIALIZACE.value).alias("Specializace"),
                         pl.col(SHARED_COLUMNS.ATC_SKUPINA.value).alias("ATC_skupina"),
                         pl.col(SHARED_COLUMNS.LEKOVA_FORMA.value).alias("léková_forma"),
@@ -109,6 +114,11 @@ class DataframeToPersonsClassConverter:
                         pl.col(SHARED_COLUMNS.PREDNISON_EQUIV.value).alias(
                             "prednison_equiv"
                         ),
+                        pl.col(SHARED_COLUMNS.POCET_BALENI.value).alias("pocet_baleni"),
+                        pl.col(SHARED_COLUMNS.POCET_V_BALENI.value).alias(
+                            "pocet_v_baleni"
+                        ),
+                        pl.col(SHARED_COLUMNS.SILA.value).alias("sila"),
                         pl.col(SHARED_COLUMNS.ATC_SKUPINA.value).alias("ATC_skupina"),
                         pl.col(SHARED_COLUMNS.LEKOVA_FORMA.value).alias("léková_forma"),
                     ]
@@ -187,6 +197,9 @@ class DataframeToPersonsClassConverter:
             latka = row["latka"] or []
             equiv_sloucenina = row["equiv_sloucenina"] or []
             prednison_equiv = row["prednison_equiv"] or []
+            pocet_baleni = row["pocet_baleni"] or []
+            pocet_v_baleni = row["pocet_v_baleni"] or []
+            sila = row["sila"] or []
             specializace_lekare = row.get("Specializace", None)
             atc_skupina = row["ATC_skupina"] or []
             lekova_forma = row["léková_forma"] or []
@@ -202,12 +215,32 @@ class DataframeToPersonsClassConverter:
 
             for i, date in enumerate(prescription_dates):
                 age_cohort = self.__calculate_age_cohort(born_at, date)
+                if (
+                    sila[i] is not None
+                    and pocet_baleni[i] is not None
+                    and pocet_v_baleni[i] is not None
+                    and prednison_equiv[i] is not None
+                    and sila[i] != ""
+                ):
+                    sila[i] = float(
+                        sila[i].replace("MG", "").replace(",", ".").replace("/ML", "")
+                    )
+
+                    current_pred_equiv = (
+                        prednison_equiv[i]
+                        * pocet_v_baleni[i]
+                        * pocet_baleni[i]
+                        * sila[i]
+                    )
+                else:
+                    current_pred_equiv = 0
+
                 prescriptions.append(
                     Prescription(
                         date=date,
                         latka=latka[i],
                         equiv_sloucenina=equiv_sloucenina[i],
-                        prednison_equiv=prednison_equiv[i],
+                        prednison_equiv=current_pred_equiv,
                         specializace_lekare=(
                             specializace_lekare[i]
                             if specializace_lekare is not None

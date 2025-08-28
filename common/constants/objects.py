@@ -22,8 +22,8 @@ class Prescription:
     latka: str
     age_cohort_at_prescription: AgeCohort
     prescription_type: PrescriptionType
+    prednison_equiv: float
     equiv_sloucenina: str | None
-    prednison_equiv: float | None
     specializace_lekare: str | None
     atc_skupina: str | None
     lekova_forma: str | None

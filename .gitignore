@@ -5,3 +5,5 @@ __pycache__/
 .~lock.*
 *.pdf
 joined_*/
+!/out/cpzp/*.csv
+!/out/ozp/*.csv

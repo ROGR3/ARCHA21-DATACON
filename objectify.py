@@ -306,9 +306,9 @@ class DataframeToPersonsClassConverter:
         ):
             age -= 1
 
-        if age < 12:
+        if age < 14:
             return AgeCohort.LESS_THAN_12
-        elif age < 30:
+        elif age < 28:
             return AgeCohort.BETWEEN_12_AND_30
         elif age < 50:
             return AgeCohort.BETWEEN_30_AND_50
@@ -322,7 +322,7 @@ cpzp_df = read_preskladane_data("./DATACON_data/CPZP_preskladane.csv", CPZP_SCHE
 cpzp_persons = DataframeToPersonsClassConverter().convert(cpzp_df)
 
 # save the persons to a pickle file
-with open("DATACON_data/cpzp_persons.pkl", "wb") as f:
+with open("DATACON_data/cpzp_persons2.pkl", "wb") as f:
     pickle.dump(cpzp_persons, f)
 
 
@@ -330,5 +330,5 @@ ozp_df = read_preskladane_data("./DATACON_data/OZP_preskladane.csv", OZP_SCHEMA)
 ozp_persons = DataframeToPersonsClassConverter().convert(ozp_df)
 
 # save the persons to a pickle file
-with open("DATACON_data/ozp_persons.pkl", "wb") as f:
+with open("DATACON_data/ozp_persons2.pkl", "wb") as f:
     pickle.dump(ozp_persons, f)

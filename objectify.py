@@ -312,10 +312,10 @@ class DataframeToPersonsClassConverter:
             return AgeCohort.BETWEEN_12_AND_30
         elif age < 50:
             return AgeCohort.BETWEEN_30_AND_50
-        elif age < 70:
-            return AgeCohort.BETWEEN_50_AND_70
+        elif age < 60:
+            return AgeCohort.BETWEEN_50_AND_60
         else:
-            return AgeCohort.MORE_THAN_70
+            return AgeCohort.MORE_THAN_60
 
 
 cpzp_df = read_preskladane_data("./DATACON_data/CPZP_preskladane.csv", CPZP_SCHEMA)

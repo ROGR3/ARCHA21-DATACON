@@ -20,7 +20,6 @@ class PrescriptionType(StrEnum):
 class Prescription:
     date: datetime
     latka: str
-    age_cohort_at_prescription: AgeCohort
     prescription_type: PrescriptionType
     prednison_equiv: float
     equiv_sloucenina: str | None
@@ -33,7 +32,6 @@ class Prescription:
 class Vaccine:
     date: datetime
     dose_number: int
-    age_cohort: AgeCohort
     nazev: str | None
 
 
@@ -49,7 +47,6 @@ class Person:
     born_at: datetime
     zahajeni_pojisteni: datetime
     ukonceni_pojisteni: datetime
-    age_cohort: AgeCohort
     vaccines: list[Vaccine]
     prescriptions: list[Prescription]
     died_at: datetime | None = None

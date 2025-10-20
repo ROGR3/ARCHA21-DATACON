@@ -214,7 +214,6 @@ class DataframeToPersonsClassConverter:
                     prescription_types.append(PrescriptionType.KORTIKOID)
 
             for i, date in enumerate(prescription_dates):
-                age_cohort = self.__calculate_age_cohort(born_at, date)
                 if (
                     sila[i] is not None
                     and pocet_baleni[i] is not None
@@ -247,7 +246,6 @@ class DataframeToPersonsClassConverter:
                             else None
                         ),
                         atc_skupina=atc_skupina[i],
-                        age_cohort_at_prescription=age_cohort,
                         prescription_type=prescription_types[i],
                         lekova_forma=lekova_forma[i],
                     )
@@ -258,24 +256,15 @@ class DataframeToPersonsClassConverter:
             nazev = row.get("nazev", None)
             vaccines = []
             for i, vaccine_date in enumerate(vaccine_dates):
-                age_cohort_at_vaccination = self.__calculate_age_cohort(
-                    born_at, vaccine_date
-                )
                 vaccines.append(
                     Vaccine(
                         date=vaccine_date,
                         dose_number=i + 1,  # Dose number starts from 1
-                        age_cohort=age_cohort_at_vaccination,
                         nazev=nazev[i] if nazev is not None else None,
                     )
                 )
 
             # Create Person object
-            person_age_cohort = (
-                self.__calculate_age_cohort(born_at, died_at)
-                if died_at is not None
-                else self.__calculate_age_cohort(born_at, datetime.now())
-            )
             person = Person(
                 id=person_id,
                 gender=gender,
@@ -285,7 +274,6 @@ class DataframeToPersonsClassConverter:
                 vaccines=vaccines,
                 prescriptions=prescriptions,
                 died_at=died_at,
-                age_cohort=person_age_cohort,
             )
 
             persons.append(person)
@@ -295,27 +283,6 @@ class DataframeToPersonsClassConverter:
     def __create_birth_date(self, year: int, month: int | None) -> datetime:
         month = month if month is not None else 1
         return datetime(year, month, 1)
-
-    def __calculate_age_cohort(
-        self, birth_date: datetime, event_date: datetime
-    ) -> AgeCohort:
-        age = event_date.year - birth_date.year
-
-        if event_date.month < birth_date.month or (
-            event_date.month == birth_date.month and event_date.day < birth_date.day
-        ):
-            age -= 1
-
-        if age < 12:
-            return AgeCohort.LESS_THAN_12
-        elif age < 30:
-            return AgeCohort.BETWEEN_12_AND_30
-        elif age < 50:
-            return AgeCohort.BETWEEN_30_AND_50
-        elif age < 60:
-            return AgeCohort.BETWEEN_50_AND_60
-        else:
-            return AgeCohort.MORE_THAN_60
 
 
 cpzp_df = read_preskladane_data("./DATACON_data/CPZP_preskladane.csv", CPZP_SCHEMA)

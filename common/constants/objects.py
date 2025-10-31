@@ -14,6 +14,7 @@ class AgeCohort(StrEnum):
 class PrescriptionType(StrEnum):
     KORTIKOID = "kortikoid"
     IMUNOSUPRESSIVE = "imunosupressive"
+    TEST = "test"
 
 
 @dataclass
@@ -26,6 +27,7 @@ class Prescription:
     specializace_lekare: str | None
     atc_skupina: str | None
     lekova_forma: str | None
+    lekova_forma_zkr: str | None
 
 
 @dataclass

@@ -92,6 +92,9 @@ class DataframeToPersonsClassConverter:
                         pl.col(CPZP_COLUMNS.SPECIALIZACE.value).alias("Specializace"),
                         pl.col(SHARED_COLUMNS.ATC_SKUPINA.value).alias("ATC_skupina"),
                         pl.col(SHARED_COLUMNS.LEKOVA_FORMA.value).alias("léková_forma"),
+                        pl.col(SHARED_COLUMNS.LEKOVA_FORMA_ZKR.value).alias(
+                            "léková_forma_zkr"
+                        ),
                     ]
                 )
             )
@@ -121,6 +124,9 @@ class DataframeToPersonsClassConverter:
                         pl.col(SHARED_COLUMNS.SILA.value).alias("sila"),
                         pl.col(SHARED_COLUMNS.ATC_SKUPINA.value).alias("ATC_skupina"),
                         pl.col(SHARED_COLUMNS.LEKOVA_FORMA.value).alias("léková_forma"),
+                        pl.col(SHARED_COLUMNS.LEKOVA_FORMA_ZKR.value).alias(
+                            "léková_forma_zkr"
+                        ),
                     ]
                 )
             )
@@ -175,7 +181,6 @@ class DataframeToPersonsClassConverter:
             prescriptions_df, on=SHARED_COLUMNS.ID_POJISTENCE.value, how="left"
         ).join(vaccines_df, on=SHARED_COLUMNS.ID_POJISTENCE.value, how="left")
 
-        # Convert to Person objects
         for row in combined.iter_rows(named=True):
             person_id = row[SHARED_COLUMNS.ID_POJISTENCE.value]
 
@@ -203,15 +208,17 @@ class DataframeToPersonsClassConverter:
             specializace_lekare = row.get("Specializace", None)
             atc_skupina = row["ATC_skupina"] or []
             lekova_forma = row["léková_forma"] or []
-            prescription_types = []
+            lekova_forma_zkr = row["léková_forma_zkr"] or []
+            prescription_types: list[PrescriptionType | None] = []
             for atc_code in atc_skupina:
                 if atc_code is None:
+                    prescription_types.append(None)
+                elif atc_code.startswith("H02"):
                     prescription_types.append(PrescriptionType.KORTIKOID)
-                    continue
-                if atc_code.startswith("L04"):
+                elif atc_code.startswith("L04"):
                     prescription_types.append(PrescriptionType.IMUNOSUPRESSIVE)
                 else:
-                    prescription_types.append(PrescriptionType.KORTIKOID)
+                    prescription_types.append(None)
 
             for i, date in enumerate(prescription_dates):
                 if (
@@ -234,6 +241,8 @@ class DataframeToPersonsClassConverter:
                 else:
                     current_pred_equiv = 0
 
+                if prescription_types[i] is None:
+                    continue
                 prescriptions.append(
                     Prescription(
                         date=date,
@@ -248,6 +257,7 @@ class DataframeToPersonsClassConverter:
                         atc_skupina=atc_skupina[i],
                         prescription_type=prescription_types[i],
                         lekova_forma=lekova_forma[i],
+                        lekova_forma_zkr=lekova_forma_zkr[i],
                     )
                 )
 
@@ -277,7 +287,6 @@ class DataframeToPersonsClassConverter:
             )
 
             persons.append(person)
-
         return persons
 
     def __create_birth_date(self, year: int, month: int | None) -> datetime:

@@ -8,3 +8,4 @@ joined_*/
 !/out/cpzp/*.csv
 !/out/ozp/*.csv
 !/out/both_companies/*.csv
+*.pkl

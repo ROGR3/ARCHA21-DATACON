@@ -52,5 +52,3 @@ class Person:
     vaccines: list[Vaccine]
     prescriptions: list[Prescription]
     died_at: datetime | None = None
-    sum_of_pe_before_vax: float | None = None
-    sum_of_pe_after_vax: float | None = None

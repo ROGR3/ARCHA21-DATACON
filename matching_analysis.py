@@ -1,117 +1,32 @@
-from enum import StrEnum
 from datetime import datetime, timedelta, date
-import polars as pl
 from collections import defaultdict
 import pickle
 from common.constants.objects import (
     Person,
-    Gender,
-    Prescription,
 )
 import matplotlib.pyplot as plt
 from bisect import bisect_left, bisect_right
-import random
+import time
+
+from utils import (
+    PREDNISON_WINDOWS_MAP_TYPE,
+    AgeCohort,
+    calculate_age_cohort,
+    find_matching_person,
+    from_prednison_equiv,
+    is_injection,
+    sum_after_date_pe_for_person,
+    sum_before_date_pe_for_person,
+)
 
 ZACATEK_POJISTENI = date(2015, 1, 1)
 KONEC_POJISTENI = date(2023, 12, 31)
 
 
-class AgeCohort(StrEnum):
-    _12_15 = "12-15"
-    _16_29 = "16-29"
-    _30_49 = "30-49"
-    _50_59 = "50-59"
-    IRRELEVANT = "irrelevant"
-
-
-def calculate_age_cohort(person: Person) -> AgeCohort:
-    YEAR_FOR_AGE_CALCULATION = 2021
-
-    age = YEAR_FOR_AGE_CALCULATION - person.born_at.year
-    if age >= 12 and age <= 15:
-        return AgeCohort._12_15
-    elif age >= 16 and age <= 29:
-        return AgeCohort._16_29
-    elif age >= 30 and age <= 49:
-        return AgeCohort._30_49
-    elif age >= 50 and age <= 59:
-        return AgeCohort._50_59
-    else:
-        return AgeCohort.IRRELEVANT
-
-
-def is_injection(pr: Prescription) -> bool:
-    return pr.lekova_forma_zkr and (pr.lekova_forma_zkr.startswith("INJ"))
-
-
-def create_prednison_enum(step: int = 25, max_value: int = 5000):
-    values = {"ZERO": "zero", f"MORE_THAN_{max_value}": f"more_than_{max_value}"}
-
-    for start in range(0, max_value, step):
-        end = start + step
-        name = f"BETWEEN_{start}_AND_{end}"
-        values[name] = name.lower()
-
-    return StrEnum("PREDNISON_EQUIV_CATEGORY", values)
-
-
-PREDNISON_EQUIV_CATEGORY = create_prednison_enum()
-
-
-def from_prednison_equiv(prednison_equiv: float) -> PREDNISON_EQUIV_CATEGORY:
-    if prednison_equiv == 0:
-        return PREDNISON_EQUIV_CATEGORY.ZERO
-
-    step = 25
-    max_value = 5000
-
-    if prednison_equiv >= max_value:
-        return PREDNISON_EQUIV_CATEGORY[f"MORE_THAN_{max_value}"]
-
-    start = int((prednison_equiv // step) * step)
-    end = start + step
-    name = f"BETWEEN_{start}_AND_{end}"
-    return PREDNISON_EQUIV_CATEGORY[name]
-
-
-def find_matching_person(
-    vax_person: Person,
-    pe_range: PREDNISON_EQUIV_CATEGORY,
-    vax_date: datetime,
-    novax_map: dict[PREDNISON_EQUIV_CATEGORY, dict[AgeCohort, dict[Gender, set[int]]]],
-) -> str:
-    ac = calculate_age_cohort(vax_person)
-    gender = vax_person.gender
-    novax_matched_ids = novax_map[vax_date][pe_range][ac][gender]
-    return random.choice(novax_matched_ids)
-
-
-def sum_after_date_pe_for_person(person: Person, ddate: datetime) -> float:
-    return sum(
-        pr.prednison_equiv
-        for pr in person.prescriptions
-        if (not is_injection(pr))
-        and (pr.date > ddate and pr.date < ddate + timedelta(days=365))
-    )
-
-
-def sum_before_date_pe_for_person(person: Person, ddate: datetime) -> float:
-    return sum(
-        pr.prednison_equiv
-        for pr in person.prescriptions
-        if (not is_injection(pr))
-        and (pr.date > ddate - timedelta(days=365) and pr.date < ddate)
-    )
-
-
-import time
-
-start_time = time.time()
 POJISTOVNA = "cpzp"
 with open(f"./DATACON_data/{POJISTOVNA}_persons.pkl", "rb") as f:
     persons: list[Person] = pickle.load(f)
 end_time = time.time()
-print(f"Time taken to load persons: {end_time - start_time} seconds")
 
 
 novax_persons_to_analyse = [
@@ -152,24 +67,20 @@ for vax_person in vax_people:
     vax_dates_distribution[ac][vax_date] += 1
 
 
-for vax_person in vax_people:
-    first_vax = vax_person.vaccines[0]
-    vax_person.sum_of_pe_before_vax = sum_before_date_pe_for_person(
-        vax_person, first_vax.date
-    )
-    vax_person.sum_of_pe_after_vax = sum_after_date_pe_for_person(
-        vax_person, first_vax.date
-    )
+class PrednisonWindowMapComputer:
+    def __init__(self, people: list[Person], vax_anchor_dates: list[date]):
+        self.people = people
+        self.vax_anchor_dates = vax_anchor_dates
+
+    def compute(self) -> PREDNISON_WINDOWS_MAP_TYPE:
+        return compute_prednison_windows(self.people, self.vax_anchor_dates)
 
 
 def compute_prednison_windows(
-    people: list[Person], vax_anchor_dates: list[datetime]
-) -> dict[datetime, dict[str | int, float]]:
+    people: list[Person], vax_anchor_dates: list[date]
+) -> PREDNISON_WINDOWS_MAP_TYPE:
     # Prepare output structure
-    result: dict[
-        datetime,
-        dict[PREDNISON_EQUIV_CATEGORY, dict[AgeCohort, dict[Gender, set[int]]]],
-    ] = {ad: {} for ad in vax_anchor_dates}
+    result: PREDNISON_WINDOWS_MAP_TYPE = {ad: {} for ad in vax_anchor_dates}
 
     completed_persons = 0
     len_of_persons_to_analyse = len(people)
@@ -199,14 +110,14 @@ def compute_prednison_windows(
                     result[anchor][pe_range][ac] = {}
 
                 if person.gender not in result[anchor][pe_range][ac]:
-                    result[anchor][pe_range][ac][person.gender] = set()
+                    result[anchor][pe_range][ac][person.gender] = set()  # type: ignore
 
-                result[anchor][pe_range][ac][person.gender].add(person.id)
+                result[anchor][pe_range][ac][person.gender].add(person.id)  # type: ignore
             continue
 
         # For accumulation:
         # Each anchor date holds its sum of prednison for this person
-        per_person_map: dict[datetime, float] = {ad: 0.0 for ad in vax_anchor_dates}
+        per_person_map: dict[date, float] = {ad: 0.0 for ad in vax_anchor_dates}
 
         # 3) For each prescription, add its value to all anchor dates
         #    within pr.date → pr.date + 365 days
@@ -235,9 +146,9 @@ def compute_prednison_windows(
                 result[anchor][pe_range][ac] = {}
 
             if person.gender not in result[anchor][pe_range][ac]:
-                result[anchor][pe_range][ac][person.gender] = set()
+                result[anchor][pe_range][ac][person.gender] = set()  # type: ignore
 
-            result[anchor][pe_range][ac][person.gender].add(person.id)
+            result[anchor][pe_range][ac][person.gender].add(person.id)  # type: ignore
 
     for anchor, ranges in result.items():
         for pe_range, acs in ranges.items():
@@ -248,10 +159,7 @@ def compute_prednison_windows(
     return result
 
 
-start_time = time.time()
 pe_map = compute_prednison_windows(novax_persons_to_analyse, anchor_dates)
-end_time = time.time()
-print(f"Time taken to compute prednison windows: {end_time - start_time} seconds")
 
 
 vax_before_pe_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(
@@ -270,16 +178,11 @@ novax_after_pe_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(
 total_people = len(vax_people)
 completed_people = 0
 skipped_people = 0
-start_time = time.time()
 for person in vax_people:
-    completed_people += 1
-    if person.sum_of_pe_before_vax > 5000:
-        continue
-
-    print(f"Processing person {completed_people}/{total_people}", end="\r")
     first_vax = person.vaccines[0]
-    vax_person_before_pe = person.sum_of_pe_before_vax
-    vax_person_after_pe = person.sum_of_pe_after_vax
+    vax_person_before_pe = sum_before_date_pe_for_person(person, first_vax.date)
+    if vax_person_before_pe > 5000:
+        continue
 
     pe_range = from_prednison_equiv(vax_person_before_pe)
     try:
@@ -288,6 +191,7 @@ for person in vax_people:
         skipped_people += 1
         continue
 
+    vax_person_after_pe = sum_after_date_pe_for_person(person, first_vax.date)
     novax_person_before_pe = sum_before_date_pe_for_person(
         person_map[matched_id], first_vax.date
     )
@@ -301,9 +205,11 @@ for person in vax_people:
     novax_before_pe_map[ac][first_vax.date] += novax_person_before_pe
     novax_after_pe_map[ac][first_vax.date] += novax_person_after_pe
 
+    completed_people += 1
+    print(f"Processing person {completed_people}/{total_people}", end="\r")
+
+
 print(f"\n Skipped {skipped_people} people")
-end_time = time.time()
-print(f"Time taken to find matching people: {end_time - start_time} seconds")
 
 
 result_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(dict)
@@ -361,12 +267,12 @@ for cohort, date_map in result_map.items():
         vax_counts,
         label="Vaccinated",
         linestyle="--",
-        color="orange",  # ← your new color
+        color="orange",
     )
     ax_right.set_ylabel("Vaccinated Count")
 
     fig.autofmt_xdate()
     fig.tight_layout()
-    fig.savefig(f"runs/1/effect_over_time_{cohort}.png")
+    fig.savefig(f"runs/3/effect_over_time_{cohort}.png")
     plt.show()
     plt.close(fig)

@@ -16,7 +16,7 @@ def find_effects_summary_files(root_dir: str = "out") -> List[Path]:
     if not root_path.exists():
         print(f"Error: Directory '{root_dir}' does not exist.")
         return []
-    
+
     files = list(root_path.rglob("effects_summary.json"))
     return sorted(files)
 
@@ -24,30 +24,30 @@ def find_effects_summary_files(root_dir: str = "out") -> List[Path]:
 def extract_metadata_from_path(file_path: Path) -> Dict[str, str]:
     """Extract metadata (cohort, time_period, PE_count) from file path."""
     parts = file_path.parts
-    
+
     # Find the position of 'matching_analysis' in the path
     try:
         matching_idx = parts.index("matching_analysis")
         cohort = parts[matching_idx - 1] if matching_idx > 0 else "unknown"
-        time_period = parts[matching_idx + 1] if matching_idx + 1 < len(parts) else "unknown"
-        pe_count = parts[matching_idx + 2] if matching_idx + 2 < len(parts) else "unknown"
+        time_period = (
+            parts[matching_idx + 1] if matching_idx + 1 < len(parts) else "unknown"
+        )
+        pe_count = (
+            parts[matching_idx + 2] if matching_idx + 2 < len(parts) else "unknown"
+        )
     except ValueError:
         # Fallback if structure is different
         cohort = parts[1] if len(parts) > 1 else "unknown"
         time_period = "unknown"
         pe_count = "unknown"
-    
-    return {
-        "cohort": cohort,
-        "time_period": time_period,
-        "PE_count": pe_count
-    }
+
+    return {"cohort": cohort, "time_period": time_period, "PE_count": pe_count}
 
 
 def read_json_file(file_path: Path) -> List[Dict[str, Any]]:
     """Read and parse a JSON file."""
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         return data
     except Exception as e:
@@ -85,26 +85,28 @@ def display_table(data: List[Dict[str, Any]], file_path: Path):
     if not data:
         print(f"\nNo data found in {file_path}\n")
         return
-    
+
     # Format the data first, then create Polars DataFrame
     formatted_data = []
     for row in data:
-        formatted_data.append({
-            "Věk": row["věk"],
-            "Medián": format_med(row.get("Med")),
-            "IQR": format_iqr(row.get("IQR")),
-            "95% CI": format_ci(row.get("95% CI")),
-            "Počet očko": row.get("počet očko", 0)
-        })
-    
+        formatted_data.append(
+            {
+                "Věk": row["věk"],
+                "Medián": format_med(row.get("Med")),
+                "IQR": format_iqr(row.get("IQR")),
+                "95% CI": format_ci(row.get("95% CI")),
+                "Počet očko": row.get("počet očko", 0),
+            }
+        )
+
     display_df = pl.DataFrame(formatted_data)
-    
+
     # Print header with file path
     relative_path = file_path.relative_to(Path("out"))
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print(f"File: {relative_path}")
-    print("="*80)
-    
+    print("=" * 80)
+
     # Print table using Polars formatting
     print(display_df)
     print()
@@ -113,37 +115,47 @@ def display_table(data: List[Dict[str, Any]], file_path: Path):
 def create_combined_dataframe(files: List[Path]) -> pl.DataFrame:
     """Create a combined DataFrame with all data and metadata."""
     all_rows = []
-    
+
     for file_path in files:
         data = read_json_file(file_path)
         if not data:
             continue
-        
+
         metadata = extract_metadata_from_path(file_path)
-        
+
         for row in data:
             # Handle null values properly
             med_value = row.get("Med")
             iqr_value = row.get("IQR")
             ci_value = row.get("95% CI")
-            
-            all_rows.append({
-                "cohort": metadata["cohort"],
-                "time_period": metadata["time_period"],
-                "PE_count": metadata["PE_count"],
-                "věk": row.get("věk", ""),
-                "Med": med_value if med_value is not None else None,
-                "Med_formatted": format_med(med_value),
-                "IQR_lower": iqr_value[0] if iqr_value and len(iqr_value) >= 1 else None,
-                "IQR_upper": iqr_value[1] if iqr_value and len(iqr_value) >= 2 else None,
-                "IQR_formatted": format_iqr(iqr_value),
-                "CI_lower": ci_value[0] if ci_value and len(ci_value) >= 1 else None,
-                "CI_upper": ci_value[1] if ci_value and len(ci_value) >= 2 else None,
-                "CI_formatted": format_ci(ci_value),
-                "počet_očko": row.get("počet očko", 0),
-                "file_path": str(file_path.relative_to(Path("out")))
-            })
-    
+
+            all_rows.append(
+                {
+                    "cohort": metadata["cohort"],
+                    "time_period": metadata["time_period"],
+                    "PE_count": metadata["PE_count"],
+                    "věk": row.get("věk", ""),
+                    "Med": med_value if med_value is not None else None,
+                    "Med_formatted": format_med(med_value),
+                    "IQR_lower": iqr_value[0]
+                    if iqr_value and len(iqr_value) >= 1
+                    else None,
+                    "IQR_upper": iqr_value[1]
+                    if iqr_value and len(iqr_value) >= 2
+                    else None,
+                    "IQR_formatted": format_iqr(iqr_value),
+                    "CI_lower": ci_value[0]
+                    if ci_value and len(ci_value) >= 1
+                    else None,
+                    "CI_upper": ci_value[1]
+                    if ci_value and len(ci_value) >= 2
+                    else None,
+                    "CI_formatted": format_ci(ci_value),
+                    "počet_očko": row.get("počet očko", 0),
+                    "file_path": str(file_path.relative_to(Path("out"))),
+                }
+            )
+
     return pl.DataFrame(all_rows)
 
 
@@ -151,36 +163,36 @@ def main():
     """Main function to find and display all effects_summary.json files."""
     print("Searching for effects_summary.json files in out/ folder...")
     files = find_effects_summary_files()
-    
+
     if not files:
         print("No effects_summary.json files found.")
         return
-    
+
     print(f"Found {len(files)} file(s)\n")
-    
+
     # Create combined DataFrame
     print("Creating combined dataset...")
     combined_df = create_combined_dataframe(files)
-    
+
     # Save to CSV
-    output_csv = "effects_summary_combined.csv"
-    output_path = Path(output_csv).absolute()
+    output_csv = "./effects_summary_combined.csv"
     combined_df.write_csv(output_csv)
     print(f"\n✓ Combined data saved to: {output_csv}")
-    print(f"  Full path: {output_path}")
     print(f"  Total rows: {len(combined_df)}")
     print(f"  Columns: {', '.join(combined_df.columns)}\n")
-    
+
     # Display summary
-    print("="*80)
+    print("=" * 80)
     print("Summary by cohort and time_period:")
-    print("="*80)
-    summary = combined_df.group_by(["cohort", "time_period", "PE_count"]).agg([
-        pl.len().alias("num_records")
-    ]).sort(["cohort", "time_period", "PE_count"])
+    print("=" * 80)
+    summary = (
+        combined_df.group_by(["cohort", "time_period", "PE_count"])
+        .agg([pl.len().alias("num_records")])
+        .sort(["cohort", "time_period", "PE_count"])
+    )
     print(summary)
     print()
-    
+
     # Optionally display tables (commented out to reduce output, uncomment if needed)
     # print("\n" + "="*80)
     # print("Displaying individual tables:")

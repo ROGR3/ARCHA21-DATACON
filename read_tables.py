@@ -10,8 +10,10 @@ from typing import List, Dict, Any, Optional
 import polars as pl
 
 
-def find_effects_summary_files(root_dir: str = "out") -> List[Path]:
-    """Find all effects_summary.json files in the out/ directory."""
+def find_effects_summary_files(
+    root_dir: str = "out/cpzp/historical_matching_analysis",
+) -> List[Path]:
+    """Find all effects_summary.json files in the historical_matching_analysis directory."""
     root_path = Path(root_dir)
     if not root_path.exists():
         print(f"Error: Directory '{root_dir}' does not exist.")
@@ -25,23 +27,28 @@ def extract_metadata_from_path(file_path: Path) -> Dict[str, str]:
     """Extract metadata (cohort, time_period, PE_count) from file path."""
     parts = file_path.parts
 
-    # Find the position of 'matching_analysis' in the path
-    try:
-        matching_idx = parts.index("matching_analysis")
-        cohort = parts[matching_idx - 1] if matching_idx > 0 else "unknown"
-        time_period = (
-            parts[matching_idx + 1] if matching_idx + 1 < len(parts) else "unknown"
-        )
-        pe_count = (
-            parts[matching_idx + 2] if matching_idx + 2 < len(parts) else "unknown"
-        )
-    except ValueError:
-        # Fallback if structure is different
-        cohort = parts[1] if len(parts) > 1 else "unknown"
-        time_period = "unknown"
-        pe_count = "unknown"
+    # Find anchor: historical_matching_analysis or matching_analysis
+    for anchor in ("historical_matching_analysis", "matching_analysis"):
+        try:
+            anchor_idx = parts.index(anchor)
+            cohort = parts[anchor_idx - 1] if anchor_idx > 0 else "unknown"
+            time_period = (
+                parts[anchor_idx + 1]
+                if anchor_idx + 1 < len(parts)
+                else "unknown"
+            )
+            pe_count = (
+                parts[anchor_idx + 2]
+                if anchor_idx + 2 < len(parts)
+                else "unknown"
+            )
+            return {"cohort": cohort, "time_period": time_period, "PE_count": pe_count}
+        except ValueError:
+            continue
 
-    return {"cohort": cohort, "time_period": time_period, "PE_count": pe_count}
+    # Fallback if structure is different
+    cohort = parts[1] if len(parts) > 1 else "unknown"
+    return {"cohort": cohort, "time_period": "unknown", "PE_count": "unknown"}
 
 
 def read_json_file(file_path: Path) -> List[Dict[str, Any]]:
@@ -161,7 +168,7 @@ def create_combined_dataframe(files: List[Path]) -> pl.DataFrame:
 
 def main():
     """Main function to find and display all effects_summary.json files."""
-    print("Searching for effects_summary.json files in out/ folder...")
+    print("Searching for effects_summary.json files in out/cpzp/historical_matching_analysis...")
     files = find_effects_summary_files()
 
     if not files:

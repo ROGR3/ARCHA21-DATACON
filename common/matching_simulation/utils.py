@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import StrEnum
-from typing import Literal
 from common.constants.objects import Person, Prescription
 
 
@@ -91,7 +90,12 @@ def is_zero_pe_group(group_name: PE_GROUP_NAMES) -> bool:
 
 
 def create_prednison_enum(step: int = 25, max_value: int = 5000):
-    values = {"ZERO": "zero", f"MORE_THAN_{max_value}": f"more_than_{max_value}"}
+    values = {
+        "ZERO_PE": "zero_pe",
+        "ZERO_NO_PRE": "zero_no_pre",
+        "ZERO_PE_SUSPECTIBLE": "zero_pe_suspectible",
+        f"MORE_THAN_{max_value}": f"more_than_{max_value}",
+    }
 
     for start in range(0, max_value, step):
         end = start + step
@@ -106,7 +110,7 @@ PREDNISON_EQUIV_CATEGORY = create_prednison_enum()
 
 def from_prednison_equiv(prednison_equiv: float) -> PREDNISON_EQUIV_CATEGORY:
     if prednison_equiv == 0:
-        return PREDNISON_EQUIV_CATEGORY.ZERO
+        return PREDNISON_EQUIV_CATEGORY.ZERO_PE
 
     step = 25
     max_value = 5000
@@ -118,6 +122,10 @@ def from_prednison_equiv(prednison_equiv: float) -> PREDNISON_EQUIV_CATEGORY:
     end = start + step
     name = f"BETWEEN_{start}_AND_{end}"
     return PREDNISON_EQUIV_CATEGORY[name]
+
+
+def has_prescriptions_before_date(person: Person, anchor_date: datetime) -> bool:
+    return any(pr.date < anchor_date for pr in person.prescriptions)
 
 
 def sum_after_date_pe_for_person(person: Person, ddate: datetime) -> float:

@@ -5,11 +5,8 @@ from common.constants.column_types import (
     OZP_SCHEMA,
     TYP_UDALOSTI,
 )
-from common.constants.column_names import SHARED_COLUMNS, OZP_COLUMNS, CPZP_COLUMNS
-import matplotlib.pyplot as plt
-import numpy as np
+from common.constants.column_names import SHARED_COLUMNS, CPZP_COLUMNS
 from common.constants.objects import (
-    AgeCohort,
     Gender,
     PrescriptionType,
     Prescription,

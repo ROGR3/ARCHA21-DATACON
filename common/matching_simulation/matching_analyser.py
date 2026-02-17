@@ -107,6 +107,7 @@ class MatchingAnalyser:
                     novax_map=pe_map,
                 )
             except Exception:
+                print(f"No matching person found for {person}")
                 continue
 
             matched_person = person_map[matched_id]

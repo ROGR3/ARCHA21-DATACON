@@ -6,6 +6,7 @@ from common.matching_simulation.utils import (
     PREDNISON_EQUIV_CATEGORY,
     MatchingAnalysisConfig,
     is_injection,
+    has_prescriptions_before_date,
 )
 from common.matching_simulation.utils import (
     from_prednison_equiv,
@@ -62,20 +63,24 @@ class PrednisonWindowsComputer:
                 if not (is_injection(pr))
             ]
             if not person_prescriptions:
-                # no prescriptions → all anchor dates = 0
                 for anchor in vax_anchor_dates:
-                    pe_range = from_prednison_equiv(0)
-                    if pe_range not in result[anchor]:
-                        result[anchor][pe_range] = {}
-
-                    ac = self.__age_cohort_calculator.calculate_age_cohort(person)
-                    if ac not in result[anchor][pe_range]:
-                        result[anchor][pe_range][ac] = {}
-
-                    if person.gender not in result[anchor][pe_range][ac]:
-                        result[anchor][pe_range][ac][person.gender] = set()
-
-                    result[anchor][pe_range][ac][person.gender].add(person.id)
+                    self.__add_person_to_result(
+                        result, anchor, PREDNISON_EQUIV_CATEGORY.ZERO_PE, person
+                    )
+                    if has_prescriptions_before_date(person, anchor):
+                        self.__add_person_to_result(
+                            result,
+                            anchor,
+                            PREDNISON_EQUIV_CATEGORY.ZERO_PE_SUSPECTIBLE,
+                            person,
+                        )
+                    else:
+                        self.__add_person_to_result(
+                            result,
+                            anchor,
+                            PREDNISON_EQUIV_CATEGORY.ZERO_NO_PRE,
+                            person,
+                        )
                 continue
 
             # For accumulation:
@@ -99,18 +104,27 @@ class PrednisonWindowsComputer:
 
             # Store per-person results
             for anchor, value in per_person_map.items():
-                pe_range = from_prednison_equiv(value)
-                if pe_range not in result[anchor]:
-                    result[anchor][pe_range] = {}
-
-                ac = self.__age_cohort_calculator.calculate_age_cohort(person)
-                if ac not in result[anchor][pe_range]:
-                    result[anchor][pe_range][ac] = {}
-
-                if person.gender not in result[anchor][pe_range][ac]:
-                    result[anchor][pe_range][ac][person.gender] = set()
-
-                result[anchor][pe_range][ac][person.gender].add(person.id)
+                if value == 0:
+                    self.__add_person_to_result(
+                        result, anchor, PREDNISON_EQUIV_CATEGORY.ZERO_PE, person
+                    )
+                    if has_prescriptions_before_date(person, anchor):
+                        self.__add_person_to_result(
+                            result,
+                            anchor,
+                            PREDNISON_EQUIV_CATEGORY.ZERO_PE_SUSPECTIBLE,
+                            person,
+                        )
+                    else:
+                        self.__add_person_to_result(
+                            result,
+                            anchor,
+                            PREDNISON_EQUIV_CATEGORY.ZERO_NO_PRE,
+                            person,
+                        )
+                else:
+                    pe_range = from_prednison_equiv(value)
+                    self.__add_person_to_result(result, anchor, pe_range, person)
 
         for anchor, ranges in result.items():
             for pe_range, acs in ranges.items():
@@ -119,3 +133,25 @@ class PrednisonWindowsComputer:
                         genders[gender] = list(idset)
 
         return result
+
+    def __add_person_to_result(
+        self,
+        result: dict[
+            datetime,
+            dict[PREDNISON_EQUIV_CATEGORY, dict[AgeCohort, dict[Gender, set[int]]]],
+        ],
+        anchor: datetime,
+        pe_range: PREDNISON_EQUIV_CATEGORY,
+        person: Person,
+    ):
+        if pe_range not in result[anchor]:
+            result[anchor][pe_range] = {}
+
+        ac = self.__age_cohort_calculator.calculate_age_cohort(person)
+        if ac not in result[anchor][pe_range]:
+            result[anchor][pe_range][ac] = {}
+
+        if person.gender not in result[anchor][pe_range][ac]:
+            result[anchor][pe_range][ac][person.gender] = set()
+
+        result[anchor][pe_range][ac][person.gender].add(person.id)

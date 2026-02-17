@@ -11,7 +11,7 @@ import polars as pl
 
 
 def find_effects_summary_files(
-    root_dir: str = "out/cpzp/historical_matching_analysis",
+    root_dir: str = "out/cpzp/matching_analysis",
 ) -> List[Path]:
     """Find all effects_summary.json files in the historical_matching_analysis directory."""
     root_path = Path(root_dir)

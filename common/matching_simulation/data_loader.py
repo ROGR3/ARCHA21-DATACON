@@ -1,12 +1,17 @@
 from common.constants.objects import Person
-import pickle
 from datetime import date
+import pickle
+
+from common.matching_simulation.utils import (
+    MatchingAnalysisConfig,
+    sum_before_date_pe_for_person,
+)
 
 
 class DataLoader:
-    def __init__(self, pojistovna: str):
-        self.__pojistovna = pojistovna
-        print(f"Loading persons from {self.__pojistovna}")
+    def __init__(self, matching_analysis_config: MatchingAnalysisConfig):
+        self.__config = matching_analysis_config
+        print(f"Loading persons from {self.__config.pojistovna}")
         self.__persons: list[Person] = self.__load_persons()
         print(f"Loaded {len(self.__persons)} persons")
         self.__person_map: dict[int, Person] = {p.id: p for p in self.__persons}
@@ -54,14 +59,17 @@ class DataLoader:
         return self.__five_hundred_to_five_thousand_pe_vax_people
 
     def __load_persons(self) -> list[Person]:
-        if self.__pojistovna == "both_companies":
+        if self.__config.pojistovna == "both_companies":
             with open("./DATACON_data/cpzp_persons.pkl", "rb") as f:
                 cpzp_persons: list[Person] = pickle.load(f)
             with open("./DATACON_data/ozp_persons.pkl", "rb") as f:
                 ozp_persons: list[Person] = pickle.load(f)
             persons = cpzp_persons + ozp_persons
         else:
-            with open(f"./DATACON_data/{self.__pojistovna}_persons.pkl", "rb") as f:
+            with open(
+                f"./DATACON_data/{self.__config.pojistovna}_persons.pkl",
+                "rb",
+            ) as f:
                 persons: list[Person] = pickle.load(f)
 
         for p in persons:
@@ -77,8 +85,8 @@ class DataLoader:
             if p.vaccines
             and p.died_at is None  # klidně do roku 2023
             and (
-                p.zahajeni_pojisteni < ZACATEK_POJISTENI
-                and p.ukonceni_pojisteni > KONEC_POJISTENI
+                p.zahajeni_pojisteni < self.__config.zacatek_pojisteni
+                and p.ukonceni_pojisteni > self.__config.konec_pojisteni
             )
         ]
 
@@ -89,8 +97,8 @@ class DataLoader:
             if not p.vaccines
             and p.died_at is None
             and (
-                p.zahajeni_pojisteni < ZACATEK_POJISTENI
-                and p.ukonceni_pojisteni > KONEC_POJISTENI
+                p.zahajeni_pojisteni < self.__config.zacatek_pojisteni
+                and p.ukonceni_pojisteni > self.__config.konec_pojisteni
             )
         ]
 

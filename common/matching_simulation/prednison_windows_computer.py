@@ -1,16 +1,15 @@
-from common.constants.objects import Gender, Person
-from datetime import datetime, timedelta
+from common.constants.objects import Person
+from datetime import date, timedelta
 from bisect import bisect_left, bisect_right
 
 from common.matching_simulation.utils import (
     PREDNISON_EQUIV_CATEGORY,
     MatchingAnalysisConfig,
+    PeMap,
+    PeMapInternal,
     is_injection,
     has_prescriptions_before_date,
-)
-from common.matching_simulation.utils import (
     from_prednison_equiv,
-    AgeCohort,
     AgeCohortCalculator,
 )
 import pickle
@@ -24,8 +23,8 @@ class PrednisonWindowsComputer:
         self.__age_cohort_calculator = age_cohort_calculator
 
     def get_prednison_windows(
-        self, people: list[Person], vax_anchor_dates: list[datetime]
-    ) -> dict[datetime, dict[str | int, float]]:
+        self, people: list[Person], vax_anchor_dates: list[date]
+    ) -> PeMap:
         if self.__config.use_local_cache:
             return self.__get_prednison_windows_from_local_cache()
         else:
@@ -33,20 +32,17 @@ class PrednisonWindowsComputer:
 
     def __get_prednison_windows_from_local_cache(
         self,
-    ) -> dict[datetime, dict[str | int, float]]:
+    ) -> PeMap:
         with open(f"{self.__config.pojistovna.lower()}_pe_map.pkl", "rb") as f:
-            pe_map = pickle.load(f)
+            pe_map: PeMap = pickle.load(f)
 
         return pe_map
 
     def __compute_prednison_windows(
-        self, people: list[Person], vax_anchor_dates: list[datetime]
-    ) -> dict[datetime, dict[str | int, float]]:
+        self, people: list[Person], vax_anchor_dates: list[date]
+    ) -> PeMap:
         # Prepare output structure
-        result: dict[
-            datetime,
-            dict[PREDNISON_EQUIV_CATEGORY, dict[AgeCohort, dict[Gender, set[int]]]],
-        ] = {ad: {} for ad in vax_anchor_dates}
+        result: PeMapInternal = {ad: {} for ad in vax_anchor_dates}
 
         completed_persons = 0
         len_of_persons_to_analyse = len(people)
@@ -85,7 +81,7 @@ class PrednisonWindowsComputer:
 
             # For accumulation:
             # Each anchor date holds its sum of prednison for this person
-            per_person_map: dict[datetime, float] = {ad: 0.0 for ad in vax_anchor_dates}
+            per_person_map: dict[date, float] = {ad: 0.0 for ad in vax_anchor_dates}
 
             # 3) For each prescription, add its value to all anchor dates
             #    within pr.date → pr.date + 365 days
@@ -126,24 +122,25 @@ class PrednisonWindowsComputer:
                     pe_range = from_prednison_equiv(value)
                     self.__add_person_to_result(result, anchor, pe_range, person)
 
+        output: PeMap = {}
         for anchor, ranges in result.items():
+            output[anchor] = {}
             for pe_range, acs in ranges.items():
+                output[anchor][pe_range] = {}
                 for ac, genders in acs.items():
+                    output[anchor][pe_range][ac] = {}
                     for gender, idset in genders.items():
-                        genders[gender] = list(idset)
+                        output[anchor][pe_range][ac][gender] = list(idset)
 
-        return result
+        return output
 
     def __add_person_to_result(
         self,
-        result: dict[
-            datetime,
-            dict[PREDNISON_EQUIV_CATEGORY, dict[AgeCohort, dict[Gender, set[int]]]],
-        ],
-        anchor: datetime,
+        result: PeMapInternal,
+        anchor: date,
         pe_range: PREDNISON_EQUIV_CATEGORY,
         person: Person,
-    ):
+    ) -> None:
         if pe_range not in result[anchor]:
             result[anchor][pe_range] = {}
 

@@ -238,7 +238,8 @@ class DataframeToPersonsClassConverter:
                 else:
                     current_pred_equiv = 0
 
-                if prescription_types[i] is None:
+                ptype = prescription_types[i]
+                if ptype is None:
                     continue
                 prescriptions.append(
                     Prescription(
@@ -252,7 +253,7 @@ class DataframeToPersonsClassConverter:
                             else None
                         ),
                         atc_skupina=atc_skupina[i],
-                        prescription_type=prescription_types[i],
+                        prescription_type=ptype,
                         lekova_forma=lekova_forma[i],
                         lekova_forma_zkr=lekova_forma_zkr[i],
                     )

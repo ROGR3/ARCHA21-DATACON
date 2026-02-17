@@ -1,11 +1,13 @@
 import random
-from common.constants.objects import Person, Gender
+from common.constants.objects import Person
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from common.matching_simulation.utils import (
     PE_GROUP_NAMES,
     PREDNISON_EQUIV_CATEGORY,
     EffectMap,
+    IqrMap,
+    PeMap,
     MatchingAnalysisConfig,
     from_prednison_equiv,
     is_zero_pe_group,
@@ -44,11 +46,11 @@ class MatchingAnalyser:
         self,
         people: list[Person],
         person_map: dict[int | str, Person],
-        pe_map: dict[datetime, dict[str | int, float]],
+        pe_map: PeMap,
         aggregation_days: int,
         group_name: PE_GROUP_NAMES,
         num_runs: int = 100,
-    ) -> tuple[EffectMap, EffectMap, EffectMap]:
+    ) -> tuple[EffectMap, IqrMap, IqrMap]:
         effects = defaultdict(lambda: defaultdict(list))
 
         for i in range(num_runs):
@@ -75,7 +77,7 @@ class MatchingAnalyser:
         self,
         people: list[Person],
         person_map: dict[int | str, Person],
-        pe_map: dict[datetime, dict[str | int, float]],
+        pe_map: PeMap,
         aggregation_days: int = 1,
     ):
         vax_before_pe_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(
@@ -181,12 +183,10 @@ class MatchingAnalyser:
     def __compute_statistics(
         self,
         effects: dict[AgeCohort, dict[datetime, list[float]]],
-    ) -> tuple[EffectMap, EffectMap, EffectMap]:
+    ) -> tuple[EffectMap, IqrMap, IqrMap]:
         median_map: EffectMap = defaultdict(dict)
-        iqr_map: dict[AgeCohort, dict[datetime, tuple[float, float]]] = defaultdict(
-            dict
-        )
-        ci_map: EffectMap = defaultdict(dict)
+        iqr_map: IqrMap = defaultdict(dict)
+        ci_map: IqrMap = defaultdict(dict)
 
         for cohort, date_map in effects.items():
             for dt, values in date_map.items():
@@ -217,10 +217,8 @@ class MatchingAnalyser:
         vax_person: Person,
         pe_range: PREDNISON_EQUIV_CATEGORY,
         vax_date: datetime,
-        novax_map: dict[
-            PREDNISON_EQUIV_CATEGORY, dict[AgeCohort, dict[Gender, set[int]]]
-        ],
-    ) -> str:
+        novax_map: PeMap,
+    ) -> int | str:
         ac = self.__age_cohort_calculator.calculate_age_cohort(vax_person)
         gender = vax_person.gender
         novax_matched_ids = novax_map[vax_date][pe_range][ac][gender]

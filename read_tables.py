@@ -33,14 +33,10 @@ def extract_metadata_from_path(file_path: Path) -> Dict[str, str]:
             anchor_idx = parts.index(anchor)
             cohort = parts[anchor_idx - 1] if anchor_idx > 0 else "unknown"
             time_period = (
-                parts[anchor_idx + 1]
-                if anchor_idx + 1 < len(parts)
-                else "unknown"
+                parts[anchor_idx + 1] if anchor_idx + 1 < len(parts) else "unknown"
             )
             pe_count = (
-                parts[anchor_idx + 2]
-                if anchor_idx + 2 < len(parts)
-                else "unknown"
+                parts[anchor_idx + 2] if anchor_idx + 2 < len(parts) else "unknown"
             )
             return {"cohort": cohort, "time_period": time_period, "PE_count": pe_count}
         except ValueError:
@@ -168,7 +164,9 @@ def create_combined_dataframe(files: List[Path]) -> pl.DataFrame:
 
 def main():
     """Main function to find and display all effects_summary.json files."""
-    print("Searching for effects_summary.json files in out/cpzp/historical_matching_analysis...")
+    print(
+        "Searching for effects_summary.json files in out/cpzp/historical_matching_analysis..."
+    )
     files = find_effects_summary_files()
 
     if not files:

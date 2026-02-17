@@ -14,7 +14,7 @@ class DataLoader:
         print(f"Loading persons from {self.__config.pojistovna}")
         self.__persons: list[Person] = self.__load_persons()
         print(f"Loaded {len(self.__persons)} persons")
-        self.__person_map: dict[int, Person] = {p.id: p for p in self.__persons}
+        self.__person_map: dict[int | str, Person] = {p.id: p for p in self.__persons}
         self.__vax_people: list[Person] = self.__get_vax_people()
         self.__novax_people: list[Person] = self.__get_novax_people()
         self.__never_prescribed_vax_people: list[Person] = (
@@ -34,7 +34,7 @@ class DataLoader:
         )
 
     @property
-    def person_map(self) -> dict[int, Person]:
+    def person_map(self) -> dict[int | str, Person]:
         return self.__person_map
 
     @property

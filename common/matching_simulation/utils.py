@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import StrEnum
-from common.constants.objects import Person, Prescription
+from typing import Any
+
+from common.constants.objects import Gender, Person, Prescription
 
 
 @dataclass(frozen=True)
@@ -49,6 +51,11 @@ class AgeCohort(StrEnum):
 
 
 EffectMap = dict[AgeCohort, dict[datetime, float]]
+IqrMap = dict[AgeCohort, dict[datetime, tuple[float, float]]]
+
+# PREDNISON_EQUIV_CATEGORY is a dynamically-created StrEnum, so we use Any for its key type.
+PeMapInternal = dict[date, dict[Any, dict[AgeCohort, dict[Gender, set[int | str]]]]]
+PeMap = dict[date, dict[Any, dict[AgeCohort, dict[Gender, list[int | str]]]]]
 
 
 class AgeCohortCalculator:
@@ -70,7 +77,7 @@ class AgeCohortCalculator:
 
 
 def is_injection(pr: Prescription) -> bool:
-    return pr.lekova_forma_zkr and (pr.lekova_forma_zkr.startswith("INJ"))
+    return bool(pr.lekova_forma_zkr and pr.lekova_forma_zkr.startswith("INJ"))
 
 
 class PE_GROUP_NAMES(StrEnum):
@@ -124,7 +131,7 @@ def from_prednison_equiv(prednison_equiv: float) -> PREDNISON_EQUIV_CATEGORY:
     return PREDNISON_EQUIV_CATEGORY[name]
 
 
-def has_prescriptions_before_date(person: Person, anchor_date: datetime) -> bool:
+def has_prescriptions_before_date(person: Person, anchor_date: date | datetime) -> bool:
     return any(pr.date < anchor_date for pr in person.prescriptions)
 
 

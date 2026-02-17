@@ -83,6 +83,10 @@ class DataLoader:
             if p.ukonceni_pojisteni is None:
                 p.ukonceni_pojisteni = date(2050, 12, 31)
 
+        for p in persons:
+            if p.vaccines:
+                p.vaccines[0].date = p.vaccines[0].date - self.__config.day_offset
+
         return persons
 
     def __get_vax_people(self) -> list[Person]:

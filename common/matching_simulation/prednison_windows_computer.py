@@ -25,18 +25,10 @@ class PrednisonWindowsComputer:
     def get_prednison_windows(
         self, people: list[Person], vax_anchor_dates: list[date]
     ) -> PeMap:
-        if self.__config.use_local_cache:
-            return self.__get_prednison_windows_from_local_cache()
-        else:
+        if not self.__config.use_local_cache:
             return self.__compute_prednison_windows(people, vax_anchor_dates)
 
-    def __get_prednison_windows_from_local_cache(
-        self,
-    ) -> PeMap:
-        with open(f"{self.__config.pojistovna.lower()}_pe_map.pkl", "rb") as f:
-            pe_map: PeMap = pickle.load(f)
-
-        return pe_map
+        return self.__get_prednison_windows_from_local_cache()
 
     def __compute_prednison_windows(
         self, people: list[Person], vax_anchor_dates: list[date]
@@ -132,6 +124,7 @@ class PrednisonWindowsComputer:
                     for gender, idset in genders.items():
                         output[anchor][pe_range][ac][gender] = list(idset)
 
+        self.__save_map_to_local_cache(output)
         return output
 
     def __add_person_to_result(
@@ -152,3 +145,24 @@ class PrednisonWindowsComputer:
             result[anchor][pe_range][ac][person.gender] = set()
 
         result[anchor][pe_range][ac][person.gender].add(person.id)
+
+    def __save_map_to_local_cache(self, pe_map: PeMap) -> None:
+        with open(
+            self.__get_file_cache_file_name(),
+            "wb",
+        ) as f:
+            pickle.dump(pe_map, f)
+
+    def __get_prednison_windows_from_local_cache(
+        self,
+    ) -> PeMap:
+        with open(
+            self.__get_file_cache_file_name(),
+            "rb",
+        ) as f:
+            pe_map: PeMap = pickle.load(f)
+
+        return pe_map
+
+    def __get_file_cache_file_name(self) -> str:
+        return f"{self.__config.pojistovna.lower()}_{self.__config.year_offset}_years_back_pe_map.pkl"

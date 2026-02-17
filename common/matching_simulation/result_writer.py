@@ -23,7 +23,12 @@ class ResultWriter:
         group_name: PE_GROUP_NAMES,
         aggregation_days: int,
     ):
-        folder_path = f"out/{self.__config.pojistovna}/matching_analysis/whole_period/{group_name}/{aggregation_days}_days_aggregation"
+        year_back_name = (
+            ""
+            if self.__config.year_offset == 0
+            else f"{self.__config.year_offset}_years_back_"
+        )
+        folder_path = f"out/{self.__config.pojistovna}/{year_back_name}matching_analysis/whole_period/{group_name}/{aggregation_days}_days_aggregation"
         os.makedirs(folder_path, exist_ok=True)
 
         self.__plot_treatment_effect(

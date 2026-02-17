@@ -1,31 +1,17 @@
-from dataclasses import dataclass
 from enum import StrEnum
 from datetime import datetime, timedelta, date
 import polars as pl
-from collections import defaultdict, Counter
-from typing import Tuple
-from common.constants.column_types import (
-    CPZP_SCHEMA,
-    OZP_SCHEMA,
-    POHLAVI_CPZP,
-    TYP_UDALOSTI,
-)
-from common.constants.column_names import SHARED_COLUMNS, OZP_COLUMNS, CPZP_COLUMNS
+from collections import defaultdict
 import pickle
 from common.constants.objects import (
     Person,
     Gender,
     AgeCohort,
     Prescription,
-    PrescriptionType,
 )
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from common.utils import (
-    draw_chart,
-    filter_by_date_range,
-)
 from bisect import bisect_left, bisect_right
 import random
 
@@ -45,6 +31,8 @@ DATE_OFFSET = timedelta(days=YEAR_OFFSET * 365)
 START_DATE = datetime(2021, 1, 1) - DATE_OFFSET
 END_DATE = datetime(2022, 2, 28) - DATE_OFFSET
 YEAR_FOR_AGE_CALCULATION = 2021 - YEAR_OFFSET
+
+EffectMap = dict[AgeCohort, dict[datetime, float]]
 
 
 class AgeCohort(StrEnum):
@@ -383,310 +371,339 @@ def aggregate_date(start_date: date, window_days: int) -> datetime:
     return epoch + timedelta(days=window_start_days)
 
 
-def compute_vax_vs_novax_sums(
-    people: list[Person],
-    person_map: dict[int, Person],
-    pe_map: dict[datetime, dict[str | int, float]],
-    aggregation_days: int = 1,
-):
-    vax_before_pe_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(
-        lambda: defaultdict(float)
-    )
-    vax_after_pe_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(
-        lambda: defaultdict(float)
-    )
-    novax_before_pe_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(
-        lambda: defaultdict(float)
-    )
-    novax_after_pe_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(
-        lambda: defaultdict(float)
-    )
+class MatchingAnalyser:
+    def __init__(self, pojistovna: str):
+        self.__pojistovna = pojistovna
 
-    print("iterating through people ", len(people))
+    def run_matching_analysis(
+        self,
+        people: list[Person],
+        person_map: dict[int, Person],
+        pe_map: dict[datetime, dict[str | int, float]],
+        aggregation_days: int,
+        group_name: str,
+        num_runs: int = 100,
+    ) -> tuple[EffectMap, EffectMap, EffectMap]:
+        effects = defaultdict(lambda: defaultdict(list))
+        vax_ratio_effects = defaultdict(lambda: defaultdict(list))
+        novax_ratio_effects = defaultdict(lambda: defaultdict(list))
 
-    for person in people:
-        first_vax = person.vaccines[0]
+        for i in range(num_runs):
+            vax_before, vax_after, novax_before, novax_after = (
+                self.__compute_vax_vs_novax_sums(
+                    people, person_map, pe_map, aggregation_days
+                )
+            )
 
-        vax_person_before_pe = sum_before_date_pe_for_person(person, first_vax.date)
-        if vax_person_before_pe > 5000:
-            continue
+            result_map = self.__compute_effect_values(
+                vax_before, vax_after, novax_before, novax_after, group_name
+            )
 
-        pe_range = from_prednison_equiv(vax_person_before_pe)
-        try:
-            matched_id = find_matching_person(person, pe_range, first_vax.date, pe_map)
-        except Exception:
-            continue
+            # Also accumulate vax_after/vax_before and novax_after/novax_before for each run
+            all_cohorts = (
+                set(vax_before.keys())
+                | set(vax_after.keys())
+                | set(novax_before.keys())
+                | set(novax_after.keys())
+            )
+            for cohort in all_cohorts:
+                all_dates = (
+                    set(vax_before[cohort].keys())
+                    | set(vax_after[cohort].keys())
+                    | set(novax_before[cohort].keys())
+                    | set(novax_after[cohort].keys())
+                )
+                for dt in all_dates:
+                    vax_before_val = vax_before[cohort].get(dt, 0.0)
+                    vax_after_val = vax_after[cohort].get(dt, 0.0)
+                    novax_before_val = novax_before[cohort].get(dt, 0.0)
+                    novax_after_val = novax_after[cohort].get(dt, 0.0)
 
-        matched_person = person_map[matched_id]
+                    vax_ratio = (
+                        vax_after_val / vax_before_val
+                        if vax_before_val != 0
+                        else float("nan")
+                    )
+                    novax_ratio = (
+                        novax_after_val / novax_before_val
+                        if novax_before_val != 0
+                        else float("nan")
+                    )
 
-        vax_person_after_pe = sum_after_date_pe_for_person(person, first_vax.date)
-        novax_person_before_pe = sum_before_date_pe_for_person(
-            matched_person, first_vax.date
+                    vax_ratio_effects[cohort][dt].append(vax_ratio)
+                    novax_ratio_effects[cohort][dt].append(novax_ratio)
+
+            for cohort, date_map in result_map.items():
+                for dt, value in date_map.items():
+                    effects[cohort][dt].append(value)
+
+            print(f"Processed {i} runs")
+
+        return self.__compute_statistics(effects)
+
+    def __compute_vax_vs_novax_sums(
+        self,
+        people: list[Person],
+        person_map: dict[int, Person],
+        pe_map: dict[datetime, dict[str | int, float]],
+        aggregation_days: int = 1,
+    ):
+        vax_before_pe_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(
+            lambda: defaultdict(float)
         )
-        novax_person_after_pe = sum_after_date_pe_for_person(
-            matched_person, first_vax.date
+        vax_after_pe_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(
+            lambda: defaultdict(float)
+        )
+        novax_before_pe_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(
+            lambda: defaultdict(float)
+        )
+        novax_after_pe_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(
+            lambda: defaultdict(float)
         )
 
-        ac = calculate_age_cohort(person)
+        print("iterating through people ", len(people))
 
-        aggregated_date = aggregate_date(first_vax.date, aggregation_days)
+        for person in people:
+            first_vax = person.vaccines[0]
 
-        vax_before_pe_map[ac][aggregated_date] += vax_person_before_pe
-        vax_after_pe_map[ac][aggregated_date] += vax_person_after_pe
-        novax_before_pe_map[ac][aggregated_date] += novax_person_before_pe
-        novax_after_pe_map[ac][aggregated_date] += novax_person_after_pe
+            vax_person_before_pe = sum_before_date_pe_for_person(person, first_vax.date)
+            if vax_person_before_pe > 5000:
+                continue
 
-    return (
+            pe_range = from_prednison_equiv(vax_person_before_pe)
+            try:
+                matched_id = find_matching_person(
+                    person, pe_range, first_vax.date, pe_map
+                )
+            except Exception:
+                continue
+
+            matched_person = person_map[matched_id]
+
+            vax_person_after_pe = sum_after_date_pe_for_person(person, first_vax.date)
+            novax_person_before_pe = sum_before_date_pe_for_person(
+                matched_person, first_vax.date
+            )
+            novax_person_after_pe = sum_after_date_pe_for_person(
+                matched_person, first_vax.date
+            )
+
+            ac = calculate_age_cohort(person)
+
+            aggregated_date = aggregate_date(first_vax.date, aggregation_days)
+
+            vax_before_pe_map[ac][aggregated_date] += vax_person_before_pe
+            vax_after_pe_map[ac][aggregated_date] += vax_person_after_pe
+            novax_before_pe_map[ac][aggregated_date] += novax_person_before_pe
+            novax_after_pe_map[ac][aggregated_date] += novax_person_after_pe
+
+        return (
+            vax_before_pe_map,
+            vax_after_pe_map,
+            novax_before_pe_map,
+            novax_after_pe_map,
+        )
+
+    def __compute_effect_values(
+        self,
         vax_before_pe_map,
         vax_after_pe_map,
         novax_before_pe_map,
         novax_after_pe_map,
-    )
+        group_name,
+    ) -> EffectMap:
+        result_map: EffectMap = defaultdict(dict)
 
-
-EffectMap = dict[AgeCohort, dict[datetime, float]]
-
-
-def run_matching_analysis(
-    people: list[Person],
-    person_map: dict[int, Person],
-    pe_map: dict[datetime, dict[str | int, float]],
-    aggregation_days: int,
-    group_name: str,
-    num_runs: int = 100,
-) -> tuple[
-    EffectMap,
-    dict[AgeCohort, dict[datetime, tuple[float, float]]],
-    dict[AgeCohort, dict[datetime, tuple[float, float]]],
-    dict[AgeCohort, dict[datetime, list[float]]],
-    EffectMap,
-    EffectMap,
-]:
-    effects: dict[AgeCohort, dict[datetime, list[float]]] = defaultdict(
-        lambda: defaultdict(list)
-    )
-    vax_ratio_effects: dict[AgeCohort, dict[datetime, list[float]]] = defaultdict(
-        lambda: defaultdict(list)
-    )
-    novax_ratio_effects: dict[AgeCohort, dict[datetime, list[float]]] = defaultdict(
-        lambda: defaultdict(list)
-    )
-
-    for i in range(num_runs):
-        vax_before, vax_after, novax_before, novax_after = compute_vax_vs_novax_sums(
-            people, person_map, pe_map, aggregation_days
+        cohorts = (
+            set(vax_before_pe_map.keys())
+            | set(vax_after_pe_map.keys())
+            | set(novax_before_pe_map.keys())
+            | set(novax_after_pe_map.keys())
         )
 
-        result_map = compute_effect_values(
-            vax_before, vax_after, novax_before, novax_after, group_name
-        )
-
-        # Also accumulate vax_after/vax_before and novax_after/novax_before for each run
-        all_cohorts = (
-            set(vax_before.keys())
-            | set(vax_after.keys())
-            | set(novax_before.keys())
-            | set(novax_after.keys())
-        )
-        for cohort in all_cohorts:
+        for cohort in cohorts:
             all_dates = (
-                set(vax_before[cohort].keys())
-                | set(vax_after[cohort].keys())
-                | set(novax_before[cohort].keys())
-                | set(novax_after[cohort].keys())
+                set(vax_before_pe_map[cohort].keys())
+                | set(vax_after_pe_map[cohort].keys())
+                | set(novax_before_pe_map[cohort].keys())
+                | set(novax_after_pe_map[cohort].keys())
             )
+
             for dt in all_dates:
-                vax_before_val = vax_before[cohort].get(dt, 0.0)
-                vax_after_val = vax_after[cohort].get(dt, 0.0)
-                novax_before_val = novax_before[cohort].get(dt, 0.0)
-                novax_after_val = novax_after[cohort].get(dt, 0.0)
+                vax_before = vax_before_pe_map[cohort].get(dt, 0.0)
+                vax_after = vax_after_pe_map[cohort].get(dt, 0.0)
+                novax_before = novax_before_pe_map[cohort].get(dt, 0.0)
+                novax_after = novax_after_pe_map[cohort].get(dt, 0.0)
 
-                vax_ratio = (
-                    vax_after_val / vax_before_val
-                    if vax_before_val != 0
-                    else float("nan")
-                )
-                novax_ratio = (
-                    novax_after_val / novax_before_val
-                    if novax_before_val != 0
-                    else float("nan")
-                )
+                if group_name == "0_PE" or group_name == "NEVER_PRESCRIBED":
+                    if novax_after != 0:
+                        result_map[cohort][dt] = vax_after / novax_after
+                else:
+                    if vax_before != 0 and novax_before != 0:
+                        result_map[cohort][dt] = (vax_after / vax_before) - (
+                            novax_after / novax_before
+                        )
 
-                vax_ratio_effects[cohort][dt].append(vax_ratio)
-                novax_ratio_effects[cohort][dt].append(novax_ratio)
+        return result_map
 
-        for cohort, date_map in result_map.items():
-            for dt, value in date_map.items():
-                effects[cohort][dt].append(value)
+    def __compute_statistics(
+        self,
+        effects: dict[AgeCohort, dict[datetime, list[float]]],
+    ) -> tuple[EffectMap, EffectMap, EffectMap]:
+        median_map: EffectMap = defaultdict(dict)
+        iqr_map: dict[AgeCohort, dict[datetime, tuple[float, float]]] = defaultdict(
+            dict
+        )
+        ci_map: EffectMap = defaultdict(dict)
 
-        print(f"Processed {i} runs")
+        for cohort, date_map in effects.items():
+            for dt, values in date_map.items():
+                arr = np.asarray(values)
 
-    median_map, iqr_map, ci_map = compute_statistics(effects)
-    vax_ratio_median_map, _, _ = compute_statistics(vax_ratio_effects)
-    novax_ratio_median_map, _, _ = compute_statistics(novax_ratio_effects)
+                median = np.median(arr)
+                q1, q3 = np.percentile(arr, [25, 75])
+                ci_low, ci_high = np.percentile(arr, [2.5, 97.5])
 
-    return (
+                median_map[cohort][dt] = median
+                iqr_map[cohort][dt] = (q1, q3)
+                ci_map[cohort][dt] = (ci_low, ci_high)
+
+        return median_map, iqr_map, ci_map
+
+
+class ResultWriter:
+    def __init__(self, pojistovna: str):
+        self.__pojistovna = pojistovna
+
+    def write_result(
+        self,
         median_map,
         iqr_map,
         ci_map,
-    )
-
-
-def compute_effect_values(
-    vax_before_pe_map,
-    vax_after_pe_map,
-    novax_before_pe_map,
-    novax_after_pe_map,
-    group_name,
-) -> EffectMap:
-    result_map: EffectMap = defaultdict(dict)
-
-    cohorts = (
-        set(vax_before_pe_map.keys())
-        | set(vax_after_pe_map.keys())
-        | set(novax_before_pe_map.keys())
-        | set(novax_after_pe_map.keys())
-    )
-
-    for cohort in cohorts:
-        all_dates = (
-            set(vax_before_pe_map[cohort].keys())
-            | set(vax_after_pe_map[cohort].keys())
-            | set(novax_before_pe_map[cohort].keys())
-            | set(novax_after_pe_map[cohort].keys())
+        vax_dates_distribution,
+        group_name,
+        aggregation_days,
+        max_aggregation_days: int,
+    ):
+        folder_path = f"out/{self.__pojistovna}/matching_analysis/whole_period/{group_name}/{aggregation_days}_days_aggregation"
+        self.__plot_treatment_effect(
+            median_map,
+            iqr_map,
+            vax_dates_distribution,
+            group_name,
+            aggregation_days,
+            folder_path,
         )
+        if aggregation_days == max_aggregation_days:
+            self.__write_table(
+                median_map=median_map,
+                iqr_map=iqr_map,
+                ci_map=ci_map,
+                vax_dates_distribution=vax_dates_distribution,
+                folder_path=folder_path,
+            )
 
-        for dt in all_dates:
-            vax_before = vax_before_pe_map[cohort].get(dt, 0.0)
-            vax_after = vax_after_pe_map[cohort].get(dt, 0.0)
-            novax_before = novax_before_pe_map[cohort].get(dt, 0.0)
-            novax_after = novax_after_pe_map[cohort].get(dt, 0.0)
+    def __plot_treatment_effect(
+        self,
+        median_map,
+        iqr_map,
+        vax_dates_distribution,
+        group_name,
+        aggregation_days,
+        folder_path,
+    ):
+        for cohort, date_map in median_map.items():
+            sorted_dates = sorted(date_map.keys())
+            y_mean = [median_map[cohort][d] for d in sorted_dates]
+            y_lower = [iqr_map[cohort][d][0] for d in sorted_dates]
+            y_upper = [iqr_map[cohort][d][1] for d in sorted_dates]
 
-            if group_name == "0_PE" or group_name == "NEVER_PRESCRIBED":
-                if novax_after != 0:
-                    result_map[cohort][dt] = vax_after / novax_after
-            else:
-                if vax_before != 0 and novax_before != 0:
-                    result_map[cohort][dt] = (vax_after / vax_before) - (
-                        novax_after / novax_before
-                    )
+            vax_counts = [
+                vax_dates_distribution[cohort].get(d, 0) for d in sorted_dates
+            ]
 
-    return result_map
+            fig, ax_left = plt.subplots(figsize=(10, 5))
 
+            # left axis
+            ax_left.plot(sorted_dates, y_mean, label="Median effect", color="blue")
+            ax_left.fill_between(
+                sorted_dates, y_lower, y_upper, alpha=0.2, label="IQR", color="blue"
+            )
+            ax_left.axhline(
+                1 if group_name == "0_PE" or group_name == "NEVER_PRESCRIBED" else 0,
+                color="black",
+                linewidth=1,
+            )
+            ax_left.set_ylabel("Effect value")
 
-def plot_treatment_effect(
-    median_map,
-    iqr_map,
-    vax_dates_distribution,
-    group_name,
-    aggregation_days,
-    folder_path,
-):
-    for cohort, date_map in median_map.items():
-        sorted_dates = sorted(date_map.keys())
-        y_mean = [median_map[cohort][d] for d in sorted_dates]
-        y_lower = [iqr_map[cohort][d][0] for d in sorted_dates]
-        y_upper = [iqr_map[cohort][d][1] for d in sorted_dates]
+            # right axis
+            ax_right = ax_left.twinx()
+            ax_right.plot(
+                sorted_dates,
+                vax_counts,
+                linestyle="--",
+                label="Vaccinated",
+                color="orange",
+            )
+            ax_right.set_ylabel("Vaccinated count")
 
-        vax_counts = [vax_dates_distribution[cohort].get(d, 0) for d in sorted_dates]
+            ax_left.set_title(
+                f"Cohort {cohort} - {group_name} - {aggregation_days} days"
+            )
+            fig.autofmt_xdate()
+            fig.tight_layout()
 
-        fig, ax_left = plt.subplots(figsize=(10, 5))
+            # shared legend
+            lines, labels = ax_left.get_legend_handles_labels()
+            lines2, labels2 = ax_right.get_legend_handles_labels()
+            ax_left.legend(lines + lines2, labels + labels2)
 
-        # left axis
-        ax_left.plot(sorted_dates, y_mean, label="Median effect", color="blue")
-        ax_left.fill_between(
-            sorted_dates, y_lower, y_upper, alpha=0.2, label="IQR", color="blue"
-        )
-        ax_left.axhline(
-            1 if group_name == "0_PE" or group_name == "NEVER_PRESCRIBED" else 0,
-            color="black",
-            linewidth=1,
-        )
-        ax_left.set_ylabel("Effect value")
+            os.makedirs(folder_path, exist_ok=True)
+            fig.savefig(f"{folder_path}/{cohort}.png")
+            plt.close(fig)
 
-        # right axis
-        ax_right = ax_left.twinx()
-        ax_right.plot(
-            sorted_dates, vax_counts, linestyle="--", label="Vaccinated", color="orange"
-        )
-        ax_right.set_ylabel("Vaccinated count")
+    def __write_table(
+        self, median_map, iqr_map, ci_map, vax_dates_distribution, folder_path
+    ):
+        table = []
 
-        ax_left.set_title(f"Cohort {cohort} - {group_name} - {aggregation_days} days")
-        fig.autofmt_xdate()
-        fig.tight_layout()
+        def get_median(median_map, cohort):
+            values = median_map.get(cohort, {})
+            return next(iter(values.values()), None)
 
-        # shared legend
-        lines, labels = ax_left.get_legend_handles_labels()
-        lines2, labels2 = ax_right.get_legend_handles_labels()
-        ax_left.legend(lines + lines2, labels + labels2)
+        def get_iqr(iqr_map, cohort):
+            values = iqr_map.get(cohort, {})
+            return next(iter(values.values()), None)  # (q1, q3)
 
-        os.makedirs(folder_path, exist_ok=True)
-        fig.savefig(f"{folder_path}/{cohort}.png")
-        plt.close(fig)
+        def get_ci(ci_map, cohort):
+            values = ci_map.get(cohort, {})
+            return next(iter(values.values()), None)  # (ci_low, ci_high)
 
+        def get_total_vaccinations(vax_dates_distribution, cohort):
+            date_map = vax_dates_distribution.get(cohort, {})
+            return int(sum(date_map.values()))
 
-def write_table(median_map, iqr_map, ci_map, vax_dates_distribution, folder_path):
-    table = []
+        for cohort in AgeCohort:
+            median = get_median(median_map, cohort)
+            iqr = get_iqr(iqr_map, cohort)
+            ci = get_ci(ci_map, cohort)
+            total_vax = get_total_vaccinations(vax_dates_distribution, cohort)
 
-    def get_median(median_map, cohort):
-        values = median_map.get(cohort, {})
-        return next(iter(values.values()), None)
+            table.append(
+                {
+                    "věk": cohort.value,
+                    "Med": median,
+                    "IQR": iqr,
+                    "95% CI": ci,
+                    "počet očko": total_vax,
+                }
+            )
 
-    def get_iqr(iqr_map, cohort):
-        values = iqr_map.get(cohort, {})
-        return next(iter(values.values()), None)  # (q1, q3)
+        import polars as pl
 
-    def get_ci(ci_map, cohort):
-        values = ci_map.get(cohort, {})
-        return next(iter(values.values()), None)  # (ci_low, ci_high)
+        df = pl.DataFrame(table)
 
-    def get_total_vaccinations(vax_dates_distribution, cohort):
-        date_map = vax_dates_distribution.get(cohort, {})
-        return int(sum(date_map.values()))
-
-    for cohort in AgeCohort:
-        median = get_median(median_map, cohort)
-        iqr = get_iqr(iqr_map, cohort)
-        ci = get_ci(ci_map, cohort)
-        total_vax = get_total_vaccinations(vax_dates_distribution, cohort)
-
-        table.append(
-            {
-                "věk": cohort.value,
-                "Med": median,
-                "IQR": iqr,
-                "95% CI": ci,
-                "počet očko": total_vax,
-            }
-        )
-
-    import polars as pl
-
-    df = pl.DataFrame(table)
-
-    df.write_json(f"{folder_path}/../effects_summary.json")
-
-
-def compute_statistics(
-    effects: dict[AgeCohort, dict[datetime, list[float]]],
-) -> tuple[EffectMap, EffectMap, EffectMap]:
-    median_map: EffectMap = defaultdict(dict)
-    iqr_map: dict[AgeCohort, dict[datetime, tuple[float, float]]] = defaultdict(dict)
-    ci_map: EffectMap = defaultdict(dict)
-
-    for cohort, date_map in effects.items():
-        for dt, values in date_map.items():
-            arr = np.asarray(values)
-
-            median = np.median(arr)
-            q1, q3 = np.percentile(arr, [25, 75])
-            ci_low, ci_high = np.percentile(arr, [2.5, 97.5])
-
-            median_map[cohort][dt] = median
-            iqr_map[cohort][dt] = (q1, q3)
-            ci_map[cohort][dt] = (ci_low, ci_high)
-
-    return median_map, iqr_map, ci_map
+        df.write_json(f"{folder_path}/../effects_summary.json")
 
 
 def get_vax_dates_distribution(
@@ -707,26 +724,23 @@ def get_vax_dates_distribution(
 
 
 def main():
-    data_loader = DataLoader("cpzp")
+    data_loader = DataLoader(POJISTOVNA)
+    prednison_windows_computer = PrednisonWindowsComputer(POJISTOVNA)
+    result_writer = ResultWriter(POJISTOVNA)
+    matching_analyser = MatchingAnalyser(POJISTOVNA)
+
     anchor_dates = [
         (START_DATE + timedelta(days=i)).date()
         for i in range((END_DATE - START_DATE).days + 1)
     ]
-    prednison_windows_computer = PrednisonWindowsComputer(POJISTOVNA)
     prednison_windows = prednison_windows_computer.get_prednison_windows(
-        data_loader.novax_people, anchor_dates
+        people=data_loader.novax_people, vax_anchor_dates=anchor_dates
     )
 
-    compute_vax_vs_novax_sums(
-        data_loader.vax_people,
-        data_loader.person_map,
-        prednison_windows,
-        1,
-    )
     groups = {
-        "NEVER_PRESCRIBED": data_loader.never_prescribed_vax_people,
-        "0_PE": data_loader.zero_pe_vax_people,
-        "1_to_500_PE": data_loader.one_to_five_hundred_pe_vax_people,
+        # "NEVER_PRESCRIBED": data_loader.never_prescribed_vax_people,
+        # "0_PE": data_loader.zero_pe_vax_people,
+        # "1_to_500_PE": data_loader.one_to_five_hundred_pe_vax_people,
         "500_to_5000_PE": data_loader.five_hundred_to_five_thousand_pe_vax_people,
     }
 
@@ -736,34 +750,30 @@ def main():
         for aggregation_days in aggregation_days_list:
             print(f"Processing {group_name} with {aggregation_days} days aggregation")
 
-            folder_path = f"out/{POJISTOVNA}/matching_analysis/whole_period/{group_name}/{aggregation_days}_days_aggregation"
-
             (
                 median_map,
                 iqr_map,
                 ci_map,
-            ) = run_matching_analysis(
+            ) = matching_analyser.run_matching_analysis(
                 people=group,
                 person_map=data_loader.person_map,
                 pe_map=prednison_windows,
                 aggregation_days=aggregation_days,
                 group_name=group_name,
-                num_runs=2,
+                num_runs=100,
             )
-            vax_dates_distribution = get_vax_dates_distribution(group, aggregation_days)
 
-            plot_treatment_effect(
-                median_map,
-                iqr_map,
-                vax_dates_distribution,
-                group_name,
-                aggregation_days,
-                folder_path,
+            result_writer.write_result(
+                median_map=median_map,
+                iqr_map=iqr_map,
+                ci_map=ci_map,
+                vax_dates_distribution=get_vax_dates_distribution(
+                    group, aggregation_days
+                ),
+                group_name=group_name,
+                aggregation_days=aggregation_days,
+                max_aggregation_days=len(anchor_dates),
             )
-            if aggregation_days == len(anchor_dates):
-                write_table(
-                    median_map, iqr_map, ci_map, vax_dates_distribution, folder_path
-                )
 
 
 if __name__ == "__main__":

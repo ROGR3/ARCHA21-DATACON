@@ -1,4 +1,8 @@
-from common.matching_simulation.utils import MatchingAnalysisConfig
+from common.matching_simulation.utils import (
+    MatchingAnalysisConfig,
+    is_zero_pe_group,
+    PE_GROUP_NAMES,
+)
 import matplotlib.pyplot as plt
 import os
 from common.matching_simulation.utils import (
@@ -16,10 +20,12 @@ class ResultWriter:
         iqr_map,
         ci_map,
         vax_dates_distribution,
-        group_name,
-        aggregation_days,
+        group_name: PE_GROUP_NAMES,
+        aggregation_days: int,
     ):
         folder_path = f"out/{self.__config.pojistovna}/matching_analysis/whole_period/{group_name}/{aggregation_days}_days_aggregation"
+        os.makedirs(folder_path, exist_ok=True)
+
         self.__plot_treatment_effect(
             median_map,
             iqr_map,
@@ -42,9 +48,9 @@ class ResultWriter:
         median_map,
         iqr_map,
         vax_dates_distribution,
-        group_name,
-        aggregation_days,
-        folder_path,
+        group_name: PE_GROUP_NAMES,
+        aggregation_days: int,
+        folder_path: str,
     ):
         for cohort, date_map in median_map.items():
             sorted_dates = sorted(date_map.keys())
@@ -64,7 +70,7 @@ class ResultWriter:
                 sorted_dates, y_lower, y_upper, alpha=0.2, label="IQR", color="blue"
             )
             ax_left.axhline(
-                1 if group_name == "0_PE" or group_name == "NEVER_PRESCRIBED" else 0,
+                1 if is_zero_pe_group(group_name) else 0,
                 color="black",
                 linewidth=1,
             )
@@ -97,7 +103,7 @@ class ResultWriter:
             plt.close(fig)
 
     def __write_table(
-        self, median_map, iqr_map, ci_map, vax_dates_distribution, folder_path
+        self, median_map, iqr_map, ci_map, vax_dates_distribution, folder_path: str
     ):
         table = []
 

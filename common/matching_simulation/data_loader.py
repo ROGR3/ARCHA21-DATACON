@@ -20,6 +20,9 @@ class DataLoader:
         self.__never_prescribed_vax_people: list[Person] = (
             self.__get_never_prescribed_vax_people(self.__vax_people)
         )
+        self.__zero_pe_suspectible: list[Person] = self.__get_zero_pe_suspects(
+            self.__vax_people
+        )
         self.__zero_pe_vax_people: list[Person] = self.__get_zero_pe_vax_people(
             self.__vax_people
         )
@@ -45,6 +48,10 @@ class DataLoader:
     @property
     def never_prescribed_vax_people(self) -> list[Person]:
         return self.__never_prescribed_vax_people
+
+    @property
+    def zero_pe_suspectible(self) -> list[Person]:
+        return self.__zero_pe_suspectible
 
     @property
     def zero_pe_vax_people(self) -> list[Person]:
@@ -109,6 +116,17 @@ class DataLoader:
             p
             for p in vax_cohort_people
             if not any(
+                prescription.date < p.vaccines[0].date
+                for prescription in p.prescriptions
+            )
+        ]
+
+    def __get_zero_pe_suspects(self, vax_cohort_people: list[Person]) -> list[Person]:
+        return [
+            p
+            for p in vax_cohort_people
+            if sum_before_date_pe_for_person(p, p.vaccines[0].date) == 0
+            and any(
                 prescription.date < p.vaccines[0].date
                 for prescription in p.prescriptions
             )

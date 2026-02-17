@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import StrEnum
-from common.constants.objects import Person, AgeCohort, Prescription
+from typing import Literal
+from common.constants.objects import Person, Prescription
 
 
 @dataclass(frozen=True)
@@ -40,15 +41,15 @@ class MatchingAnalysisConfig:
         return len(self.anchor_dates)
 
 
-EffectMap = dict[AgeCohort, dict[datetime, float]]
-
-
 class AgeCohort(StrEnum):
     _12_15 = "12-15"
     _16_29 = "16-29"
     _30_49 = "30-49"
     _50_59 = "50-59"
     IRRELEVANT = "irrelevant"
+
+
+EffectMap = dict[AgeCohort, dict[datetime, float]]
 
 
 class AgeCohortCalculator:
@@ -71,6 +72,22 @@ class AgeCohortCalculator:
 
 def is_injection(pr: Prescription) -> bool:
     return pr.lekova_forma_zkr and (pr.lekova_forma_zkr.startswith("INJ"))
+
+
+class PE_GROUP_NAMES(StrEnum):
+    ZERO_PE = "0_PE"
+    NEVER_PRESCRIBED = "NEVER_PRESCRIBED"
+    ZERO_PE_SUSPECTIBLE = "ZERO_PE_SUSPECTIBLE"
+    ONE_TO_FIVE_HUNDRED_PE = "1_to_500_PE"
+    FIVE_HUNDRED_TO_FIVE_THOUSAND_PE = "500_to_5000_PE"
+
+
+def is_zero_pe_group(group_name: PE_GROUP_NAMES) -> bool:
+    return (
+        group_name == PE_GROUP_NAMES.ZERO_PE
+        or group_name == PE_GROUP_NAMES.NEVER_PRESCRIBED
+        or group_name == PE_GROUP_NAMES.ZERO_PE_SUSPECTIBLE
+    )
 
 
 def create_prednison_enum(step: int = 25, max_value: int = 5000):

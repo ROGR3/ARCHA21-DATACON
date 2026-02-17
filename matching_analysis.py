@@ -8,6 +8,7 @@ from common.matching_simulation.prednison_windows_computer import (
 )
 from common.matching_simulation.result_writer import ResultWriter
 from common.matching_simulation.utils import (
+    PE_GROUP_NAMES,
     MatchingAnalysisConfig,
     AgeCohortCalculator,
 )
@@ -35,14 +36,14 @@ def main():
         people=data_loader.novax_people, vax_anchor_dates=config.anchor_dates
     )
 
-    groups = {
-        # "NEVER_PRESCRIBED": data_loader.never_prescribed_vax_people,
-        # "0_PE": data_loader.zero_pe_vax_people,
-        # "1_to_500_PE": data_loader.one_to_five_hundred_pe_vax_people,
-        "500_to_5000_PE": data_loader.five_hundred_to_five_thousand_pe_vax_people,
-    }
-
     aggregation_days_list = [1, 14, config.maximum_aggregation_days]
+    groups = {
+        # PE_GROUP_NAMES.NEVER_PRESCRIBED: data_loader.never_prescribed_vax_people,
+        # PE_GROUP_NAMES.ZERO_PE_SUSPECTIBLE: data_loader.zero_pe_suspectible,
+        # PE_GROUP_NAMES.ZERO_PE: data_loader.zero_pe_vax_people,
+        # PE_GROUP_NAMES.ONE_TO_FIVE_HUNDRED_PE: data_loader.one_to_five_hundred_pe_vax_people,
+        PE_GROUP_NAMES.FIVE_HUNDRED_TO_FIVE_THOUSAND_PE: data_loader.five_hundred_to_five_thousand_pe_vax_people,
+    }
 
     for group_name, group in groups.items():
         for aggregation_days in aggregation_days_list:

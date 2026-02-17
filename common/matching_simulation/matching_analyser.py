@@ -3,10 +3,12 @@ from common.constants.objects import Person, Gender
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from common.matching_simulation.utils import (
+    PE_GROUP_NAMES,
     PREDNISON_EQUIV_CATEGORY,
     EffectMap,
     MatchingAnalysisConfig,
     from_prednison_equiv,
+    is_zero_pe_group,
     sum_after_date_pe_for_person,
     sum_before_date_pe_for_person,
     AgeCohort,
@@ -44,12 +46,10 @@ class MatchingAnalyser:
         person_map: dict[int | str, Person],
         pe_map: dict[datetime, dict[str | int, float]],
         aggregation_days: int,
-        group_name: str,
+        group_name: PE_GROUP_NAMES,
         num_runs: int = 100,
     ) -> tuple[EffectMap, EffectMap, EffectMap]:
         effects = defaultdict(lambda: defaultdict(list))
-        vax_ratio_effects = defaultdict(lambda: defaultdict(list))
-        novax_ratio_effects = defaultdict(lambda: defaultdict(list))
 
         for i in range(num_runs):
             vax_before, vax_after, novax_before, novax_after = (
@@ -62,46 +62,13 @@ class MatchingAnalyser:
                 vax_before, vax_after, novax_before, novax_after, group_name
             )
 
-            # Also accumulate vax_after/vax_before and novax_after/novax_before for each run
-            all_cohorts = (
-                set(vax_before.keys())
-                | set(vax_after.keys())
-                | set(novax_before.keys())
-                | set(novax_after.keys())
-            )
-            for cohort in all_cohorts:
-                all_dates = (
-                    set(vax_before[cohort].keys())
-                    | set(vax_after[cohort].keys())
-                    | set(novax_before[cohort].keys())
-                    | set(novax_after[cohort].keys())
-                )
-                for dt in all_dates:
-                    vax_before_val = vax_before[cohort].get(dt, 0.0)
-                    vax_after_val = vax_after[cohort].get(dt, 0.0)
-                    novax_before_val = novax_before[cohort].get(dt, 0.0)
-                    novax_after_val = novax_after[cohort].get(dt, 0.0)
-
-                    vax_ratio = (
-                        vax_after_val / vax_before_val
-                        if vax_before_val != 0
-                        else float("nan")
-                    )
-                    novax_ratio = (
-                        novax_after_val / novax_before_val
-                        if novax_before_val != 0
-                        else float("nan")
-                    )
-
-                    vax_ratio_effects[cohort][dt].append(vax_ratio)
-                    novax_ratio_effects[cohort][dt].append(novax_ratio)
-
             for cohort, date_map in result_map.items():
                 for dt, value in date_map.items():
                     effects[cohort][dt].append(value)
 
-            print(f"Processed {i} runs")
+            print(f"Processed {i}/{num_runs} runs", end="\r")
 
+        print()
         return self.__compute_statistics(effects)
 
     def __compute_vax_vs_novax_sums(
@@ -123,8 +90,6 @@ class MatchingAnalyser:
         novax_after_pe_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(
             lambda: defaultdict(float)
         )
-
-        print("iterating through people ", len(people))
 
         for person in people:
             first_vax = person.vaccines[0]
@@ -201,7 +166,7 @@ class MatchingAnalyser:
                 novax_before = novax_before_pe_map[cohort].get(dt, 0.0)
                 novax_after = novax_after_pe_map[cohort].get(dt, 0.0)
 
-                if group_name == "0_PE" or group_name == "NEVER_PRESCRIBED":
+                if is_zero_pe_group(group_name):
                     if novax_after != 0:
                         result_map[cohort][dt] = vax_after / novax_after
                 else:

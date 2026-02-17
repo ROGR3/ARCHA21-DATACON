@@ -131,11 +131,11 @@ def from_prednison_equiv(prednison_equiv: float) -> PREDNISON_EQUIV_CATEGORY:
     return PREDNISON_EQUIV_CATEGORY[name]
 
 
-def has_prescriptions_before_date(person: Person, anchor_date: date | datetime) -> bool:
+def has_prescriptions_before_date(person: Person, anchor_date: date) -> bool:
     return any(pr.date < anchor_date for pr in person.prescriptions)
 
 
-def sum_after_date_pe_for_person(person: Person, ddate: datetime) -> float:
+def sum_after_date_pe_for_person(person: Person, ddate: date) -> float:
     return sum(
         pr.prednison_equiv
         for pr in person.prescriptions
@@ -144,7 +144,7 @@ def sum_after_date_pe_for_person(person: Person, ddate: datetime) -> float:
     )
 
 
-def sum_before_date_pe_for_person(person: Person, ddate: datetime) -> float:
+def sum_before_date_pe_for_person(person: Person, ddate: date) -> float:
     return sum(
         pr.prednison_equiv
         for pr in person.prescriptions

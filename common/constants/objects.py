@@ -1,6 +1,6 @@
 from dataclasses import dataclass
+from datetime import date, datetime
 from enum import StrEnum
-from datetime import datetime
 
 
 class AgeCohort(StrEnum):
@@ -19,7 +19,7 @@ class PrescriptionType(StrEnum):
 
 @dataclass
 class Prescription:
-    date: datetime
+    date: date
     latka: str
     prescription_type: PrescriptionType
     prednison_equiv: float
@@ -32,7 +32,7 @@ class Prescription:
 
 @dataclass
 class Vaccine:
-    date: datetime
+    date: date
     dose_number: int
     nazev: str | None
 
@@ -47,8 +47,8 @@ class Person:
     id: int | str
     gender: Gender
     born_at: datetime
-    zahajeni_pojisteni: datetime
-    ukonceni_pojisteni: datetime
+    zahajeni_pojisteni: date
+    ukonceni_pojisteni: date
     vaccines: list[Vaccine]
     prescriptions: list[Prescription]
-    died_at: datetime | None = None
+    died_at: date | None = None

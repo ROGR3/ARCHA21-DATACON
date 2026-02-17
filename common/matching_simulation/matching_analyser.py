@@ -216,7 +216,7 @@ class MatchingAnalyser:
         self,
         vax_person: Person,
         pe_range: PREDNISON_EQUIV_CATEGORY,
-        vax_date: datetime,
+        vax_date: date,
         novax_map: PeMap,
     ) -> int | str:
         ac = self.__age_cohort_calculator.calculate_age_cohort(vax_person)

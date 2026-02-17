@@ -9,3 +9,6 @@ lintfix:
     uv run ruff format . --check --diff
     uv run ty check .
     uv run pytest .
+
+test:
+    uv run pytest .

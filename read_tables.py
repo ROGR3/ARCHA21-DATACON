@@ -11,7 +11,7 @@ import polars as pl
 
 
 def find_effects_summary_files(
-    root_dir: str = "out/cpzp/3_years_back_matching_analysis",
+    root_dir: str = "out/cpzp/matching_analysis",
 ) -> List[Path]:
     """Find all effects_summary.json files in the historical_matching_analysis directory."""
     root_path = Path(root_dir)
@@ -28,7 +28,7 @@ def extract_metadata_from_path(file_path: Path) -> Dict[str, str]:
     parts = file_path.parts
 
     # Find anchor: historical_matching_analysis or matching_analysis
-    for anchor in ("3_years_back_matching_analysis", "matching_analysis"):
+    for anchor in ("matching_analysis", "matching_analysis"):
         try:
             anchor_idx = parts.index(anchor)
             cohort = parts[anchor_idx - 1] if anchor_idx > 0 else "unknown"

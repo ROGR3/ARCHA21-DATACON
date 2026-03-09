@@ -1,7 +1,7 @@
 """
 Forest plot visualization of matching analysis effects.
 
-Compares vaccination period vs 3-years-back period for each PE bucket,
+Shows 5 periods (3y back → 1y forward) for each PE bucket,
 broken down by age cohort.
 """
 
@@ -9,13 +9,27 @@ import json
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import numpy as np
 
 BASE = Path("out/cpzp")
-VACCINATION = BASE / "matching_analysis" / "whole_period"
-THREE_YEARS = BASE / "3_years_back_matching_analysis" / "whole_period"
+
+PERIODS = [
+    ("3_years_back_matching_analysis", "3 roky zpět"),
+    ("2_years_back_matching_analysis", "2 roky zpět"),
+    ("1_years_back_matching_analysis", "1 rok zpět"),
+    ("matching_analysis", "Očkovací období"),
+    ("-1_years_back_matching_analysis", "1 rok dopředu"),
+]
+
+PERIOD_STYLES = [
+    {"color": "#888888", "marker": "v", "ms": 5},  # 3y back
+    {"color": "#888888", "marker": "D", "ms": 4.5},  # 2y back
+    {"color": "#888888", "marker": "s", "ms": 4.5},  # 1y back
+    {"color": "#2171b5", "marker": "o", "ms": 6},  # vaccination
+    {"color": "#888888", "marker": "^", "ms": 5},  # 1y forward
+]
 
 BUCKETS = [
     "0_PE",
@@ -40,13 +54,16 @@ AGE_LABELS = {
     "50-59": "50–59 let",
 }
 
-# Buckets where the effect is a ratio (reference line at 1);
-# others are differences (reference line at 0).
 RATIO_BUCKETS = {"ZERO_PE_SUSPECTIBLE", "NEVER_PRESCRIBED", "0_PE"}
 
+N_PERIODS = len(PERIODS)
+ROW_HEIGHT = N_PERIODS + 1.5  # vertical space per age group
 
-def load_effects(directory: Path, bucket: str) -> dict:
+
+def load_effects(directory: Path, bucket: str) -> dict | None:
     path = directory / bucket / "effects_summary.json"
+    if not path.exists():
+        return None
     with open(path) as f:
         data = json.load(f)
     return {entry["věk"]: entry for entry in data}
@@ -57,73 +74,52 @@ def _fmt_n(n: int) -> str:
 
 
 def make_forest_plot(bucket: str, ax: plt.Axes):
-    vax_data = load_effects(VACCINATION, bucket)
-    back_data = load_effects(THREE_YEARS, bucket)
-
     is_ratio = bucket in RATIO_BUCKETS
     ref_line = 1.0 if is_ratio else 0.0
 
-    y_positions = []
-    group_seps = []
-    for i, age in enumerate(AGE_ORDER):
-        y_vax = i * 3
-        y_back = i * 3 + 1
-        y_positions.append((age, y_vax, y_back))
-        if i < len(AGE_ORDER) - 1:
-            group_seps.append(i * 3 + 2)
+    all_data = []
+    for dir_name, label in PERIODS:
+        d = load_effects(BASE / dir_name / "whole_period", bucket)
+        all_data.append(d)
 
-    colors = {"vax": "#2171b5", "back": "#cb181d"}
+    for age_idx, age in enumerate(AGE_ORDER):
+        group_base = age_idx * ROW_HEIGHT
 
-    all_right_edges = []
+        for p_idx, (data, (_, plabel), style) in enumerate(
+            zip(all_data, PERIODS, PERIOD_STYLES)
+        ):
+            if data is None or age not in data:
+                continue
+            entry = data[age]
+            med = entry["Med"]
+            ci_lo, ci_hi = entry["95% CI"]
+            y = group_base + p_idx
 
-    for age, y_vax, y_back in y_positions:
-        if age in vax_data:
-            v = vax_data[age]
-            med = v["Med"]
-            ci_lo, ci_hi = v["95% CI"]
             ax.errorbar(
-                med, y_vax,
+                med,
+                y,
                 xerr=[[med - ci_lo], [ci_hi - med]],
-                fmt="o", color=colors["vax"], markersize=6, capsize=3,
-                linewidth=1.5, markeredgewidth=1.5,
+                fmt=style["marker"],
+                color=style["color"],
+                markersize=style["ms"],
+                capsize=3,
+                linewidth=1.5,
+                markeredgewidth=1.5,
             )
-            all_right_edges.append(ci_hi)
-
-        if age in back_data:
-            b = back_data[age]
-            med = b["Med"]
-            ci_lo, ci_hi = b["95% CI"]
-            ax.errorbar(
-                med, y_back,
-                xerr=[[med - ci_lo], [ci_hi - med]],
-                fmt="s", color=colors["back"], markersize=5, capsize=3,
-                linewidth=1.5, markeredgewidth=1.5,
-            )
-            all_right_edges.append(ci_hi)
-
-    # Add n= annotations after computing x-limits for consistent placement
-    for age, y_vax, y_back in y_positions:
-        if age in vax_data:
-            v = vax_data[age]
-            ci_hi = v["95% CI"][1]
             ax.annotate(
-                _fmt_n(v["počet očko"]),
-                (ci_hi, y_vax), textcoords="offset points",
-                xytext=(5, 0), fontsize=6.5, color=colors["vax"], va="center",
-            )
-        if age in back_data:
-            b = back_data[age]
-            ci_hi = b["95% CI"][1]
-            ax.annotate(
-                _fmt_n(b["počet očko"]),
-                (ci_hi, y_back), textcoords="offset points",
-                xytext=(5, 0), fontsize=6.5, color=colors["back"], va="center",
+                _fmt_n(entry["počet očko"]),
+                (ci_hi, y),
+                textcoords="offset points",
+                xytext=(5, 0),
+                fontsize=6,
+                color=style["color"],
+                va="center",
             )
 
     yticks = []
     ylabels = []
-    for age, y_vax, y_back in y_positions:
-        mid = (y_vax + y_back) / 2
+    for age_idx, age in enumerate(AGE_ORDER):
+        mid = age_idx * ROW_HEIGHT + (N_PERIODS - 1) / 2
         yticks.append(mid)
         ylabels.append(AGE_LABELS[age])
 
@@ -133,35 +129,45 @@ def make_forest_plot(bucket: str, ax: plt.Axes):
 
     ax.axvline(ref_line, color="grey", linestyle="--", linewidth=0.8, zorder=0)
 
-    for sep in group_seps:
-        ax.axhline(sep, color="#dddddd", linestyle="-", linewidth=0.5, zorder=0)
+    for age_idx in range(len(AGE_ORDER) - 1):
+        sep_y = (age_idx + 1) * ROW_HEIGHT - 1
+        ax.axhline(sep_y, color="#dddddd", linestyle="-", linewidth=0.5, zorder=0)
 
     ax.set_title(BUCKET_LABELS[bucket], fontsize=12, fontweight="bold", pad=10)
     ax.set_xlabel("Medián efektu (95% CI)", fontsize=9)
     ax.grid(axis="x", alpha=0.2, linewidth=0.5)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-
     ax.margins(x=0.15)
 
 
 def main():
     legend_elements = [
-        plt.Line2D([0], [0], marker="o", color="#2171b5", linestyle="None",
-                   markersize=7, label="Očkovací období"),
-        plt.Line2D([0], [0], marker="s", color="#cb181d", linestyle="None",
-                   markersize=6, label="3 roky zpět"),
+        plt.Line2D(
+            [0],
+            [0],
+            marker=s["marker"],
+            color=s["color"],
+            linestyle="None",
+            markersize=s["ms"],
+            label=label,
+        )
+        for (_, label), s in zip(PERIODS, PERIOD_STYLES)
     ]
 
-    out_dir = Path("out/cpzp/forest_plots")
+    out_dir = Path("out/cpzp/forest_plots/more_years_included")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     for bucket in BUCKETS:
-        fig, ax = plt.subplots(figsize=(9, 3.2))
+        fig, ax = plt.subplots(figsize=(10, 4.5))
         make_forest_plot(bucket, ax)
         fig.legend(
-            handles=legend_elements, loc="upper right",
-            fontsize=9, frameon=True, fancybox=True, edgecolor="#cccccc",
+            handles=legend_elements,
+            loc="upper right",
+            fontsize=8,
+            frameon=True,
+            fancybox=True,
+            edgecolor="#cccccc",
         )
         fig.tight_layout()
         out_path = out_dir / f"forest_{bucket.lower()}.png"

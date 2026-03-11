@@ -24,8 +24,8 @@ def main():
         pojistovna="cpzp",
         zacatek_pojisteni=date(2015, 1, 1),
         konec_pojisteni=date(2023, 12, 31),
-        year_offset=-1,
-        use_local_cache=False,
+        year_offset=3,
+        use_local_cache=True,
     )
     data_loader = DataLoader(config)
     age_cohort_calculator = AgeCohortCalculator(config)
@@ -39,11 +39,11 @@ def main():
 
     aggregation_days_list = [config.maximum_aggregation_days]
     groups = {
-        PE_GROUP_NAMES.FIVE_HUNDRED_TO_FIVE_THOUSAND_PE: data_loader.five_hundred_to_five_thousand_pe_vax_people,
         PE_GROUP_NAMES.NEVER_PRESCRIBED: data_loader.never_prescribed_vax_people,
         PE_GROUP_NAMES.ZERO_PE_SUSPECTIBLE: data_loader.zero_pe_suspectible,
-        PE_GROUP_NAMES.ZERO_PE: data_loader.zero_pe_vax_people,
-        PE_GROUP_NAMES.ONE_TO_FIVE_HUNDRED_PE: data_loader.one_to_five_hundred_pe_vax_people,
+        # PE_GROUP_NAMES.ZERO_PE: data_loader.zero_pe_vax_people,
+        # PE_GROUP_NAMES.ONE_TO_FIVE_HUNDRED_PE: data_loader.one_to_five_hundred_pe_vax_people,
+        # PE_GROUP_NAMES.FIVE_HUNDRED_TO_FIVE_THOUSAND_PE: data_loader.five_hundred_to_five_thousand_pe_vax_people,
     }
 
     for group_name, group in groups.items():

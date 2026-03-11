@@ -56,7 +56,7 @@ class MatchingAnalyser:
         for i in range(num_runs):
             vax_before, vax_after, novax_before, novax_after = (
                 self.__compute_vax_vs_novax_sums(
-                    people, person_map, pe_map, aggregation_days
+                    people, person_map, pe_map, group_name, aggregation_days
                 )
             )
 
@@ -78,6 +78,7 @@ class MatchingAnalyser:
         people: list[Person],
         person_map: dict[int | str, Person],
         pe_map: PeMap,
+        group_name: PE_GROUP_NAMES,
         aggregation_days: int = 1,
     ):
         vax_before_pe_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(
@@ -100,7 +101,12 @@ class MatchingAnalyser:
             if vax_person_before_pe > 5000:
                 continue
 
-            pe_range = from_prednison_equiv(vax_person_before_pe)
+            if group_name == PE_GROUP_NAMES.NEVER_PRESCRIBED:
+                pe_range = PREDNISON_EQUIV_CATEGORY.ZERO_NO_PRE
+            elif group_name == PE_GROUP_NAMES.ZERO_PE_SUSPECTIBLE:
+                pe_range = PREDNISON_EQUIV_CATEGORY.ZERO_PE_SUSPECTIBLE
+            else:
+                pe_range = from_prednison_equiv(vax_person_before_pe)
             try:
                 matched_id = self.__find_matching_person(
                     vax_person=person,

@@ -25,7 +25,7 @@ def main():
         zacatek_pojisteni=date(2015, 1, 1),
         konec_pojisteni=date(2023, 12, 31),
         year_offset=3,
-        use_local_cache=True,
+        use_local_cache=False,
     )
     data_loader = DataLoader(config)
     age_cohort_calculator = AgeCohortCalculator(config)

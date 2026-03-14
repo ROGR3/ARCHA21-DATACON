@@ -96,7 +96,7 @@ class TestNoPrescriptions:
                 pe_map,
                 a,
                 PREDNISON_EQUIV_CATEGORY.ZERO_PE,
-                AgeCohort._30_49,
+                AgeCohort._30_39,
                 Gender.MALE,
                 1,
             )
@@ -111,7 +111,7 @@ class TestNoPrescriptions:
                 pe_map,
                 a,
                 PREDNISON_EQUIV_CATEGORY.ZERO_NO_PRE,
-                AgeCohort._30_49,
+                AgeCohort._30_39,
                 Gender.MALE,
                 1,
             )
@@ -125,7 +125,7 @@ class TestNoPrescriptions:
             pe_map,
             anchors[0],
             PREDNISON_EQUIV_CATEGORY.ZERO_PE_SUSPECTIBLE,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -157,7 +157,7 @@ class TestInjectionOnlyPrescriptions:
             pe_map,
             anchors[0],
             PREDNISON_EQUIV_CATEGORY.ZERO_PE,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -178,7 +178,7 @@ class TestInjectionOnlyPrescriptions:
             pe_map,
             anchors[0],
             PREDNISON_EQUIV_CATEGORY.ZERO_PE_SUSPECTIBLE,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -198,7 +198,7 @@ class TestInjectionOnlyPrescriptions:
             pe_map,
             anchors[0],
             PREDNISON_EQUIV_CATEGORY.ZERO_NO_PRE,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -226,7 +226,7 @@ class TestSinglePrescriptionWindow:
             pe_map,
             anchor,
             expected_cat,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -243,7 +243,7 @@ class TestSinglePrescriptionWindow:
             pe_map,
             anchor,
             PREDNISON_EQUIV_CATEGORY.ZERO_PE,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -260,7 +260,7 @@ class TestSinglePrescriptionWindow:
             pe_map,
             anchor,
             PREDNISON_EQUIV_CATEGORY.ZERO_PE,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -303,7 +303,7 @@ class TestWindowBoundaries:
             pe_map,
             anchor,
             expected_cat,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         ), (
@@ -330,7 +330,7 @@ class TestWindowBoundaries:
             pe_map,
             anchor,
             expected_cat,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         ), (
@@ -351,7 +351,7 @@ class TestWindowBoundaries:
             pe_map,
             anchor,
             PREDNISON_EQUIV_CATEGORY.ZERO_PE,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -369,7 +369,7 @@ class TestWindowBoundaries:
             pe_map,
             anchor,
             PREDNISON_EQUIV_CATEGORY.ZERO_PE,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -400,7 +400,7 @@ class TestPeAccumulation:
             pe_map,
             anchors[0],
             expected_cat,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -422,7 +422,7 @@ class TestPeAccumulation:
             pe_map,
             anchor,
             expected_cat,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -443,7 +443,7 @@ class TestPeAccumulation:
             pe_map,
             anchor,
             expected_cat,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -467,7 +467,7 @@ class TestPeAccumulation:
             pe_map,
             anchor,
             expected_cat,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -497,7 +497,7 @@ class TestWindowSliding:
             pe_map,
             date(2021, 5, 31),
             cat,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -505,7 +505,7 @@ class TestWindowSliding:
             pe_map,
             date(2021, 6, 1),
             cat,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -528,7 +528,7 @@ class TestWindowSliding:
             pe_map,
             day_365,
             cat,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -537,7 +537,7 @@ class TestWindowSliding:
             pe_map,
             day_366,
             PREDNISON_EQUIV_CATEGORY.ZERO_PE,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -558,7 +558,7 @@ class TestDemographicPartitioning:
         pe_map = _build_pe_map([male, female], [anchor])
 
         cat = PREDNISON_EQUIV_CATEGORY.ZERO_PE
-        cohort = AgeCohort._30_49
+        cohort = AgeCohort._30_39
         assert _person_in_map(pe_map, anchor, cat, cohort, Gender.MALE, 1)
         assert _person_in_map(pe_map, anchor, cat, cohort, Gender.FEMALE, 2)
         assert not _person_in_map(pe_map, anchor, cat, cohort, Gender.FEMALE, 1)
@@ -567,14 +567,14 @@ class TestDemographicPartitioning:
     def test_different_age_cohorts_separated(self):
         anchor = date(2021, 6, 1)
         young = make_person(pid=1, born_year=2021 - 14)  # 14 -> _12_15
-        middle = make_person(pid=2, born_year=2021 - 35)  # 35 -> _30_49
+        middle = make_person(pid=2, born_year=2021 - 35)  # 35 -> _30_39
         pe_map = _build_pe_map([young, middle], [anchor])
 
         cat = PREDNISON_EQUIV_CATEGORY.ZERO_PE
         assert _person_in_map(pe_map, anchor, cat, AgeCohort._12_15, Gender.MALE, 1)
-        assert _person_in_map(pe_map, anchor, cat, AgeCohort._30_49, Gender.MALE, 2)
+        assert _person_in_map(pe_map, anchor, cat, AgeCohort._30_39, Gender.MALE, 2)
         assert not _person_in_map(pe_map, anchor, cat, AgeCohort._12_15, Gender.MALE, 2)
-        assert not _person_in_map(pe_map, anchor, cat, AgeCohort._30_49, Gender.MALE, 1)
+        assert not _person_in_map(pe_map, anchor, cat, AgeCohort._30_39, Gender.MALE, 1)
 
 
 # ===================================================================
@@ -604,7 +604,7 @@ class TestSuspectibleClassification:
             pe_map,
             anchor,
             PREDNISON_EQUIV_CATEGORY.ZERO_PE,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -612,7 +612,7 @@ class TestSuspectibleClassification:
             pe_map,
             anchor,
             PREDNISON_EQUIV_CATEGORY.ZERO_PE_SUSPECTIBLE,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -620,7 +620,7 @@ class TestSuspectibleClassification:
             pe_map,
             anchor,
             PREDNISON_EQUIV_CATEGORY.ZERO_NO_PRE,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -639,7 +639,7 @@ class TestSuspectibleClassification:
             pe_map,
             anchor,
             PREDNISON_EQUIV_CATEGORY.ZERO_NO_PRE,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -670,8 +670,8 @@ class TestMultiplePeople:
         cat_p2 = from_prednison_equiv(15.0)
         # Both should be BETWEEN_0_AND_25
         assert cat_p1 == cat_p2
-        assert _person_in_map(pe_map, anchor, cat_p1, AgeCohort._30_49, Gender.MALE, 1)
-        assert _person_in_map(pe_map, anchor, cat_p2, AgeCohort._30_49, Gender.MALE, 2)
+        assert _person_in_map(pe_map, anchor, cat_p1, AgeCohort._30_39, Gender.MALE, 1)
+        assert _person_in_map(pe_map, anchor, cat_p2, AgeCohort._30_39, Gender.MALE, 2)
 
     def test_people_in_different_buckets(self):
         anchor = date(2021, 6, 1)
@@ -688,9 +688,9 @@ class TestMultiplePeople:
         cat_low = from_prednison_equiv(10.0)
         cat_high = from_prednison_equiv(500.0)
         assert cat_low != cat_high
-        assert _person_in_map(pe_map, anchor, cat_low, AgeCohort._30_49, Gender.MALE, 1)
+        assert _person_in_map(pe_map, anchor, cat_low, AgeCohort._30_39, Gender.MALE, 1)
         assert _person_in_map(
-            pe_map, anchor, cat_high, AgeCohort._30_49, Gender.MALE, 2
+            pe_map, anchor, cat_high, AgeCohort._30_39, Gender.MALE, 2
         )
 
 
@@ -775,7 +775,7 @@ class TestConsistencyWithSumBefore:
             pe_map,
             anchor,
             cat_100,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         )
@@ -808,7 +808,7 @@ class TestConsistencyWithSumBefore:
             pe_map,
             anchor,
             cat_100,
-            AgeCohort._30_49,
+            AgeCohort._30_39,
             Gender.MALE,
             1,
         ), (

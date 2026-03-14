@@ -77,7 +77,7 @@ class TestMatchingAnalysisConfig:
 
 
 class TestAgeCohortCalculator:
-    """Age cohort boundaries: 12-15, 16-29, 30-49, 50-59, else IRRELEVANT."""
+    """Age cohort boundaries: 12-15, 16-22, 23-29, 30-39, 40-49, 50-59, else IRRELEVANT."""
 
     @pytest.mark.parametrize(
         "born_year, expected",
@@ -86,10 +86,14 @@ class TestAgeCohortCalculator:
             (2021 - 11, AgeCohort.IRRELEVANT),  # age 11 → too young
             (2021 - 12, AgeCohort._12_15),  # age 12 → lower bound
             (2021 - 15, AgeCohort._12_15),  # age 15 → upper bound
-            (2021 - 16, AgeCohort._16_29),  # age 16 → lower bound
-            (2021 - 29, AgeCohort._16_29),  # age 29 → upper bound
-            (2021 - 30, AgeCohort._30_49),  # age 30 → lower bound
-            (2021 - 49, AgeCohort._30_49),  # age 49 → upper bound
+            (2021 - 16, AgeCohort._16_22),  # age 16 → lower bound
+            (2021 - 22, AgeCohort._16_22),  # age 22 → upper bound
+            (2021 - 23, AgeCohort._23_29),  # age 23 → lower bound
+            (2021 - 29, AgeCohort._23_29),  # age 29 → upper bound
+            (2021 - 30, AgeCohort._30_39),  # age 30 → lower bound
+            (2021 - 39, AgeCohort._30_39),  # age 39 → upper bound
+            (2021 - 40, AgeCohort._40_49),  # age 40 → lower bound
+            (2021 - 49, AgeCohort._40_49),  # age 49 → upper bound
             (2021 - 50, AgeCohort._50_59),  # age 50 → lower bound
             (2021 - 59, AgeCohort._50_59),  # age 59 → upper bound
             (2021 - 60, AgeCohort.IRRELEVANT),  # age 60 → too old

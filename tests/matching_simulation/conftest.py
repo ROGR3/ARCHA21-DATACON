@@ -57,7 +57,7 @@ def make_person(
 ) -> Person:
     """Create a Person with sensible defaults.
 
-    born_year=1985 → age 36 in 2021 → AgeCohort._30_49
+    born_year=1985 → age 36 in 2021 → AgeCohort._30_39
     """
     return Person(
         id=pid,

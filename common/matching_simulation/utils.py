@@ -44,8 +44,10 @@ class MatchingAnalysisConfig:
 
 class AgeCohort(StrEnum):
     _12_15 = "12-15"
-    _16_29 = "16-29"
-    _30_49 = "30-49"
+    _16_22 = "16-22"
+    _23_29 = "23-29"
+    _30_39 = "30-39"
+    _40_49 = "40-49"
     _50_59 = "50-59"
     IRRELEVANT = "irrelevant"
 
@@ -66,10 +68,14 @@ class AgeCohortCalculator:
         age = self.__config.year_for_age_calculation - person.born_at.year
         if age >= 12 and age <= 15:
             return AgeCohort._12_15
-        elif age >= 16 and age <= 29:
-            return AgeCohort._16_29
-        elif age >= 30 and age <= 49:
-            return AgeCohort._30_49
+        elif age >= 16 and age <= 22:
+            return AgeCohort._16_22
+        elif age >= 23 and age <= 29:
+            return AgeCohort._23_29
+        elif age >= 30 and age <= 39:
+            return AgeCohort._30_39
+        elif age >= 40 and age <= 49:
+            return AgeCohort._40_49
         elif age >= 50 and age <= 59:
             return AgeCohort._50_59
         else:

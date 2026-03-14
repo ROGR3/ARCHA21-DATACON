@@ -81,8 +81,7 @@ def _fmt_n(n: int) -> str:
 
 
 def make_forest_plot(bucket: str, ax: plt.Axes):
-    is_ratio = bucket in RATIO_BUCKETS
-    ref_line = 1.0 if is_ratio else 0.0
+    ref_line = 1.0
 
     all_data = []
     for dir_name, label in PERIODS:

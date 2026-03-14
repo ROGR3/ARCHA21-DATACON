@@ -50,8 +50,10 @@ class MatchingAnalyser:
         aggregation_days: int,
         group_name: PE_GROUP_NAMES,
         num_runs: int = 100,
-    ) -> tuple[EffectMap, IqrMap, IqrMap]:
+    ) -> tuple[EffectMap, IqrMap, IqrMap, EffectMap, EffectMap]:
         effects = defaultdict(lambda: defaultdict(list))
+        raw_vax_effects = defaultdict(lambda: defaultdict(list))
+        raw_novax_effects = defaultdict(lambda: defaultdict(list))
 
         for i in range(num_runs):
             vax_before, vax_after, novax_before, novax_after = (
@@ -60,18 +62,28 @@ class MatchingAnalyser:
                 )
             )
 
-            result_map = self.__compute_effect_values(
+            result_map, vax_eff, novax_eff = self.__compute_effect_values(
                 vax_before, vax_after, novax_before, novax_after, group_name
             )
 
-            for cohort, date_map in result_map.items():
-                for dt, value in date_map.items():
-                    effects[cohort][dt].append(value)
+            for src, dst in [
+                (result_map, effects),
+                (vax_eff, raw_vax_effects),
+                (novax_eff, raw_novax_effects),
+            ]:
+                for cohort, date_map in src.items():
+                    for dt, value in date_map.items():
+                        dst[cohort][dt].append(value)
 
             print(f"Processed {i}/{num_runs} runs", end="\r")
 
         print()
-        return self.__compute_statistics(effects)
+        median_map, iqr_map, ci_map = self.__compute_statistics(effects)
+
+        vax_effects_median, _, _ = self.__compute_statistics(raw_vax_effects)
+        novax_effects_median, _, _ = self.__compute_statistics(raw_novax_effects)
+
+        return median_map, iqr_map, ci_map, vax_effects_median, novax_effects_median
 
     def __compute_vax_vs_novax_sums(
         self,
@@ -151,8 +163,10 @@ class MatchingAnalyser:
         novax_before_pe_map,
         novax_after_pe_map,
         group_name,
-    ) -> EffectMap:
+    ) -> tuple[EffectMap, EffectMap, EffectMap]:
         result_map: EffectMap = defaultdict(dict)
+        vax_effects: EffectMap = defaultdict(dict)
+        novax_effects: EffectMap = defaultdict(dict)
 
         cohorts = (
             set(vax_before_pe_map.keys())
@@ -175,16 +189,22 @@ class MatchingAnalyser:
                 novax_before = novax_before_pe_map[cohort].get(dt, 0.0)
                 novax_after = novax_after_pe_map[cohort].get(dt, 0.0)
 
-                if is_zero_pe_group(group_name):
-                    if novax_after != 0:
-                        result_map[cohort][dt] = vax_after / novax_after
-                else:
-                    if vax_before != 0 and novax_before != 0:
-                        result_map[cohort][dt] = (vax_after / vax_before) - (
-                            novax_after / novax_before
-                        )
+                # if is_zero_pe_group(group_name):
+                #     if novax_after != 0:
+                #         result_map[cohort][dt] = vax_after / novax_after
+                # else:
+                #     if vax_before != 0 and novax_before != 0:
+                #         result_map[cohort][dt] = (vax_after / vax_before) - (
+                #             novax_after / novax_before
+                #         )
 
-        return result_map
+                vax_effects[cohort][dt] = vax_after - vax_before
+                novax_effects[cohort][dt] = novax_after - novax_before
+                if novax_effects[cohort][dt]  != 0:
+                    result_map[cohort][dt] = vax_effects[cohort][dt] / novax_effects[cohort][dt]
+                else:
+                    print(f"novax_after is 0 for {cohort} on {dt}")
+        return result_map, vax_effects, novax_effects
 
     def __compute_statistics(
         self,

@@ -22,13 +22,11 @@ class ResultWriter:
         vax_dates_distribution,
         group_name: PE_GROUP_NAMES,
         aggregation_days: int,
+        vax_effects_median,
+        novax_effects_median,
     ):
-        year_back_name = (
-            ""
-            if self.__config.year_offset == 0
-            else f"{self.__config.year_offset}_years_back_"
-        )
-        folder_path = f"out/{self.__config.pojistovna}/{year_back_name}matching_analysis/whole_period/{group_name}/{aggregation_days}_days_aggregation"
+        year_back_name = f"{self.__config.year_offset}_years_back_matching_analysis"
+        folder_path = f"out/{self.__config.pojistovna}/matching_analysis/unified_effect_baseline/{year_back_name}/whole_period/{group_name}/{aggregation_days}_days_aggregation"
         os.makedirs(folder_path, exist_ok=True)
 
         self.__plot_treatment_effect(
@@ -46,6 +44,8 @@ class ResultWriter:
                 ci_map=ci_map,
                 vax_dates_distribution=vax_dates_distribution,
                 folder_path=folder_path,
+                vax_effects_median=vax_effects_median,
+                novax_effects_median=novax_effects_median,
             )
 
     def __plot_treatment_effect(
@@ -108,7 +108,14 @@ class ResultWriter:
             plt.close(fig)
 
     def __write_table(
-        self, median_map, iqr_map, ci_map, vax_dates_distribution, folder_path: str
+        self,
+        median_map,
+        iqr_map,
+        ci_map,
+        vax_dates_distribution,
+        folder_path: str,
+        vax_effects_median,
+        novax_effects_median,
     ):
         table = []
 
@@ -129,18 +136,15 @@ class ResultWriter:
             return int(sum(date_map.values()))
 
         for cohort in AgeCohort:
-            median = get_median(median_map, cohort)
-            iqr = get_iqr(iqr_map, cohort)
-            ci = get_ci(ci_map, cohort)
-            total_vax = get_total_vaccinations(vax_dates_distribution, cohort)
-
             table.append(
                 {
                     "věk": cohort.value,
-                    "Med": median,
-                    "IQR": iqr,
-                    "95% CI": ci,
-                    "počet očko": total_vax,
+                    "Med": get_median(median_map, cohort),
+                    "IQR": get_iqr(iqr_map, cohort),
+                    "95% CI": get_ci(ci_map, cohort),
+                    "počet očko": get_total_vaccinations(vax_dates_distribution, cohort),
+                    "očko po-před": get_median(vax_effects_median, cohort),
+                    "neočko po-před": get_median(novax_effects_median, cohort),
                 }
             )
 

@@ -249,16 +249,27 @@ def main():
 
     raw_legend = [
         plt.Line2D(
-            [0], [0], marker="o", color=VAX_COLOR, linestyle="None",
-            markersize=5, label="Očkovaní (po–před)"
+            [0],
+            [0],
+            marker="o",
+            color=VAX_COLOR,
+            linestyle="None",
+            markersize=5,
+            label="Očkovaní (po–před)",
         ),
         plt.Line2D(
-            [0], [0], marker="o", color=NOVAX_COLOR, linestyle="None",
-            markersize=5, fillstyle="none", label="Neočkovaní (po–před)"
+            [0],
+            [0],
+            marker="o",
+            color=NOVAX_COLOR,
+            linestyle="None",
+            markersize=5,
+            fillstyle="none",
+            label="Neočkovaní (po–před)",
         ),
     ]
 
-    out_dir = Path("out/cpzp/matching_analysis/forest_plots/more_years_included")
+    out_dir = Path("out/cpzp/matching_analysis/unified_effect_baseline/forest_plots")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     for bucket in BUCKETS:
@@ -286,8 +297,13 @@ def main():
 
         period_raw_legend = [
             plt.Line2D(
-                [0], [0], marker=VAX_MARKERS[i], color="#555555",
-                linestyle="None", markersize=5, label=label
+                [0],
+                [0],
+                marker=VAX_MARKERS[i],
+                color="#555555",
+                linestyle="None",
+                markersize=5,
+                label=label,
             )
             for i, (_, label) in enumerate(PERIODS)
         ]

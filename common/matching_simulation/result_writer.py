@@ -26,7 +26,12 @@ class ResultWriter:
         novax_effects_median,
     ):
         year_back_name = f"{self.__config.year_offset}_years_back_matching_analysis"
-        folder_path = f"out/{self.__config.pojistovna}/matching_analysis/unified_effect_baseline/{year_back_name}/whole_period/{group_name}/{aggregation_days}_days_aggregation"
+        unified_effect_baseline_name = (
+            "unified_effect_baseline"
+            if self.__config.use_unified_effect_baseline
+            else ""
+        )
+        folder_path = f"out/{self.__config.pojistovna}/matching_analysis/{unified_effect_baseline_name}/{year_back_name}/whole_period/{group_name}/{aggregation_days}_days_aggregation"
         os.makedirs(folder_path, exist_ok=True)
 
         self.__plot_treatment_effect(
@@ -74,8 +79,13 @@ class ResultWriter:
             ax_left.fill_between(
                 sorted_dates, y_lower, y_upper, alpha=0.2, label="IQR", color="blue"
             )
+
+            baseline = 1 if self.__config.use_unified_effect_baseline else 0
+            if is_zero_pe_group(group_name):
+                baseline = 1
+
             ax_left.axhline(
-                1 if is_zero_pe_group(group_name) else 0,
+                baseline,
                 color="black",
                 linewidth=1,
             )
@@ -142,7 +152,9 @@ class ResultWriter:
                     "Med": get_median(median_map, cohort),
                     "IQR": get_iqr(iqr_map, cohort),
                     "95% CI": get_ci(ci_map, cohort),
-                    "počet očko": get_total_vaccinations(vax_dates_distribution, cohort),
+                    "počet očko": get_total_vaccinations(
+                        vax_dates_distribution, cohort
+                    ),
                     "očko po-před": get_median(vax_effects_median, cohort),
                     "neočko po-před": get_median(novax_effects_median, cohort),
                 }

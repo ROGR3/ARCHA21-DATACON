@@ -13,6 +13,7 @@ class MatchingAnalysisConfig:
     konec_pojisteni: date
     year_offset: int
     use_local_cache: bool = False
+    use_unified_effect_baseline: bool = False
 
     @property
     def day_offset(self) -> timedelta:

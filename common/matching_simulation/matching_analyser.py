@@ -204,13 +204,27 @@ class MatchingAnalyser:
                 #             novax_after / novax_before
                 #         )
 
-                n = count_map[cohort].get(dt, 1)
-                vax_effects[cohort][dt] = (vax_after - vax_before) / n
-                novax_effects[cohort][dt] = (novax_after - novax_before) / n
-                if novax_effects[cohort][dt] != 0:
-                    result_map[cohort][dt] = vax_effects[cohort][dt] / novax_effects[cohort][dt]
+                if (
+                    not self.__config.use_unified_effect_baseline
+                    and not is_zero_pe_group(group_name)
+                ):
+                    if vax_before != 0 and novax_before != 0:
+                        result_map[cohort][dt] = (vax_after / vax_before) - (
+                            novax_after / novax_before
+                        )
+                    else:
+                        print(f"vax_before or novax_before is 0 for {cohort} on {dt}")
                 else:
-                    print(f"novax_after is 0 for {cohort} on {dt}")
+                    n = count_map[cohort].get(dt, 1)
+                    vax_effects[cohort][dt] = (vax_after - vax_before) / n
+                    novax_effects[cohort][dt] = (novax_after - novax_before) / n
+                    if novax_effects[cohort][dt] != 0:
+                        result_map[cohort][dt] = (
+                            vax_effects[cohort][dt] / novax_effects[cohort][dt]
+                        )
+                    else:
+                        print(f"novax_after is 0 for {cohort} on {dt}")
+
         return result_map, vax_effects, novax_effects
 
     def __compute_statistics(

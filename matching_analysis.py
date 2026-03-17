@@ -24,8 +24,9 @@ def main():
         pojistovna="cpzp",
         zacatek_pojisteni=date(2015, 1, 1),
         konec_pojisteni=date(2023, 12, 31),
-        year_offset=-1,
-        use_local_cache=False,
+        year_offset=0,
+        use_local_cache=True,
+        use_unified_effect_baseline=False,
     )
     data_loader = DataLoader(config)
     age_cohort_calculator = AgeCohortCalculator(config)

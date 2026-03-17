@@ -56,14 +56,14 @@ class MatchingAnalyser:
         raw_novax_effects = defaultdict(lambda: defaultdict(list))
 
         for i in range(num_runs):
-            vax_before, vax_after, novax_before, novax_after = (
+            vax_before, vax_after, novax_before, novax_after, count_map = (
                 self.__compute_vax_vs_novax_sums(
                     people, person_map, pe_map, group_name, aggregation_days
                 )
             )
 
             result_map, vax_eff, novax_eff = self.__compute_effect_values(
-                vax_before, vax_after, novax_before, novax_after, group_name
+                vax_before, vax_after, novax_before, novax_after, group_name, count_map
             )
 
             for src, dst in [
@@ -104,6 +104,9 @@ class MatchingAnalyser:
         )
         novax_after_pe_map: dict[AgeCohort, dict[datetime, float]] = defaultdict(
             lambda: defaultdict(float)
+        )
+        count_map: dict[AgeCohort, dict[datetime, int]] = defaultdict(
+            lambda: defaultdict(int)
         )
 
         for person in people:
@@ -148,12 +151,14 @@ class MatchingAnalyser:
             vax_after_pe_map[ac][aggregated_date] += vax_person_after_pe
             novax_before_pe_map[ac][aggregated_date] += novax_person_before_pe
             novax_after_pe_map[ac][aggregated_date] += novax_person_after_pe
+            count_map[ac][aggregated_date] += 1
 
         return (
             vax_before_pe_map,
             vax_after_pe_map,
             novax_before_pe_map,
             novax_after_pe_map,
+            count_map,
         )
 
     def __compute_effect_values(
@@ -163,6 +168,7 @@ class MatchingAnalyser:
         novax_before_pe_map,
         novax_after_pe_map,
         group_name,
+        count_map,
     ) -> tuple[EffectMap, EffectMap, EffectMap]:
         result_map: EffectMap = defaultdict(dict)
         vax_effects: EffectMap = defaultdict(dict)
@@ -198,9 +204,10 @@ class MatchingAnalyser:
                 #             novax_after / novax_before
                 #         )
 
-                vax_effects[cohort][dt] = vax_after - vax_before
-                novax_effects[cohort][dt] = novax_after - novax_before
-                if novax_effects[cohort][dt]  != 0:
+                n = count_map[cohort].get(dt, 1)
+                vax_effects[cohort][dt] = (vax_after - vax_before) / n
+                novax_effects[cohort][dt] = (novax_after - novax_before) / n
+                if novax_effects[cohort][dt] != 0:
                     result_map[cohort][dt] = vax_effects[cohort][dt] / novax_effects[cohort][dt]
                 else:
                     print(f"novax_after is 0 for {cohort} on {dt}")

@@ -29,7 +29,7 @@ class ResultWriter:
         unified_effect_baseline_name = (
             "unified_effect_baseline"
             if self.__config.use_unified_effect_baseline
-            else ""
+            else "different_effect_baseline"
         )
         folder_path = f"out/{self.__config.pojistovna}/matching_analysis/{unified_effect_baseline_name}/{year_back_name}/whole_period/{group_name}/{aggregation_days}_days_aggregation"
         os.makedirs(folder_path, exist_ok=True)

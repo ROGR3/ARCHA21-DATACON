@@ -209,8 +209,10 @@ class MatchingAnalyser:
                     and not is_zero_pe_group(group_name)
                 ):
                     if vax_before != 0 and novax_before != 0:
-                        result_map[cohort][dt] = (vax_after / vax_before) - (
-                            novax_after / novax_before
+                        vax_effects[cohort][dt] = vax_after / vax_before
+                        novax_effects[cohort][dt] = novax_after / novax_before
+                        result_map[cohort][dt] = (
+                            vax_effects[cohort][dt] - novax_effects[cohort][dt]
                         )
                     else:
                         print(f"vax_before or novax_before is 0 for {cohort} on {dt}")

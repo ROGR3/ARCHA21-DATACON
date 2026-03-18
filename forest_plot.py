@@ -17,7 +17,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-BASE = Path("out/cpzp/matching_analysis/unified_effect_baseline")
+EFFECT_BASELINE = "unified_effect_baseline"  # "unified_effect_baseline" or "different_effect_baseline"
+
+BASE = Path(f"out/cpzp/matching_analysis/{EFFECT_BASELINE}")
 
 PERIODS = [
     ("3_years_back_matching_analysis", "3 roky zpět"),
@@ -269,7 +271,7 @@ def main():
         ),
     ]
 
-    out_dir = Path("out/cpzp/matching_analysis/unified_effect_baseline/forest_plots")
+    out_dir = BASE / "forest_plots"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     for bucket in BUCKETS:

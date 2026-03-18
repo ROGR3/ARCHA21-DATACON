@@ -17,7 +17,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-EFFECT_BASELINE = "unified_effect_baseline"  # "unified_effect_baseline" or "different_effect_baseline"
+EFFECT_BASELINE = "different_effect_baseline"  # "unified_effect_baseline" or "different_effect_baseline"
 
 BASE = Path(f"out/cpzp/matching_analysis/{EFFECT_BASELINE}")
 
@@ -64,6 +64,7 @@ AGE_LABELS = {
 }
 
 RATIO_BUCKETS = {"ZERO_PE_SUSPECTIBLE", "NEVER_PRESCRIBED", "0_PE"}
+DIFF_BASELINE_RATIO_BUCKETS = {"1_to_500_PE", "500_to_5000_PE"}
 
 N_PERIODS = len(PERIODS)
 ROW_HEIGHT = N_PERIODS + 1.5  # vertical space per age group
@@ -216,19 +217,26 @@ def make_raw_effects_plot(bucket: str, ax: plt.Axes):
     ax.set_yticklabels(ylabels, fontsize=9)
     ax.invert_yaxis()
 
-    ax.axvline(0, color="grey", linestyle="--", linewidth=0.8, zorder=0)
+    is_ratio = (
+        EFFECT_BASELINE == "different_effect_baseline"
+        and bucket in DIFF_BASELINE_RATIO_BUCKETS
+    )
+    ref_line = 1.0 if is_ratio else 0.0
+    op_label = "po / před" if is_ratio else "po – před"
+
+    ax.axvline(ref_line, color="grey", linestyle="--", linewidth=0.8, zorder=0)
 
     for age_idx in range(len(AGE_ORDER) - 1):
         sep_y = (age_idx + 1) * ROW_HEIGHT - 1
         ax.axhline(sep_y, color="#dddddd", linestyle="-", linewidth=0.5, zorder=0)
 
     ax.set_title(
-        f"{BUCKET_LABELS[bucket]} — očko vs. neočko po–před",
+        f"{BUCKET_LABELS[bucket]} — průměrné PE na osobu ({op_label})",
         fontsize=12,
         fontweight="bold",
         pad=10,
     )
-    ax.set_xlabel("Medián součtu PE (po – před)", fontsize=9)
+    ax.set_xlabel(f"Průměrné PE na osobu ({op_label})", fontsize=9)
     ax.grid(axis="x", alpha=0.2, linewidth=0.5)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -249,27 +257,33 @@ def main():
         for (_, label), s in zip(PERIODS, PERIOD_STYLES)
     ]
 
-    raw_legend = [
-        plt.Line2D(
-            [0],
-            [0],
-            marker="o",
-            color=VAX_COLOR,
-            linestyle="None",
-            markersize=5,
-            label="Očkovaní (po–před)",
-        ),
-        plt.Line2D(
-            [0],
-            [0],
-            marker="o",
-            color=NOVAX_COLOR,
-            linestyle="None",
-            markersize=5,
-            fillstyle="none",
-            label="Neočkovaní (po–před)",
-        ),
-    ]
+    def _raw_legend(bucket: str) -> list:
+        is_ratio = (
+            EFFECT_BASELINE == "different_effect_baseline"
+            and bucket in DIFF_BASELINE_RATIO_BUCKETS
+        )
+        op = "po/před" if is_ratio else "po–před"
+        return [
+            plt.Line2D(
+                [0],
+                [0],
+                marker="o",
+                color=VAX_COLOR,
+                linestyle="None",
+                markersize=5,
+                label=f"Očkovaní ({op})",
+            ),
+            plt.Line2D(
+                [0],
+                [0],
+                marker="o",
+                color=NOVAX_COLOR,
+                linestyle="None",
+                markersize=5,
+                fillstyle="none",
+                label=f"Neočkovaní ({op})",
+            ),
+        ]
 
     out_dir = BASE / "forest_plots"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -310,7 +324,7 @@ def main():
             for i, (_, label) in enumerate(PERIODS)
         ]
         fig2.legend(
-            handles=raw_legend + period_raw_legend,
+            handles=_raw_legend(bucket) + period_raw_legend,
             loc="upper right",
             fontsize=8,
             frameon=True,

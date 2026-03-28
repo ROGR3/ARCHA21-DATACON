@@ -14,7 +14,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 EFFECT_BASELINE = "different_effect_baseline"
-BASE = Path(f"out/cpzp/matching_analysis/every_prescription_analysis/{EFFECT_BASELINE}")
+BASE = Path(f"out/cpzp/matching_analysis/non_inj_analysis/{EFFECT_BASELINE}")
 
 PERIODS = [
     ("3_years_back_matching_analysis", "3 roky zpět"),
@@ -126,7 +126,8 @@ def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes):
             y = group_base + p_idx
             marker = style["marker"]
 
-            rightmost = 0.0
+            rightmost = float("-inf")
+            has_point = False
 
             if vax_val is not None:
                 vax_ci = entry.get("očko 95% CI")
@@ -144,6 +145,7 @@ def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes):
                         markeredgewidth=1.2,
                     )
                     rightmost = max(rightmost, hi)
+                    has_point = True
                 else:
                     ax.plot(
                         vax_val,
@@ -155,6 +157,7 @@ def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes):
                         markeredgewidth=1.2,
                     )
                     rightmost = max(rightmost, vax_val)
+                    has_point = True
 
             if novax_val is not None:
                 novax_ci = entry.get("neočko 95% CI")
@@ -173,6 +176,7 @@ def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes):
                         fillstyle="none",
                     )
                     rightmost = max(rightmost, hi)
+                    has_point = True
                 else:
                     ax.plot(
                         novax_val,
@@ -185,10 +189,11 @@ def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes):
                         fillstyle="none",
                     )
                     rightmost = max(rightmost, novax_val)
+                    has_point = True
 
             vax_count = entry.get("počet očko", 0)
             spec_count = entry.get("počet u spec.", 0)
-            if vax_count and rightmost != 0.0:
+            if vax_count and has_point:
                 label = f"n={vax_count:,} ({spec_count:,} u spec.)".replace(
                     ",", "\u2009"
                 )

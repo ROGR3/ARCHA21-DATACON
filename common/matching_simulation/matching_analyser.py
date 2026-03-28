@@ -50,7 +50,7 @@ class MatchingAnalyser:
         aggregation_days: int,
         group_name: PE_GROUP_NAMES,
         num_runs: int = 100,
-    ) -> tuple[EffectMap, IqrMap, IqrMap, EffectMap, EffectMap]:
+    ) -> tuple[EffectMap, IqrMap, IqrMap, EffectMap, EffectMap, IqrMap, IqrMap]:
         effects = defaultdict(lambda: defaultdict(list))
         raw_vax_effects = defaultdict(lambda: defaultdict(list))
         raw_novax_effects = defaultdict(lambda: defaultdict(list))
@@ -80,10 +80,10 @@ class MatchingAnalyser:
         print()
         median_map, iqr_map, ci_map = self.__compute_statistics(effects)
 
-        vax_effects_median, _, _ = self.__compute_statistics(raw_vax_effects)
-        novax_effects_median, _, _ = self.__compute_statistics(raw_novax_effects)
+        vax_effects_median, _, vax_effects_ci = self.__compute_statistics(raw_vax_effects)
+        novax_effects_median, _, novax_effects_ci = self.__compute_statistics(raw_novax_effects)
 
-        return median_map, iqr_map, ci_map, vax_effects_median, novax_effects_median
+        return median_map, iqr_map, ci_map, vax_effects_median, novax_effects_median, vax_effects_ci, novax_effects_ci
 
     def __compute_vax_vs_novax_sums(
         self,
@@ -112,7 +112,9 @@ class MatchingAnalyser:
         for person in people:
             first_vax = person.vaccines[0]
 
-            vax_person_before_pe = sum_before_date_pe_for_person(person, first_vax.date)
+            vax_person_before_pe = sum_before_date_pe_for_person(
+                person, first_vax.date, self.__config
+            )
             if vax_person_before_pe > 5000:
                 continue
 
@@ -135,12 +137,14 @@ class MatchingAnalyser:
 
             matched_person = person_map[matched_id]
 
-            vax_person_after_pe = sum_after_date_pe_for_person(person, first_vax.date)
+            vax_person_after_pe = sum_after_date_pe_for_person(
+                person, first_vax.date, self.__config
+            )
             novax_person_before_pe = sum_before_date_pe_for_person(
-                matched_person, first_vax.date
+                matched_person, first_vax.date, self.__config
             )
             novax_person_after_pe = sum_after_date_pe_for_person(
-                matched_person, first_vax.date
+                matched_person, first_vax.date, self.__config
             )
 
             ac = self.__age_cohort_calculator.calculate_age_cohort(person)

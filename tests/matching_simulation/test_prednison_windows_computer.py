@@ -765,7 +765,7 @@ class TestConsistencyWithSumBefore:
         )
 
         # sum_before excludes the prescription on the exact date
-        pe_from_sum = sum_before_date_pe_for_person(person, pr_date)
+        pe_from_sum = sum_before_date_pe_for_person(person, pr_date, _make_config())
         assert pe_from_sum == 0.0, "sum_before excludes prescription on exact date"
 
         # But the PE window computer includes it
@@ -797,7 +797,7 @@ class TestConsistencyWithSumBefore:
             pid=1, prescriptions=[make_prescription(pr_date, pe=100.0)]
         )
 
-        pe_from_sum = sum_before_date_pe_for_person(person, anchor)
+        pe_from_sum = sum_before_date_pe_for_person(person, anchor, _make_config())
         assert pe_from_sum == 0.0, (
             "sum_before excludes prescription exactly 365 days before"
         )

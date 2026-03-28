@@ -129,7 +129,7 @@ class DataLoader:
         return [
             p
             for p in vax_cohort_people
-            if sum_before_date_pe_for_person(p, p.vaccines[0].date) == 0
+            if sum_before_date_pe_for_person(p, p.vaccines[0].date, self.__config) == 0
             and any(
                 prescription.date < p.vaccines[0].date
                 for prescription in p.prescriptions
@@ -140,7 +140,7 @@ class DataLoader:
         return [
             p
             for p in vax_cohort_people
-            if sum_before_date_pe_for_person(p, p.vaccines[0].date) == 0
+            if sum_before_date_pe_for_person(p, p.vaccines[0].date, self.__config) == 0
         ]
 
     def __get_one_to_five_hundred_pe_vax_people(
@@ -149,8 +149,9 @@ class DataLoader:
         return [
             p
             for p in vax_cohort_people
-            if sum_before_date_pe_for_person(p, p.vaccines[0].date) >= 1
-            and sum_before_date_pe_for_person(p, p.vaccines[0].date) < 500
+            if sum_before_date_pe_for_person(p, p.vaccines[0].date, self.__config) >= 1
+            and sum_before_date_pe_for_person(p, p.vaccines[0].date, self.__config)
+            < 500
         ]
 
     def __get_five_hundred_to_five_thousand_pe_vax_people(
@@ -159,6 +160,8 @@ class DataLoader:
         return [
             p
             for p in vax_cohort_people
-            if sum_before_date_pe_for_person(p, p.vaccines[0].date) >= 500
-            and sum_before_date_pe_for_person(p, p.vaccines[0].date) < 5000
+            if sum_before_date_pe_for_person(p, p.vaccines[0].date, self.__config)
+            >= 500
+            and sum_before_date_pe_for_person(p, p.vaccines[0].date, self.__config)
+            < 5000
         ]

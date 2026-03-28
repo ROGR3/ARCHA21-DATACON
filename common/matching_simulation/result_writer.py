@@ -24,6 +24,8 @@ class ResultWriter:
         aggregation_days: int,
         vax_effects_median,
         novax_effects_median,
+        vax_effects_ci,
+        novax_effects_ci,
     ):
         year_back_name = f"{self.__config.year_offset}_years_back_matching_analysis"
         unified_effect_baseline_name = (
@@ -31,7 +33,10 @@ class ResultWriter:
             if self.__config.use_unified_effect_baseline
             else "different_effect_baseline"
         )
-        folder_path = f"out/{self.__config.pojistovna}/matching_analysis/{unified_effect_baseline_name}/{year_back_name}/whole_period/{group_name}/{aggregation_days}_days_aggregation"
+        inj_analysis_name = "inj_analysis/" if self.__config.inj_analysis else ""
+        if self.__config.every_prescription_analysis:
+            inj_analysis_name = "every_prescription_analysis/"
+        folder_path = f"out/{self.__config.pojistovna}/matching_analysis/{inj_analysis_name}{unified_effect_baseline_name}/{year_back_name}/whole_period/{group_name}/{aggregation_days}_days_aggregation"
         os.makedirs(folder_path, exist_ok=True)
 
         self.__plot_treatment_effect(
@@ -51,6 +56,8 @@ class ResultWriter:
                 folder_path=folder_path,
                 vax_effects_median=vax_effects_median,
                 novax_effects_median=novax_effects_median,
+                vax_effects_ci=vax_effects_ci,
+                novax_effects_ci=novax_effects_ci,
             )
 
     def __plot_treatment_effect(
@@ -126,6 +133,8 @@ class ResultWriter:
         folder_path: str,
         vax_effects_median,
         novax_effects_median,
+        vax_effects_ci,
+        novax_effects_ci,
     ):
         table = []
 
@@ -156,7 +165,9 @@ class ResultWriter:
                         vax_dates_distribution, cohort
                     ),
                     "očko po-před": get_median(vax_effects_median, cohort),
+                    "očko 95% CI": get_ci(vax_effects_ci, cohort),
                     "neočko po-před": get_median(novax_effects_median, cohort),
+                    "neočko 95% CI": get_ci(novax_effects_ci, cohort),
                 }
             )
 

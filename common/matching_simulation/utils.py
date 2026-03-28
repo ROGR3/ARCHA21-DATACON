@@ -14,6 +14,8 @@ class MatchingAnalysisConfig:
     year_offset: int
     use_local_cache: bool = False
     use_unified_effect_baseline: bool = False
+    inj_analysis: bool = False
+    every_prescription_analysis: bool = False
 
     @property
     def day_offset(self) -> timedelta:
@@ -83,8 +85,16 @@ class AgeCohortCalculator:
             return AgeCohort.IRRELEVANT
 
 
-def is_injection(pr: Prescription) -> bool:
-    return bool(pr.lekova_forma_zkr and pr.lekova_forma_zkr.startswith("INJ"))
+def is_valid_prescription(pr: Prescription, config: MatchingAnalysisConfig) -> bool:
+    """
+    Check for injection prescriptions.
+    """
+    if config.every_prescription_analysis:
+        return True
+
+    if config.inj_analysis:
+        return bool(pr.lekova_forma_zkr and pr.lekova_forma_zkr.startswith("INJ"))
+    return not bool(pr.lekova_forma_zkr and pr.lekova_forma_zkr.startswith("INJ"))
 
 
 class PE_GROUP_NAMES(StrEnum):
@@ -142,19 +152,23 @@ def has_prescriptions_before_date(person: Person, anchor_date: date) -> bool:
     return any(pr.date < anchor_date for pr in person.prescriptions)
 
 
-def sum_after_date_pe_for_person(person: Person, ddate: date) -> float:
+def sum_after_date_pe_for_person(
+    person: Person, ddate: date, config: MatchingAnalysisConfig
+) -> float:
     return sum(
         pr.prednison_equiv
         for pr in person.prescriptions
-        if (not is_injection(pr))
+        if (is_valid_prescription(pr, config))
         and (pr.date > ddate and pr.date < ddate + timedelta(days=365))
     )
 
 
-def sum_before_date_pe_for_person(person: Person, ddate: date) -> float:
+def sum_before_date_pe_for_person(
+    person: Person, ddate: date, config: MatchingAnalysisConfig
+) -> float:
     return sum(
         pr.prednison_equiv
         for pr in person.prescriptions
-        if (not is_injection(pr))
+        if (is_valid_prescription(pr, config))
         and (pr.date > ddate - timedelta(days=365) and pr.date < ddate)
     )

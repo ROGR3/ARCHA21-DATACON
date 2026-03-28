@@ -93,68 +93,80 @@ class TestEffectComputationZeroPE:
     def test_equal_after_pe_gives_ratio_one(self):
         """When vax and novax have the same after-PE, effect = 1.0."""
         analyser = _make_analyser()
-        vax_before = {AgeCohort._30_39: {datetime(2021, 6, 1): 0.0}}
-        vax_after = {AgeCohort._30_39: {datetime(2021, 6, 1): 100.0}}
-        novax_before = {AgeCohort._30_39: {datetime(2021, 6, 1): 0.0}}
-        novax_after = {AgeCohort._30_39: {datetime(2021, 6, 1): 100.0}}
+        dt = datetime(2021, 6, 1)
+        vax_before = {AgeCohort._30_39: {dt: 0.0}}
+        vax_after = {AgeCohort._30_39: {dt: 100.0}}
+        novax_before = {AgeCohort._30_39: {dt: 0.0}}
+        novax_after = {AgeCohort._30_39: {dt: 100.0}}
+        count_map = {AgeCohort._30_39: {dt: 1}}
 
-        result = _compute_effect_values(
+        result, _, _ = _compute_effect_values(
             analyser,
             vax_before,
             vax_after,
             novax_before,
             novax_after,
             PE_GROUP_NAMES.ZERO_PE,
+            count_map,
         )
-        assert result[AgeCohort._30_39][datetime(2021, 6, 1)] == pytest.approx(1.0)
+        assert result[AgeCohort._30_39][dt] == pytest.approx(1.0)
 
     def test_higher_vax_after_gives_ratio_above_one(self):
         """More PE after vax than after novax -> ratio > 1."""
         analyser = _make_analyser()
-        vax_after = {AgeCohort._30_39: {datetime(2021, 6, 1): 200.0}}
-        novax_after = {AgeCohort._30_39: {datetime(2021, 6, 1): 100.0}}
+        dt = datetime(2021, 6, 1)
+        vax_after = {AgeCohort._30_39: {dt: 200.0}}
+        novax_after = {AgeCohort._30_39: {dt: 100.0}}
+        count_map = {AgeCohort._30_39: {dt: 1}}
 
-        result = _compute_effect_values(
+        result, _, _ = _compute_effect_values(
             analyser,
             defaultdict(dict),
             vax_after,
             defaultdict(dict),
             novax_after,
             PE_GROUP_NAMES.ZERO_PE,
+            count_map,
         )
-        assert result[AgeCohort._30_39][datetime(2021, 6, 1)] == pytest.approx(2.0)
+        assert result[AgeCohort._30_39][dt] == pytest.approx(2.0)
 
     def test_zero_novax_after_skips(self):
         """Division by zero: when novax_after=0, the date should be skipped."""
         analyser = _make_analyser()
-        vax_after = {AgeCohort._30_39: {datetime(2021, 6, 1): 100.0}}
-        novax_after = {AgeCohort._30_39: {datetime(2021, 6, 1): 0.0}}
+        dt = datetime(2021, 6, 1)
+        vax_after = {AgeCohort._30_39: {dt: 100.0}}
+        novax_after = {AgeCohort._30_39: {dt: 0.0}}
+        count_map = {AgeCohort._30_39: {dt: 1}}
 
-        result = _compute_effect_values(
+        result, _, _ = _compute_effect_values(
             analyser,
             defaultdict(dict),
             vax_after,
             defaultdict(dict),
             novax_after,
             PE_GROUP_NAMES.ZERO_PE,
+            count_map,
         )
-        assert datetime(2021, 6, 1) not in result.get(AgeCohort._30_39, {})
+        assert dt not in result.get(AgeCohort._30_39, {})
 
     def test_never_prescribed_uses_zero_pe_formula(self):
         """NEVER_PRESCRIBED is a zero-PE group -> same ratio formula."""
         analyser = _make_analyser()
-        vax_after = {AgeCohort._30_39: {datetime(2021, 6, 1): 150.0}}
-        novax_after = {AgeCohort._30_39: {datetime(2021, 6, 1): 100.0}}
+        dt = datetime(2021, 6, 1)
+        vax_after = {AgeCohort._30_39: {dt: 150.0}}
+        novax_after = {AgeCohort._30_39: {dt: 100.0}}
+        count_map = {AgeCohort._30_39: {dt: 1}}
 
-        result = _compute_effect_values(
+        result, _, _ = _compute_effect_values(
             analyser,
             defaultdict(dict),
             vax_after,
             defaultdict(dict),
             novax_after,
             PE_GROUP_NAMES.NEVER_PRESCRIBED,
+            count_map,
         )
-        assert result[AgeCohort._30_39][datetime(2021, 6, 1)] == pytest.approx(1.5)
+        assert result[AgeCohort._30_39][dt] == pytest.approx(1.5)
 
 
 # ===================================================================
@@ -178,14 +190,16 @@ class TestEffectComputationNonZeroPE:
         vax_after = {AgeCohort._30_39: {dt: 100.0}}  # ratio = 0.5
         novax_before = {AgeCohort._30_39: {dt: 400.0}}
         novax_after = {AgeCohort._30_39: {dt: 200.0}}  # ratio = 0.5
+        count_map = {AgeCohort._30_39: {dt: 1}}
 
-        result = _compute_effect_values(
+        result, _, _ = _compute_effect_values(
             analyser,
             vax_before,
             vax_after,
             novax_before,
             novax_after,
             PE_GROUP_NAMES.ONE_TO_FIVE_HUNDRED_PE,
+            count_map,
         )
         assert result[AgeCohort._30_39][dt] == pytest.approx(0.0)
 
@@ -197,14 +211,16 @@ class TestEffectComputationNonZeroPE:
         vax_after = {AgeCohort._30_39: {dt: 200.0}}  # ratio = 2.0
         novax_before = {AgeCohort._30_39: {dt: 100.0}}
         novax_after = {AgeCohort._30_39: {dt: 100.0}}  # ratio = 1.0
+        count_map = {AgeCohort._30_39: {dt: 1}}
 
-        result = _compute_effect_values(
+        result, _, _ = _compute_effect_values(
             analyser,
             vax_before,
             vax_after,
             novax_before,
             novax_after,
             PE_GROUP_NAMES.ONE_TO_FIVE_HUNDRED_PE,
+            count_map,
         )
         # DID = 2.0 - 1.0 = 1.0
         assert result[AgeCohort._30_39][dt] == pytest.approx(1.0)
@@ -217,14 +233,16 @@ class TestEffectComputationNonZeroPE:
         vax_after = {AgeCohort._30_39: {dt: 100.0}}  # ratio = 0.5
         novax_before = {AgeCohort._30_39: {dt: 200.0}}
         novax_after = {AgeCohort._30_39: {dt: 200.0}}  # ratio = 1.0
+        count_map = {AgeCohort._30_39: {dt: 1}}
 
-        result = _compute_effect_values(
+        result, _, _ = _compute_effect_values(
             analyser,
             vax_before,
             vax_after,
             novax_before,
             novax_after,
             PE_GROUP_NAMES.FIVE_HUNDRED_TO_FIVE_THOUSAND_PE,
+            count_map,
         )
         # DID = 0.5 - 1.0 = -0.5
         assert result[AgeCohort._30_39][dt] == pytest.approx(-0.5)
@@ -237,14 +255,16 @@ class TestEffectComputationNonZeroPE:
         vax_after = {AgeCohort._30_39: {dt: 100.0}}
         novax_before = {AgeCohort._30_39: {dt: 100.0}}
         novax_after = {AgeCohort._30_39: {dt: 100.0}}
+        count_map = {AgeCohort._30_39: {dt: 1}}
 
-        result = _compute_effect_values(
+        result, _, _ = _compute_effect_values(
             analyser,
             vax_before,
             vax_after,
             novax_before,
             novax_after,
             PE_GROUP_NAMES.ONE_TO_FIVE_HUNDRED_PE,
+            count_map,
         )
         assert dt not in result.get(AgeCohort._30_39, {})
 
@@ -256,14 +276,16 @@ class TestEffectComputationNonZeroPE:
         vax_after = {AgeCohort._30_39: {dt: 100.0}}
         novax_before = {AgeCohort._30_39: {dt: 0.0}}
         novax_after = {AgeCohort._30_39: {dt: 100.0}}
+        count_map = {AgeCohort._30_39: {dt: 1}}
 
-        result = _compute_effect_values(
+        result, _, _ = _compute_effect_values(
             analyser,
             vax_before,
             vax_after,
             novax_before,
             novax_after,
             PE_GROUP_NAMES.ONE_TO_FIVE_HUNDRED_PE,
+            count_map,
         )
         assert dt not in result.get(AgeCohort._30_39, {})
 
@@ -286,14 +308,19 @@ class TestEffectMultipleCohorts:
             AgeCohort._16_22: {dt: 50.0},
             AgeCohort._30_39: {dt: 100.0},
         }
+        count_map = {
+            AgeCohort._16_22: {dt: 1},
+            AgeCohort._30_39: {dt: 1},
+        }
 
-        result = _compute_effect_values(
+        result, _, _ = _compute_effect_values(
             analyser,
             defaultdict(dict),
             vax_after,
             defaultdict(dict),
             novax_after,
             PE_GROUP_NAMES.ZERO_PE,
+            count_map,
         )
         assert result[AgeCohort._16_22][dt] == pytest.approx(2.0)
         assert result[AgeCohort._30_39][dt] == pytest.approx(3.0)
@@ -538,7 +565,7 @@ class TestRunMatchingAnalysisIntegration:
             }
         }
 
-        median_map, iqr_map, ci_map = analyser.run_matching_analysis(
+        median_map, iqr_map, ci_map, _, _, _, _ = analyser.run_matching_analysis(
             people=[vax_person],
             person_map=person_map,
             pe_map=pe_map,
@@ -596,7 +623,7 @@ class TestRunMatchingAnalysisIntegration:
             }
         }
 
-        median_map, iqr_map, ci_map = analyser.run_matching_analysis(
+        median_map, iqr_map, ci_map, _, _, _, _ = analyser.run_matching_analysis(
             people=[vax_person],
             person_map=person_map,
             pe_map=pe_map,
@@ -628,7 +655,7 @@ class TestRunMatchingAnalysisIntegration:
         person_map = {1: vax_person}
         pe_map: PeMap = {}
 
-        median_map, _, _ = analyser.run_matching_analysis(
+        median_map, _, _, _, _, _, _ = analyser.run_matching_analysis(
             people=[vax_person],
             person_map=person_map,
             pe_map=pe_map,

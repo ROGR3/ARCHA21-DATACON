@@ -11,7 +11,7 @@ from common.matching_simulation.utils import (
     MatchingAnalysisConfig,
     from_prednison_equiv,
     has_prescriptions_before_date,
-    is_injection,
+    is_valid_prescription,
     is_zero_pe_group,
     sum_after_date_pe_for_person,
     sum_before_date_pe_for_person,
@@ -109,19 +109,62 @@ class TestAgeCohortCalculator:
 # ===================================================================
 
 
-class TestIsInjection:
-    def test_injection_prescription(self):
+class TestIsValidPrescription:
+    @pytest.fixture
+    def inj_config(self):
+        return MatchingAnalysisConfig(
+            pojistovna="test",
+            zacatek_pojisteni=date(2020, 1, 1),
+            konec_pojisteni=date(2023, 1, 1),
+            year_offset=0,
+            inj_analysis=True,
+        )
+
+    @pytest.fixture
+    def default_no_inj_config(self):
+        return MatchingAnalysisConfig(
+            pojistovna="test",
+            zacatek_pojisteni=date(2020, 1, 1),
+            konec_pojisteni=date(2023, 1, 1),
+            year_offset=0,
+        )
+
+    @pytest.fixture
+    def every_config(self):
+        return MatchingAnalysisConfig(
+            pojistovna="test",
+            zacatek_pojisteni=date(2020, 1, 1),
+            konec_pojisteni=date(2023, 1, 1),
+            year_offset=0,
+            every_prescription_analysis=True,
+        )
+
+    def test_injection_valid_with_inj_analysis(self, inj_config):
         pr = make_prescription(date(2021, 5, 1), injection=True)
-        assert is_injection(pr) is True
+        assert is_valid_prescription(pr, inj_config) is True
 
-    def test_non_injection_prescription(self):
+    def test_non_injection_invalid_with_inj_analysis(self, inj_config):
         pr = make_prescription(date(2021, 5, 1), injection=False)
-        assert is_injection(pr) is False
+        assert is_valid_prescription(pr, inj_config) is False
 
-    def test_none_lekova_forma_zkr(self):
+    def test_none_lekova_forma_invalid_with_inj_analysis(self, inj_config):
         pr = make_prescription(date(2021, 5, 1))
         pr.lekova_forma_zkr = None
-        assert is_injection(pr) is False
+        assert is_valid_prescription(pr, inj_config) is False
+
+    def test_injection_invalid_with_default_config(self, default_no_inj_config):
+        pr = make_prescription(date(2021, 5, 1), injection=True)
+        assert is_valid_prescription(pr, default_no_inj_config) is False
+
+    def test_non_injection_valid_with_default_config(self, default_no_inj_config):
+        pr = make_prescription(date(2021, 5, 1), injection=False)
+        assert is_valid_prescription(pr, default_no_inj_config) is True
+
+    def test_every_prescription_always_valid(self, every_config):
+        pr_inj = make_prescription(date(2021, 5, 1), injection=True)
+        pr_tbl = make_prescription(date(2021, 5, 1), injection=False)
+        assert is_valid_prescription(pr_inj, every_config) is True
+        assert is_valid_prescription(pr_tbl, every_config) is True
 
 
 # ===================================================================
@@ -218,51 +261,51 @@ class TestSumBeforeDatePe:
     Window: (ddate - 365, ddate) — both boundaries exclusive.
     """
 
-    def test_basic_sum(self):
+    def test_basic_sum(self, default_config):
         person = make_person(
             prescriptions=[
                 make_prescription(date(2021, 3, 1), pe=100.0),
                 make_prescription(date(2021, 4, 1), pe=50.0),
             ]
         )
-        result = sum_before_date_pe_for_person(person, date(2021, 6, 1))
+        result = sum_before_date_pe_for_person(person, date(2021, 6, 1), default_config)
         assert result == 150.0
 
-    def test_excludes_injections(self):
+    def test_excludes_injections(self, default_config):
         person = make_person(
             prescriptions=[
                 make_prescription(date(2021, 3, 1), pe=100.0),
                 make_prescription(date(2021, 4, 1), pe=200.0, injection=True),
             ]
         )
-        result = sum_before_date_pe_for_person(person, date(2021, 6, 1))
+        result = sum_before_date_pe_for_person(person, date(2021, 6, 1), default_config)
         assert result == 100.0
 
-    def test_excludes_prescription_on_exact_date(self):
+    def test_excludes_prescription_on_exact_date(self, default_config):
         """Prescription exactly on ddate is excluded (open upper bound)."""
         person = make_person(
             prescriptions=[make_prescription(date(2021, 6, 1), pe=100.0)]
         )
-        result = sum_before_date_pe_for_person(person, date(2021, 6, 1))
+        result = sum_before_date_pe_for_person(person, date(2021, 6, 1), default_config)
         assert result == 0.0
 
-    def test_excludes_prescription_exactly_365_days_before(self):
+    def test_excludes_prescription_exactly_365_days_before(self, default_config):
         """Prescription exactly 365 days before ddate is excluded (open lower bound)."""
         anchor = date(2021, 6, 1)
         pr_date = anchor - timedelta(days=365)
         person = make_person(prescriptions=[make_prescription(pr_date, pe=100.0)])
-        result = sum_before_date_pe_for_person(person, anchor)
+        result = sum_before_date_pe_for_person(person, anchor, default_config)
         assert result == 0.0
 
-    def test_includes_prescription_364_days_before(self):
+    def test_includes_prescription_364_days_before(self, default_config):
         """Prescription 364 days before ddate is inside the window."""
         anchor = date(2021, 6, 1)
         pr_date = anchor - timedelta(days=364)
         person = make_person(prescriptions=[make_prescription(pr_date, pe=100.0)])
-        result = sum_before_date_pe_for_person(person, anchor)
+        result = sum_before_date_pe_for_person(person, anchor, default_config)
         assert result == 100.0
 
-    def test_excludes_prescriptions_outside_window(self):
+    def test_excludes_prescriptions_outside_window(self, default_config):
         anchor = date(2021, 6, 1)
         person = make_person(
             prescriptions=[
@@ -270,7 +313,7 @@ class TestSumBeforeDatePe:
                 make_prescription(anchor + timedelta(days=1), pe=888.0),
             ]
         )
-        result = sum_before_date_pe_for_person(person, anchor)
+        result = sum_before_date_pe_for_person(person, anchor, default_config)
         assert result == 0.0
 
 
@@ -280,45 +323,45 @@ class TestSumAfterDatePe:
     Window: (ddate, ddate + 365) — both boundaries exclusive.
     """
 
-    def test_basic_sum(self):
+    def test_basic_sum(self, default_config):
         person = make_person(
             prescriptions=[
                 make_prescription(date(2021, 7, 1), pe=80.0),
                 make_prescription(date(2021, 8, 1), pe=20.0),
             ]
         )
-        result = sum_after_date_pe_for_person(person, date(2021, 6, 1))
+        result = sum_after_date_pe_for_person(person, date(2021, 6, 1), default_config)
         assert result == 100.0
 
-    def test_excludes_injections(self):
+    def test_excludes_injections(self, default_config):
         person = make_person(
             prescriptions=[
                 make_prescription(date(2021, 7, 1), pe=80.0),
                 make_prescription(date(2021, 8, 1), pe=200.0, injection=True),
             ]
         )
-        result = sum_after_date_pe_for_person(person, date(2021, 6, 1))
+        result = sum_after_date_pe_for_person(person, date(2021, 6, 1), default_config)
         assert result == 80.0
 
-    def test_excludes_prescription_on_exact_date(self):
+    def test_excludes_prescription_on_exact_date(self, default_config):
         """Prescription exactly on ddate is excluded (open lower bound)."""
         person = make_person(
             prescriptions=[make_prescription(date(2021, 6, 1), pe=100.0)]
         )
-        result = sum_after_date_pe_for_person(person, date(2021, 6, 1))
+        result = sum_after_date_pe_for_person(person, date(2021, 6, 1), default_config)
         assert result == 0.0
 
-    def test_excludes_prescription_exactly_365_days_after(self):
+    def test_excludes_prescription_exactly_365_days_after(self, default_config):
         """Prescription exactly 365 days after ddate is excluded (open upper bound)."""
         anchor = date(2021, 6, 1)
         pr_date = anchor + timedelta(days=365)
         person = make_person(prescriptions=[make_prescription(pr_date, pe=100.0)])
-        result = sum_after_date_pe_for_person(person, anchor)
+        result = sum_after_date_pe_for_person(person, anchor, default_config)
         assert result == 0.0
 
-    def test_includes_prescription_364_days_after(self):
+    def test_includes_prescription_364_days_after(self, default_config):
         anchor = date(2021, 6, 1)
         pr_date = anchor + timedelta(days=364)
         person = make_person(prescriptions=[make_prescription(pr_date, pe=100.0)])
-        result = sum_after_date_pe_for_person(person, anchor)
+        result = sum_after_date_pe_for_person(person, anchor, default_config)
         assert result == 100.0

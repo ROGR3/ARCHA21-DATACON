@@ -7,7 +7,7 @@ from common.matching_simulation.utils import (
     MatchingAnalysisConfig,
     PeMap,
     PeMapInternal,
-    is_injection,
+    is_valid_prescription,
     has_prescriptions_before_date,
     from_prednison_equiv,
     AgeCohortCalculator,
@@ -48,7 +48,7 @@ class PrednisonWindowsComputer:
             person_prescriptions = [
                 pr
                 for pr in sorted(person.prescriptions, key=lambda pr: pr.date)
-                if not (is_injection(pr))
+                if (is_valid_prescription(pr, self.__config))
             ]
             if not person_prescriptions:
                 for anchor in vax_anchor_dates:

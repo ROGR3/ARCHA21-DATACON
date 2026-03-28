@@ -25,8 +25,10 @@ def main():
         zacatek_pojisteni=date(2015, 1, 1),
         konec_pojisteni=date(2023, 12, 31),
         year_offset=3,
-        use_local_cache=True,
+        use_local_cache=False,
         use_unified_effect_baseline=False,
+        inj_analysis=True,
+        every_prescription_analysis=False,
     )
     data_loader = DataLoader(config)
     age_cohort_calculator = AgeCohortCalculator(config)
@@ -57,6 +59,8 @@ def main():
                 ci_map,
                 vax_effects_median,
                 novax_effects_median,
+                vax_effects_ci,
+                novax_effects_ci,
             ) = matching_analyser.run_matching_analysis(
                 people=group,
                 person_map=data_loader.person_map,
@@ -77,6 +81,8 @@ def main():
                 aggregation_days=aggregation_days,
                 vax_effects_median=vax_effects_median,
                 novax_effects_median=novax_effects_median,
+                vax_effects_ci=vax_effects_ci,
+                novax_effects_ci=novax_effects_ci,
             )
 
 

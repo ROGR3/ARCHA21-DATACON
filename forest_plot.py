@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 EFFECT_BASELINE = "different_effect_baseline"  # "unified_effect_baseline" or "different_effect_baseline"
 
-BASE = Path(f"out/cpzp/matching_analysis/{EFFECT_BASELINE}")
+BASE = Path(f"out/cpzp/matching_analysis/every_prescription_analysis/{EFFECT_BASELINE}")
 
 PERIODS = [
     ("3_years_back_matching_analysis", "3 roky zpět"),

@@ -119,7 +119,7 @@ impl Config {
         match self.inj_mode {
             InjMode::InjOnly => "inj_analysis",
             InjMode::All => "every_prescription_analysis",
-            InjMode::NonInj => "",
+            InjMode::NonInj => "non_inj_analysis",
         }
     }
 

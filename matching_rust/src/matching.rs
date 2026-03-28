@@ -31,6 +31,8 @@ pub struct SpecialtyResult {
     pub novax_median: EffectMap,
     pub vax_ci: CiMap,
     pub novax_ci: CiMap,
+    /// How many vax persons in each cohort have at least one prescription from this specialty
+    pub person_count: HashMap<AgeCohort, u64>,
 }
 
 // ---------------------------------------------------------------------------
@@ -113,6 +115,32 @@ pub fn run_matching_analysis(
         })
         .collect();
 
+    // Per-specialty person counts: how many vax persons have ≥1 prescription
+    // from each specialty (deterministic, computed once).
+    let spec_person_counts: HashMap<SpecialtyGroup, HashMap<AgeCohort, u64>> = if spec {
+        let mut counts: HashMap<SpecialtyGroup, HashMap<AgeCohort, u64>> = HashMap::new();
+        for vd in &vax_data {
+            let p = &persons[vd.person_idx];
+            let vax_date = vd.vax_date;
+            let start = vax_date - chrono::Duration::days(365);
+            let end = vax_date + chrono::Duration::days(365);
+            for &sg in &SpecialtyGroup::ALL {
+                let has_any = p.prescriptions.iter().any(|pr| {
+                    inj_mode.matches(pr)
+                        && pr.specialty == sg
+                        && pr.date > start
+                        && pr.date < end
+                });
+                if has_any {
+                    *counts.entry(sg).or_default().entry(vd.ac).or_default() += 1;
+                }
+            }
+        }
+        counts
+    } else {
+        HashMap::new()
+    };
+
     eprintln!(
         "    {} vax persons ready for matching ({} runs × {} threads)",
         vax_data.len(),
@@ -162,11 +190,13 @@ pub fn run_matching_analysis(
             let empty: ValueLists = HashMap::new();
             let sv = sv.unwrap_or(&empty);
             let sn = sn.unwrap_or(&empty);
+            let pc = spec_person_counts.get(&sg).cloned().unwrap_or_default();
             map.insert(sg, SpecialtyResult {
                 vax_median: compute_median(sv),
                 novax_median: compute_median(sn),
                 vax_ci: compute_percentiles(sv, 2.5, 97.5),
                 novax_ci: compute_percentiles(sn, 2.5, 97.5),
+                person_count: pc,
             });
         }
         Some(map)

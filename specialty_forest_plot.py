@@ -14,7 +14,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 EFFECT_BASELINE = "different_effect_baseline"
-BASE = Path(f"out/cpzp/matching_analysis/inj_analysis/{EFFECT_BASELINE}")
+BASE = Path(f"out/cpzp/matching_analysis/non_inj_analysis/{EFFECT_BASELINE}")
 
 PERIODS = [
     ("3_years_back_matching_analysis", "3 roky zpět"),
@@ -133,15 +133,27 @@ def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes):
                 if vax_ci is not None:
                     lo, hi = vax_ci
                     ax.errorbar(
-                        vax_val, y,
+                        vax_val,
+                        y,
                         xerr=[[max(0, vax_val - lo)], [max(0, hi - vax_val)]],
-                        fmt=marker, color=VAX_COLOR, markersize=style["ms"],
-                        capsize=2.5, linewidth=1, markeredgewidth=1.2,
+                        fmt=marker,
+                        color=VAX_COLOR,
+                        markersize=style["ms"],
+                        capsize=2.5,
+                        linewidth=1,
+                        markeredgewidth=1.2,
                     )
                     rightmost = max(rightmost, hi)
                 else:
-                    ax.plot(vax_val, y, marker=marker, color=VAX_COLOR,
-                            markersize=style["ms"], linestyle="None", markeredgewidth=1.2)
+                    ax.plot(
+                        vax_val,
+                        y,
+                        marker=marker,
+                        color=VAX_COLOR,
+                        markersize=style["ms"],
+                        linestyle="None",
+                        markeredgewidth=1.2,
+                    )
                     rightmost = max(rightmost, vax_val)
 
             if novax_val is not None:
@@ -149,25 +161,43 @@ def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes):
                 if novax_ci is not None:
                     lo, hi = novax_ci
                     ax.errorbar(
-                        novax_val, y,
+                        novax_val,
+                        y,
                         xerr=[[max(0, novax_val - lo)], [max(0, hi - novax_val)]],
-                        fmt=marker, color=NOVAX_COLOR, markersize=style["ms"],
-                        capsize=2.5, linewidth=1, markeredgewidth=1.2,
+                        fmt=marker,
+                        color=NOVAX_COLOR,
+                        markersize=style["ms"],
+                        capsize=2.5,
+                        linewidth=1,
+                        markeredgewidth=1.2,
                         fillstyle="none",
                     )
                     rightmost = max(rightmost, hi)
                 else:
-                    ax.plot(novax_val, y, marker=marker, color=NOVAX_COLOR,
-                            markersize=style["ms"], linestyle="None",
-                            markeredgewidth=1.2, fillstyle="none")
+                    ax.plot(
+                        novax_val,
+                        y,
+                        marker=marker,
+                        color=NOVAX_COLOR,
+                        markersize=style["ms"],
+                        linestyle="None",
+                        markeredgewidth=1.2,
+                        fillstyle="none",
+                    )
                     rightmost = max(rightmost, novax_val)
 
             vax_count = entry.get("počet očko", 0)
+            spec_count = entry.get("počet u spec.", 0)
             if vax_count and rightmost != 0.0:
+                label = f"n={vax_count:,} ({spec_count:,} u spec.)".replace(",", "\u2009")
                 ax.annotate(
-                    _fmt_n(vax_count), (rightmost, y),
-                    textcoords="offset points", xytext=(5, 0),
-                    fontsize=5.5, color=style["color"], va="center",
+                    label,
+                    (rightmost, y),
+                    textcoords="offset points",
+                    xytext=(5, 0),
+                    fontsize=5.5,
+                    color=style["color"],
+                    va="center",
                 )
 
     yticks = []
@@ -188,7 +218,9 @@ def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes):
 
     ax.set_title(
         f"{BUCKET_LABELS[bucket]} — {SPEC_LABELS[spec]}",
-        fontsize=12, fontweight="bold", pad=10,
+        fontsize=12,
+        fontweight="bold",
+        pad=10,
     )
     ax.set_xlabel("Průměrné PE na osobu (po – před)", fontsize=9)
     ax.grid(axis="x", alpha=0.2, linewidth=0.5)
@@ -198,19 +230,41 @@ def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes):
 
 
 def main():
-    out_dir = BASE / "forest_plots"
+    out_dir = BASE / "forest_plots" / "per_spec"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     period_legend = [
-        plt.Line2D([0], [0], marker=s["marker"], color=s["color"],
-                    linestyle="None", markersize=s["ms"], label=label)
+        plt.Line2D(
+            [0],
+            [0],
+            marker=s["marker"],
+            color=s["color"],
+            linestyle="None",
+            markersize=s["ms"],
+            label=label,
+        )
         for (_, label), s in zip(PERIODS, PERIOD_STYLES)
     ]
     type_legend = [
-        plt.Line2D([0], [0], marker="o", color=VAX_COLOR, linestyle="None",
-                    markersize=5, label="Očkovaní (po–před)"),
-        plt.Line2D([0], [0], marker="o", color=NOVAX_COLOR, linestyle="None",
-                    markersize=4, fillstyle="none", label="Neočkovaní (po–před)"),
+        plt.Line2D(
+            [0],
+            [0],
+            marker="o",
+            color=VAX_COLOR,
+            linestyle="None",
+            markersize=5,
+            label="Očkovaní (po–před)",
+        ),
+        plt.Line2D(
+            [0],
+            [0],
+            marker="o",
+            color=NOVAX_COLOR,
+            linestyle="None",
+            markersize=4,
+            fillstyle="none",
+            label="Neočkovaní (po–před)",
+        ),
     ]
 
     for bucket in BUCKETS:

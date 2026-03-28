@@ -3,6 +3,7 @@
     "specializace": "ortopedie_chirurgie",
     "věk": "12-15",
     "počet očko": 4,
+    "počet u spec.": 0,
     "očko PE po-před": null,
     "očko 95% CI": null,
     "neočko PE po-před": null,
@@ -12,6 +13,7 @@
     "specializace": "ortopedie_chirurgie",
     "věk": "16-22",
     "počet očko": 20,
+    "počet u spec.": 0,
     "očko PE po-před": 0.0,
     "očko 95% CI": [
       0.0,
@@ -27,6 +29,7 @@
     "specializace": "ortopedie_chirurgie",
     "věk": "23-29",
     "počet očko": 66,
+    "počet u spec.": 7,
     "očko PE po-před": -88.13953488372093,
     "očko 95% CI": [
       -88.13953488372093,
@@ -34,7 +37,7 @@
     ],
     "neočko PE po-před": -61.395348837209305,
     "neočko 95% CI": [
-      -73.02325581395348,
+      -77.67441860465117,
       -61.395348837209305
     ]
   },
@@ -42,66 +45,71 @@
     "specializace": "ortopedie_chirurgie",
     "věk": "30-39",
     "počet očko": 143,
+    "počet u spec.": 23,
     "očko PE po-před": -67.52427184466019,
     "očko 95% CI": [
       -67.52427184466019,
       -67.52427184466019
     ],
-    "neočko PE po-před": -92.37864077669903,
+    "neočko PE po-před": -92.90655339805825,
     "neočko 95% CI": [
-      -114.70797936893204,
-      -69.73376820388351
+      -111.44417475728156,
+      -69.79535800970876
     ]
   },
   {
     "specializace": "ortopedie_chirurgie",
     "věk": "40-49",
     "počet očko": 451,
+    "počet u spec.": 128,
     "očko PE po-před": -135.06578947368422,
     "očko 95% CI": [
       -135.06578947368422,
       -135.06578947368422
     ],
-    "neočko PE po-před": -104.77704678362574,
+    "neočko PE po-před": -101.50950292397661,
     "neočko 95% CI": [
-      -133.7838998538012,
-      -76.82346491228071
+      -132.46144005847952,
+      -76.35857090643276
     ]
   },
   {
     "specializace": "ortopedie_chirurgie",
     "věk": "50-59",
     "počet očko": 553,
+    "počet u spec.": 208,
     "očko PE po-před": -145.99377962085308,
     "očko 95% CI": [
       -145.99377962085308,
       -145.99377962085308
     ],
-    "neočko PE po-před": -124.2031990521327,
+    "neočko PE po-před": -122.52962085308056,
     "neočko 95% CI": [
-      -145.8862559241706,
-      -102.40402843601898
+      -141.89292061611374,
+      -97.0619075829384
     ]
   },
   {
     "specializace": "ortopedie_chirurgie",
     "věk": "irrelevant",
     "počet očko": 1228,
+    "počet u spec.": 677,
     "očko PE po-před": -171.0459741550696,
     "očko 95% CI": [
       -171.0459741550696,
       -171.0459741550696
     ],
-    "neočko PE po-před": -139.45203777335985,
+    "neočko PE po-před": -139.1445079522863,
     "neočko 95% CI": [
-      -152.05119284294236,
-      -125.19685014910539
+      -154.43892892644135,
+      -123.94069955268391
     ]
   },
   {
     "specializace": "revmatologie",
     "věk": "12-15",
     "počet očko": 4,
+    "počet u spec.": 0,
     "očko PE po-před": null,
     "očko 95% CI": null,
     "neočko PE po-před": null,
@@ -111,6 +119,7 @@
     "specializace": "revmatologie",
     "věk": "16-22",
     "počet očko": 20,
+    "počet u spec.": 0,
     "očko PE po-před": 0.0,
     "očko 95% CI": [
       0.0,
@@ -126,6 +135,7 @@
     "specializace": "revmatologie",
     "věk": "23-29",
     "počet očko": 66,
+    "počet u spec.": 0,
     "očko PE po-před": 0.0,
     "očko 95% CI": [
       0.0,
@@ -141,14 +151,15 @@
     "specializace": "revmatologie",
     "věk": "30-39",
     "počet očko": 143,
+    "počet u spec.": 3,
     "očko PE po-před": -11.256067961165048,
     "očko 95% CI": [
       -11.256067961165048,
       -11.256067961165048
     ],
-    "neočko PE po-před": 1.8810679611650487,
+    "neočko PE po-před": 1.941747572815534,
     "neočko 95% CI": [
-      -2.2481796116504853,
+      -2.7518203883495147,
       4.368932038834951
     ]
   },
@@ -156,51 +167,55 @@
     "specializace": "revmatologie",
     "věk": "40-49",
     "počet očko": 451,
+    "počet u spec.": 16,
     "očko PE po-před": -8.859649122807017,
     "očko 95% CI": [
       -8.859649122807017,
       -8.859649122807017
     ],
-    "neočko PE po-před": -13.223684210526315,
+    "neočko PE po-před": -11.38888888888889,
     "neočko 95% CI": [
-      -20.079312865497077,
-      -5.734100877192985
+      -18.969298245614034,
+      -4.049890350877204
     ]
   },
   {
     "specializace": "revmatologie",
     "věk": "50-59",
     "počet očko": 553,
+    "počet u spec.": 41,
     "očko PE po-před": -28.19312796208531,
     "očko 95% CI": [
       -28.19312796208531,
       -28.19312796208531
     ],
-    "neočko PE po-před": -9.194312796208532,
+    "neočko PE po-před": -9.697867298578199,
     "neočko 95% CI": [
-      -13.999111374407583,
-      -5.642772511848342
+      -14.289395734597157,
+      -5.484597156398106
     ]
   },
   {
     "specializace": "revmatologie",
     "věk": "irrelevant",
     "počet očko": 1228,
+    "počet u spec.": 128,
     "očko PE po-před": -26.277335984095426,
     "očko 95% CI": [
       -26.277335984095426,
       -26.277335984095426
     ],
-    "neočko PE po-před": -17.547216699801194,
+    "neočko PE po-před": -17.42917495029821,
     "neočko 95% CI": [
-      -23.002298707753482,
-      -13.019010934393645
+      -21.979249502982107,
+      -12.847042743538777
     ]
   },
   {
     "specializace": "neurologie",
     "věk": "12-15",
     "počet očko": 4,
+    "počet u spec.": 0,
     "očko PE po-před": null,
     "očko 95% CI": null,
     "neočko PE po-před": null,
@@ -210,6 +225,7 @@
     "specializace": "neurologie",
     "věk": "16-22",
     "počet očko": 20,
+    "počet u spec.": 4,
     "očko PE po-před": 289.5833333333333,
     "očko 95% CI": [
       289.5833333333333,
@@ -225,81 +241,87 @@
     "specializace": "neurologie",
     "věk": "23-29",
     "počet očko": 66,
+    "počet u spec.": 21,
     "očko PE po-před": -475.53779069767444,
     "očko 95% CI": [
       -475.53779069767444,
       -475.53779069767444
     ],
-    "neočko PE po-před": -755.1526162790698,
+    "neočko PE po-před": -777.5726744186046,
     "neočko 95% CI": [
-      -1042.3092296511627,
-      -390.6867732558143
+      -1051.4825581395348,
+      -451.51162790697674
     ]
   },
   {
     "specializace": "neurologie",
     "věk": "30-39",
     "počet očko": 143,
+    "počet u spec.": 44,
     "očko PE po-před": -452.79126213592235,
     "očko 95% CI": [
       -452.79126213592235,
       -452.79126213592235
     ],
-    "neočko PE po-před": -579.4781553398059,
+    "neočko PE po-před": -570.497572815534,
     "neočko 95% CI": [
-      -768.341322815534,
-      -263.5477851941752
+      -771.0054611650485,
+      -384.6723300970875
     ]
   },
   {
     "specializace": "neurologie",
     "věk": "40-49",
     "počet očko": 451,
+    "počet u spec.": 103,
     "očko PE po-před": -272.3378106725146,
     "očko 95% CI": [
       -272.3378106725146,
       -272.3378106725146
     ],
-    "neočko PE po-před": -292.3611111111111,
+    "neočko PE po-před": -294.3731725146199,
     "neočko 95% CI": [
-      -376.94997258771934,
-      -200.8091648391813
+      -381.94846491228066,
+      -201.07721125731
     ]
   },
   {
     "specializace": "neurologie",
     "věk": "50-59",
     "počet očko": 553,
+    "počet u spec.": 116,
     "očko PE po-před": -167.63951421800948,
     "očko 95% CI": [
       -167.63951421800948,
       -167.63951421800948
     ],
-    "neočko PE po-před": -329.7748815165877,
+    "neočko PE po-před": -329.6771327014218,
     "neočko 95% CI": [
-      -348.6450681279621,
-      -311.52614040284357
+      -348.92091232227483,
+      -310.28273104265406
     ]
   },
   {
     "specializace": "neurologie",
     "věk": "irrelevant",
     "počet očko": 1228,
+    "počet u spec.": 186,
     "očko PE po-před": -44.886928429423456,
     "očko 95% CI": [
       -44.886928429423456,
       -44.886928429423456
     ],
-    "neočko PE po-před": -84.46011431411532,
+    "neočko PE po-před": -84.58685387673957,
     "neočko 95% CI": [
-      -95.61950173956262,
-      -75.39871707256461
+      -95.25765718190854,
+      -74.06979995029822
     ]
   },
   {
     "specializace": "praktik",
     "věk": "12-15",
     "počet očko": 4,
+    "počet u spec.": 0,
     "očko PE po-před": null,
     "očko 95% CI": null,
     "neočko PE po-před": null,
@@ -309,6 +331,7 @@
     "specializace": "praktik",
     "věk": "16-22",
     "počet očko": 20,
+    "počet u spec.": 0,
     "očko PE po-před": 0.0,
     "očko 95% CI": [
       0.0,
@@ -324,6 +347,7 @@
     "specializace": "praktik",
     "věk": "23-29",
     "počet očko": 66,
+    "počet u spec.": 1,
     "očko PE po-před": -14.171511627906977,
     "očko 95% CI": [
       -14.171511627906977,
@@ -331,74 +355,79 @@
     ],
     "neočko PE po-před": -25.1453488372093,
     "neočko 95% CI": [
-      -81.3953488372093,
-      38.533793604651045
+      -96.04651162790697,
+      30.886627906976745
     ]
   },
   {
     "specializace": "praktik",
     "věk": "30-39",
     "počet očko": 143,
+    "počet u spec.": 12,
     "očko PE po-před": -55.2123786407767,
     "očko 95% CI": [
       -55.2123786407767,
       -55.2123786407767
     ],
-    "neočko PE po-před": -52.27245145631068,
+    "neočko PE po-před": -47.724514563106794,
     "neočko 95% CI": [
-      -130.29960558252426,
-      -2.454490291262137
+      -115.40427791262137,
+      5.679611650485321
     ]
   },
   {
     "specializace": "praktik",
     "věk": "40-49",
     "počet očko": 451,
+    "počet u spec.": 48,
     "očko PE po-před": -73.2328216374269,
     "očko 95% CI": [
       -73.2328216374269,
       -73.2328216374269
     ],
-    "neočko PE po-před": -33.5453216374269,
+    "neočko PE po-před": -35.46692251461988,
     "neočko 95% CI": [
-      -50.173565423976605,
-      -21.400173611111114
+      -52.42854532163743,
+      -23.58845029239766
     ]
   },
   {
     "specializace": "praktik",
     "věk": "50-59",
     "počet očko": 553,
+    "počet u spec.": 50,
     "očko PE po-před": -42.36226303317535,
     "očko 95% CI": [
       -42.36226303317535,
       -42.36226303317535
     ],
-    "neočko PE po-před": -45.01999407582939,
+    "neočko PE po-před": -46.06042654028436,
     "neočko 95% CI": [
-      -61.03761848341233,
-      -35.51584715639811
+      -57.549614928909946,
+      -32.934945201421826
     ]
   },
   {
     "specializace": "praktik",
     "věk": "irrelevant",
     "počet očko": 1228,
+    "počet u spec.": 97,
     "očko PE po-před": -36.339463220675945,
     "očko 95% CI": [
       -36.339463220675945,
       -36.339463220675945
     ],
-    "neočko PE po-před": -29.64804920477137,
+    "neočko PE po-před": -29.724465705765407,
     "neočko 95% CI": [
-      -36.8512208001988,
-      -22.65407554671968
+      -37.46095303180914,
+      -23.06239127733599
     ]
   },
   {
     "specializace": "gastroenterologie",
     "věk": "12-15",
     "počet očko": 4,
+    "počet u spec.": 0,
     "očko PE po-před": null,
     "očko 95% CI": null,
     "neočko PE po-před": null,
@@ -408,6 +437,7 @@
     "specializace": "gastroenterologie",
     "věk": "16-22",
     "počet očko": 20,
+    "počet u spec.": 0,
     "očko PE po-před": 0.0,
     "očko 95% CI": [
       0.0,
@@ -423,6 +453,7 @@
     "specializace": "gastroenterologie",
     "věk": "23-29",
     "počet očko": 66,
+    "počet u spec.": 0,
     "očko PE po-před": 0.0,
     "očko 95% CI": [
       0.0,
@@ -438,14 +469,15 @@
     "specializace": "gastroenterologie",
     "věk": "30-39",
     "počet očko": 143,
+    "počet u spec.": 2,
     "očko PE po-před": -0.5825242718446602,
     "očko 95% CI": [
       -0.5825242718446602,
       -0.5825242718446602
     ],
-    "neočko PE po-před": -6.353155339805825,
+    "neočko PE po-před": -6.49878640776699,
     "neočko 95% CI": [
-      -9.653367718446603,
+      -12.46359223300971,
       -0.3883495145631068
     ]
   },
@@ -453,6 +485,7 @@
     "specializace": "gastroenterologie",
     "věk": "40-49",
     "počet očko": 451,
+    "počet u spec.": 1,
     "očko PE po-před": 0.3508771929824561,
     "očko 95% CI": [
       0.3508771929824561,
@@ -460,7 +493,7 @@
     ],
     "neočko PE po-před": -0.9502923976608187,
     "neočko 95% CI": [
-      -1.9005847953216375,
+      -2.8508771929824563,
       0.0
     ]
   },
@@ -468,21 +501,23 @@
     "specializace": "gastroenterologie",
     "věk": "50-59",
     "počet očko": 553,
+    "počet u spec.": 2,
     "očko PE po-před": 0.0947867298578199,
     "očko 95% CI": [
       0.0947867298578199,
       0.0947867298578199
     ],
-    "neočko PE po-před": -0.7914691943127963,
+    "neočko PE po-před": -0.8744075829383886,
     "neočko 95% CI": [
-      -2.5575236966824644,
-      0.14218009478672985
+      -2.501718009478673,
+      0.0
     ]
   },
   {
     "specializace": "gastroenterologie",
     "věk": "irrelevant",
     "počet očko": 1228,
+    "počet u spec.": 1,
     "očko PE po-před": -0.5964214711729622,
     "očko 95% CI": [
       -0.5964214711729622,
@@ -498,6 +533,7 @@
     "specializace": "pneumo_ftizeo",
     "věk": "12-15",
     "počet očko": 4,
+    "počet u spec.": 0,
     "očko PE po-před": null,
     "očko 95% CI": null,
     "neočko PE po-před": null,
@@ -507,6 +543,7 @@
     "specializace": "pneumo_ftizeo",
     "věk": "16-22",
     "počet očko": 20,
+    "počet u spec.": 0,
     "očko PE po-před": 0.0,
     "očko 95% CI": [
       0.0,
@@ -522,6 +559,7 @@
     "specializace": "pneumo_ftizeo",
     "věk": "23-29",
     "počet očko": 66,
+    "počet u spec.": 1,
     "očko PE po-před": -20.930232558139537,
     "očko 95% CI": [
       -20.930232558139537,
@@ -537,6 +575,7 @@
     "specializace": "pneumo_ftizeo",
     "věk": "30-39",
     "počet očko": 143,
+    "počet u spec.": 3,
     "očko PE po-před": -12.330097087378642,
     "očko 95% CI": [
       -12.330097087378642,
@@ -552,51 +591,55 @@
     "specializace": "pneumo_ftizeo",
     "věk": "40-49",
     "počet očko": 451,
+    "počet u spec.": 9,
     "očko PE po-před": -5.33625730994152,
     "očko 95% CI": [
       -5.33625730994152,
       -5.33625730994152
     ],
-    "neočko PE po-před": -28.581871345029242,
+    "neočko PE po-před": -28.88888888888889,
     "neočko 95% CI": [
-      -40.307748538011694,
-      -18.92324561403509
+      -38.045321637426895,
+      -19.45540935672515
     ]
   },
   {
     "specializace": "pneumo_ftizeo",
     "věk": "50-59",
     "počet očko": 553,
+    "počet u spec.": 30,
     "očko PE po-před": -38.062796208530806,
     "očko 95% CI": [
       -38.062796208530806,
       -38.062796208530806
     ],
-    "neočko PE po-před": -30.1303317535545,
+    "neočko PE po-před": -30.9478672985782,
     "neočko 95% CI": [
-      -44.01836492890995,
-      -15.767180094786731
+      -43.29324644549763,
+      -20.997037914691944
     ]
   },
   {
     "specializace": "pneumo_ftizeo",
     "věk": "irrelevant",
     "počet očko": 1228,
+    "počet u spec.": 82,
     "očko PE po-před": -30.668489065606362,
     "očko 95% CI": [
       -30.668489065606366,
       -30.668489065606362
     ],
-    "neočko PE po-před": -25.41500994035785,
+    "neočko PE po-před": -25.6610337972167,
     "neočko 95% CI": [
-      -30.613568588469185,
-      -20.80367793240557
+      -31.119532803180917,
+      -21.008449304174952
     ]
   },
   {
     "specializace": "interna",
     "věk": "12-15",
     "počet očko": 4,
+    "počet u spec.": 0,
     "očko PE po-před": null,
     "očko 95% CI": null,
     "neočko PE po-před": null,
@@ -606,6 +649,7 @@
     "specializace": "interna",
     "věk": "16-22",
     "počet očko": 20,
+    "počet u spec.": 0,
     "očko PE po-před": 0.0,
     "očko 95% CI": [
       0.0,
@@ -621,6 +665,7 @@
     "specializace": "interna",
     "věk": "23-29",
     "počet očko": 66,
+    "počet u spec.": 3,
     "očko PE po-před": -19.767441860465116,
     "očko 95% CI": [
       -19.767441860465116,
@@ -628,7 +673,7 @@
     ],
     "neočko PE po-před": -43.02325581395349,
     "neočko 95% CI": [
-      -69.82558139534885,
+      -70.93023255813954,
       -29.069767441860463
     ]
   },
@@ -636,66 +681,71 @@
     "specializace": "interna",
     "věk": "30-39",
     "počet očko": 143,
+    "počet u spec.": 12,
     "očko PE po-před": -123.04611650485437,
     "očko 95% CI": [
       -123.04611650485437,
       -123.04611650485437
     ],
-    "neočko PE po-před": -40.60983009708738,
+    "neočko PE po-před": -40.849514563106794,
     "neočko 95% CI": [
-      -62.451001213592235,
-      -21.62833737864078
+      -73.52229975728156,
+      -23.859981796116507
     ]
   },
   {
     "specializace": "interna",
     "věk": "40-49",
     "počet očko": 451,
+    "počet u spec.": 29,
     "očko PE po-před": -26.607456140350877,
     "očko 95% CI": [
       -26.607456140350877,
       -26.607456140350877
     ],
-    "neočko PE po-před": -32.38304093567251,
+    "neočko PE po-před": -31.500365497076025,
     "neočko 95% CI": [
-      -57.28495065789474,
-      -5.036229897660825
+      -62.916666666666664,
+      -4.708881578947414
     ]
   },
   {
     "specializace": "interna",
     "věk": "50-59",
     "počet očko": 553,
+    "počet u spec.": 15,
     "očko PE po-před": -26.85574644549763,
     "očko 95% CI": [
       -26.85574644549763,
       -26.85574644549763
     ],
-    "neočko PE po-před": -16.531398104265403,
+    "neočko PE po-před": -18.05983412322275,
     "neočko 95% CI": [
-      -24.81860930094787,
-      -12.534619372037914
+      -26.51155213270142,
+      -10.29058056872038
     ]
   },
   {
     "specializace": "interna",
     "věk": "irrelevant",
     "počet očko": 1228,
+    "počet u spec.": 54,
     "očko PE po-před": -24.198682902584494,
     "očko 95% CI": [
       -24.198682902584494,
       -24.198682902584494
     ],
-    "neočko PE po-před": -5.1217693836978135,
+    "neočko PE po-před": -4.416003976143141,
     "neočko 95% CI": [
-      -10.7930541749503,
-      2.7352137176938354
+      -11.235322440357852,
+      2.435263419483099
     ]
   },
   {
     "specializace": "other",
     "věk": "12-15",
     "počet očko": 4,
+    "počet u spec.": 0,
     "očko PE po-před": null,
     "očko 95% CI": null,
     "neočko PE po-před": null,
@@ -705,6 +755,7 @@
     "specializace": "other",
     "věk": "16-22",
     "počet očko": 20,
+    "počet u spec.": 2,
     "očko PE po-před": -50.0,
     "očko 95% CI": [
       -50.0,
@@ -712,7 +763,7 @@
     ],
     "neočko PE po-před": 960.9375,
     "neočko 95% CI": [
-      957.6041666666666,
+      958.3463541666666,
       1062.5
     ]
   },
@@ -720,75 +771,80 @@
     "specializace": "other",
     "věk": "23-29",
     "počet očko": 66,
+    "počet u spec.": 18,
     "očko PE po-před": -197.13662790697674,
     "očko 95% CI": [
       -197.13662790697674,
       -197.13662790697674
     ],
-    "neočko PE po-před": -164.92732558139534,
+    "neočko PE po-před": -164.81831395348837,
     "neočko 95% CI": [
-      -204.2074854651163,
-      -127.78488372093025
+      -193.78488372093022,
+      -126.56976744186046
     ]
   },
   {
     "specializace": "other",
     "věk": "30-39",
     "počet očko": 143,
+    "počet u spec.": 28,
     "očko PE po-před": -177.4681432038835,
     "očko 95% CI": [
       -177.4681432038835,
       -177.4681432038835
     ],
-    "neočko PE po-před": -106.5260922330097,
+    "neočko PE po-před": -106.38349514563107,
     "neočko 95% CI": [
-      -136.09101941747574,
-      -76.31796116504856
+      -133.8334344660194,
+      -76.121359223301
     ]
   },
   {
     "specializace": "other",
     "věk": "40-49",
     "počet očko": 451,
+    "počet u spec.": 110,
     "očko PE po-před": -148.38815789473685,
     "očko 95% CI": [
       -148.38815789473685,
       -148.38815789473685
     ],
-    "neočko PE po-před": -190.09046052631578,
+    "neočko PE po-před": -190.77394005847952,
     "neočko 95% CI": [
-      -208.82064373172514,
-      -168.32879888523394
+      -211.1564670138889,
+      -165.50712719298247
     ]
   },
   {
     "specializace": "other",
     "věk": "50-59",
     "počet očko": 553,
+    "počet u spec.": 120,
     "očko PE po-před": -120.71423281990522,
     "očko 95% CI": [
       -120.71423281990522,
       -120.71423281990522
     ],
-    "neočko PE po-před": -88.905509478673,
+    "neočko PE po-před": -89.93927725118483,
     "neočko 95% CI": [
-      -105.84271327014218,
-      -71.9923356042654
+      -108.03247186018957,
+      -71.46512144549766
     ]
   },
   {
     "specializace": "other",
     "věk": "irrelevant",
     "počet očko": 1228,
+    "počet u spec.": 243,
     "očko PE po-před": -93.18343066600397,
     "očko 95% CI": [
       -93.18343066600397,
       -93.18343066600397
     ],
-    "neočko PE po-před": -153.9377795725646,
+    "neočko PE po-před": -154.68579150099401,
     "neočko 95% CI": [
-      -167.0339991302187,
-      -140.7991426441352
+      -165.4264141712227,
+      -140.75420912027835
     ]
   }
 ]

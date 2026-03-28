@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 EFFECT_BASELINE = "different_effect_baseline"  # "unified_effect_baseline" or "different_effect_baseline"
 
-BASE = Path(f"out/cpzp/matching_analysis/{EFFECT_BASELINE}")
+BASE = Path(f"out/cpzp/matching_analysis/inj_analysis/{EFFECT_BASELINE}")
 
 PERIODS = [
     ("3_years_back_matching_analysis", "3 roky zpět"),
@@ -84,7 +84,10 @@ def _fmt_n(n: int) -> str:
 
 
 def make_forest_plot(bucket: str, ax: plt.Axes):
-    ref_line = 1.0
+    if EFFECT_BASELINE == "unified_effect_baseline" or bucket in DIFF_BASELINE_RATIO_BUCKETS:
+        ref_line = 0.0
+    else:
+        ref_line = 1.0
 
     all_data = []
     for dir_name, label in PERIODS:
@@ -101,6 +104,8 @@ def make_forest_plot(bucket: str, ax: plt.Axes):
                 continue
             entry = data[age]
             med = entry["Med"]
+            if med is None or entry["95% CI"] is None:
+                continue
             ci_lo, ci_hi = entry["95% CI"]
             y = group_base + p_idx
 
@@ -176,35 +181,58 @@ def make_raw_effects_plot(bucket: str, ax: plt.Axes):
             y = group_base + p_idx
             marker = VAX_MARKERS[p_idx]
 
+            vax_ci = entry.get("očko 95% CI")
             if vax_val is not None:
-                ax.plot(
-                    vax_val,
-                    y,
-                    marker=marker,
-                    color=VAX_COLOR,
-                    markersize=5,
-                    linestyle="None",
-                    markeredgewidth=1.2,
-                )
+                if vax_ci is not None:
+                    ci_lo, ci_hi = vax_ci
+                    ax.errorbar(
+                        vax_val,
+                        y,
+                        xerr=[[vax_val - ci_lo], [ci_hi - vax_val]],
+                        fmt=marker,
+                        color=VAX_COLOR,
+                        markersize=5,
+                        capsize=2.5,
+                        linewidth=1,
+                        markeredgewidth=1.2,
+                    )
+                else:
+                    ax.plot(
+                        vax_val,
+                        y,
+                        marker=marker,
+                        color=VAX_COLOR,
+                        markersize=5,
+                        linestyle="None",
+                        markeredgewidth=1.2,
+                    )
+            novax_ci = entry.get("neočko 95% CI")
             if novax_val is not None:
-                ax.plot(
-                    novax_val,
-                    y,
-                    marker=marker,
-                    color=NOVAX_COLOR,
-                    markersize=5,
-                    linestyle="None",
-                    markeredgewidth=1.2,
-                    fillstyle="none",
-                )
-            if vax_val is not None and novax_val is not None:
-                ax.plot(
-                    [vax_val, novax_val],
-                    [y, y],
-                    color="#aaaaaa",
-                    linewidth=0.8,
-                    zorder=0,
-                )
+                if novax_ci is not None:
+                    ci_lo, ci_hi = novax_ci
+                    ax.errorbar(
+                        novax_val,
+                        y,
+                        xerr=[[novax_val - ci_lo], [ci_hi - novax_val]],
+                        fmt=marker,
+                        color=NOVAX_COLOR,
+                        markersize=5,
+                        capsize=2.5,
+                        linewidth=1,
+                        markeredgewidth=1.2,
+                        fillstyle="none",
+                    )
+                else:
+                    ax.plot(
+                        novax_val,
+                        y,
+                        marker=marker,
+                        color=NOVAX_COLOR,
+                        markersize=5,
+                        linestyle="None",
+                        markeredgewidth=1.2,
+                        fillstyle="none",
+                    )
 
     yticks = []
     ylabels = []

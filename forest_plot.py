@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 EFFECT_BASELINE = "different_effect_baseline"  # "unified_effect_baseline" or "different_effect_baseline"
 
-BASE = Path(f"out/cpzp/matching_analysis/inj_analysis/{EFFECT_BASELINE}")
+BASE = Path(f"out/cpzp/matching_analysis/{EFFECT_BASELINE}")
 
 PERIODS = [
     ("3_years_back_matching_analysis", "3 roky zpět"),
@@ -84,7 +84,10 @@ def _fmt_n(n: int) -> str:
 
 
 def make_forest_plot(bucket: str, ax: plt.Axes):
-    if EFFECT_BASELINE == "unified_effect_baseline" or bucket in DIFF_BASELINE_RATIO_BUCKETS:
+    if (
+        EFFECT_BASELINE == "unified_effect_baseline"
+        or bucket in DIFF_BASELINE_RATIO_BUCKETS
+    ):
         ref_line = 0.0
     else:
         ref_line = 1.0
@@ -188,7 +191,7 @@ def make_raw_effects_plot(bucket: str, ax: plt.Axes):
                     ax.errorbar(
                         vax_val,
                         y,
-                        xerr=[[vax_val - ci_lo], [ci_hi - vax_val]],
+                        xerr=[[max(0, vax_val - ci_lo)], [max(0, ci_hi - vax_val)]],
                         fmt=marker,
                         color=VAX_COLOR,
                         markersize=5,
@@ -213,7 +216,7 @@ def make_raw_effects_plot(bucket: str, ax: plt.Axes):
                     ax.errorbar(
                         novax_val,
                         y,
-                        xerr=[[novax_val - ci_lo], [ci_hi - novax_val]],
+                        xerr=[[max(0, novax_val - ci_lo)], [max(0, ci_hi - novax_val)]],
                         fmt=marker,
                         color=NOVAX_COLOR,
                         markersize=5,

@@ -45,6 +45,10 @@ pub struct Cli {
     /// Output directory for results
     #[arg(long, default_value = "./out")]
     pub out_dir: String,
+
+    /// Enable per-specialty PE decomposition
+    #[arg(long, default_value_t = false)]
+    pub specialty_analysis: bool,
 }
 
 /// Derived configuration used throughout the pipeline.
@@ -58,6 +62,7 @@ pub struct Config {
     pub num_runs: usize,
     pub data_dir: String,
     pub out_dir: String,
+    pub specialty_analysis: bool,
 }
 
 impl Config {
@@ -80,6 +85,7 @@ impl Config {
             num_runs: cli.num_runs,
             data_dir: cli.data_dir.clone(),
             out_dir: cli.out_dir.clone(),
+            specialty_analysis: cli.specialty_analysis,
         }
     }
 

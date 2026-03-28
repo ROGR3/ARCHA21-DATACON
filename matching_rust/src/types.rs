@@ -152,6 +152,83 @@ impl PeGroupName {
 }
 
 // ---------------------------------------------------------------------------
+// SpecialtyGroup – doctor specialty buckets
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+pub enum SpecialtyGroup {
+    #[serde(rename = "ortopedie_chirurgie")]
+    OrtopedieChirurgie,
+    #[serde(rename = "revmatologie")]
+    Revmatologie,
+    #[serde(rename = "neurologie")]
+    Neurologie,
+    #[serde(rename = "praktik")]
+    Praktik,
+    #[serde(rename = "gastroenterologie")]
+    Gastroenterologie,
+    #[serde(rename = "pneumo_ftizeo")]
+    PneumoFtizeo,
+    #[serde(rename = "interna")]
+    Interna,
+    #[serde(rename = "other")]
+    Other,
+}
+
+impl SpecialtyGroup {
+    pub fn from_raw(raw: &str) -> Self {
+        let lower = raw.to_lowercase();
+        if lower.contains("ortopedie")
+            || lower == "chirurgie"
+            || lower.contains("úrazová chirurgie")
+            || lower.contains("hrudní chirurgie")
+            || lower.contains("neurochirurgie")
+            || lower.contains("plastická chirurgie")
+        {
+            SpecialtyGroup::OrtopedieChirurgie
+        } else if lower.contains("revmatologie") {
+            SpecialtyGroup::Revmatologie
+        } else if lower == "neurologie" {
+            SpecialtyGroup::Neurologie
+        } else if lower.contains("praktické lékařství") || lower.contains("praktick") {
+            SpecialtyGroup::Praktik
+        } else if lower.contains("gastroenterologie") {
+            SpecialtyGroup::Gastroenterologie
+        } else if lower.contains("pneumologie") || lower.contains("ftizeologie") {
+            SpecialtyGroup::PneumoFtizeo
+        } else if lower.contains("vnitřní lékařství") || lower.contains("interna") {
+            SpecialtyGroup::Interna
+        } else {
+            SpecialtyGroup::Other
+        }
+    }
+
+    pub fn label(&self) -> &'static str {
+        match self {
+            SpecialtyGroup::OrtopedieChirurgie => "ortopedie_chirurgie",
+            SpecialtyGroup::Revmatologie => "revmatologie",
+            SpecialtyGroup::Neurologie => "neurologie",
+            SpecialtyGroup::Praktik => "praktik",
+            SpecialtyGroup::Gastroenterologie => "gastroenterologie",
+            SpecialtyGroup::PneumoFtizeo => "pneumo_ftizeo",
+            SpecialtyGroup::Interna => "interna",
+            SpecialtyGroup::Other => "other",
+        }
+    }
+
+    pub const ALL: [SpecialtyGroup; 8] = [
+        SpecialtyGroup::OrtopedieChirurgie,
+        SpecialtyGroup::Revmatologie,
+        SpecialtyGroup::Neurologie,
+        SpecialtyGroup::Praktik,
+        SpecialtyGroup::Gastroenterologie,
+        SpecialtyGroup::PneumoFtizeo,
+        SpecialtyGroup::Interna,
+        SpecialtyGroup::Other,
+    ];
+}
+
+// ---------------------------------------------------------------------------
 // Core domain structs
 // ---------------------------------------------------------------------------
 
@@ -160,6 +237,7 @@ pub struct Prescription {
     pub date: NaiveDate,
     pub prednison_equiv: f64,
     pub lekova_forma_zkr: Option<String>,
+    pub specialty: SpecialtyGroup,
 }
 
 #[derive(Debug, Clone)]
@@ -212,6 +290,36 @@ impl Person {
     #[allow(dead_code)]
     pub fn has_prescriptions_before(&self, anchor: NaiveDate) -> bool {
         self.prescriptions.iter().any(|p| p.date < anchor)
+    }
+
+    pub fn pe_before_by_specialty(
+        &self,
+        anchor: NaiveDate,
+        inj_mode: InjMode,
+    ) -> HashMap<SpecialtyGroup, f64> {
+        let start = anchor - chrono::Duration::days(365);
+        let mut map = HashMap::new();
+        for p in &self.prescriptions {
+            if inj_mode.matches(p) && p.date > start && p.date < anchor {
+                *map.entry(p.specialty).or_default() += p.prednison_equiv;
+            }
+        }
+        map
+    }
+
+    pub fn pe_after_by_specialty(
+        &self,
+        anchor: NaiveDate,
+        inj_mode: InjMode,
+    ) -> HashMap<SpecialtyGroup, f64> {
+        let end = anchor + chrono::Duration::days(365);
+        let mut map = HashMap::new();
+        for p in &self.prescriptions {
+            if inj_mode.matches(p) && p.date > anchor && p.date < end {
+                *map.entry(p.specialty).or_default() += p.prednison_equiv;
+            }
+        }
+        map
     }
 }
 

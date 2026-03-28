@@ -4,7 +4,7 @@ use std::path::Path;
 use chrono::NaiveDate;
 
 use crate::config::Config;
-use crate::types::{Gender, InjMode, PeGroupName, Person, PersonId, Prescription, Vaccine};
+use crate::types::{Gender, InjMode, PeGroupName, Person, PersonId, Prescription, SpecialtyGroup, Vaccine};
 
 // ---------------------------------------------------------------------------
 // CSV row – one row from the flat CSV file
@@ -21,6 +21,7 @@ struct RawRow {
     event_date: Option<NaiveDate>,
     atc_skupina: Option<String>,
     lekova_forma_zkr: Option<String>,
+    specializace: Option<String>,
     prednison_equiv: Option<f64>,
     pocet_baleni: Option<f64>,
     pocet_v_baleni: Option<f64>,
@@ -159,6 +160,7 @@ fn load_csv(path: &str, is_cpzp: bool, config: &Config) -> Vec<Person> {
     let baleni_col = col("Pocet_baleni");
     let v_baleni_col = col("Pocet_v_baleni");
     let sila_col = col("síla").or_else(|| col("sila"));
+    let spec_col = col("Specializace");
 
     // Accumulate raw rows grouped by person ID
     let mut groups: HashMap<String, Vec<RawRow>> = HashMap::new();
@@ -192,6 +194,7 @@ fn load_csv(path: &str, is_cpzp: bool, config: &Config) -> Vec<Person> {
             event_date: get_opt(Some(event_date_col)).and_then(|s| parse_date(&s)),
             atc_skupina: get_opt(atc_col),
             lekova_forma_zkr: get_opt(forma_col),
+            specializace: get_opt(spec_col),
             prednison_equiv: get_opt(pe_col).and_then(|s| s.parse().ok()),
             pocet_baleni: get_opt(baleni_col).and_then(|s| s.parse().ok()),
             pocet_v_baleni: get_opt(v_baleni_col).and_then(|s| s.parse().ok()),
@@ -259,10 +262,17 @@ fn build_person(
 
             let pe_value = compute_pe(&row.prednison_equiv, &row.pocet_baleni, &row.pocet_v_baleni, &row.sila);
 
+            let spec = row
+                .specializace
+                .as_deref()
+                .map(SpecialtyGroup::from_raw)
+                .unwrap_or(SpecialtyGroup::Other);
+
             prescriptions.push(Prescription {
                 date: event_date,
                 prednison_equiv: pe_value,
                 lekova_forma_zkr: row.lekova_forma_zkr.clone(),
+                specialty: spec,
             });
         } else if row.event_type.contains("vakcinace") {
             let mut date = event_date;

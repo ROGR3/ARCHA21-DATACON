@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use crate::config::Config;
 use crate::matching::MatchingResult;
-use crate::types::{AgeCohort, PeGroupName, Person};
+use crate::types::{AgeCohort, PeGroupName, Person, SpecialtyGroup};
 
 #[derive(Serialize)]
 struct SummaryRow {
@@ -27,6 +27,24 @@ struct SummaryRow {
     novax_effect: Option<f64>,
     #[serde(rename = "neočko 95% CI")]
     novax_effect_ci: Option<(f64, f64)>,
+}
+
+#[derive(Serialize)]
+struct SpecialtyRow {
+    #[serde(rename = "specializace")]
+    specialty: String,
+    #[serde(rename = "věk")]
+    age: String,
+    #[serde(rename = "počet očko")]
+    vax_count: u64,
+    #[serde(rename = "očko PE po-před")]
+    vax_pe: Option<f64>,
+    #[serde(rename = "očko 95% CI")]
+    vax_ci: Option<(f64, f64)>,
+    #[serde(rename = "neočko PE po-před")]
+    novax_pe: Option<f64>,
+    #[serde(rename = "neočko 95% CI")]
+    novax_ci: Option<(f64, f64)>,
 }
 
 pub fn write_results(
@@ -103,4 +121,34 @@ pub fn write_results(
     fs::write(&json_path, &json).expect("cannot write JSON");
 
     eprintln!("  wrote {}", json_path.display());
+
+    // Per-specialty JSON
+    if let Some(ref spec_map) = result.specialty {
+        let mut spec_rows: Vec<SpecialtyRow> = Vec::new();
+        for &sg in &SpecialtyGroup::ALL {
+            let sr = spec_map.get(&sg);
+            for &ac in &AgeCohort::ALL {
+                let get_first = |map: &crate::matching::EffectMap| -> Option<f64> {
+                    map.get(&ac).and_then(|dm| dm.values().next()).copied()
+                };
+                let get_first_ci = |map: &crate::matching::CiMap| -> Option<(f64, f64)> {
+                    map.get(&ac).and_then(|dm| dm.values().next()).copied()
+                };
+                spec_rows.push(SpecialtyRow {
+                    specialty: sg.label().to_string(),
+                    age: ac.label().to_string(),
+                    vax_count: *vax_counts.get(&ac).unwrap_or(&0),
+                    vax_pe: sr.and_then(|s| get_first(&s.vax_median)),
+                    vax_ci: sr.and_then(|s| get_first_ci(&s.vax_ci)),
+                    novax_pe: sr.and_then(|s| get_first(&s.novax_median)),
+                    novax_ci: sr.and_then(|s| get_first_ci(&s.novax_ci)),
+                });
+            }
+        }
+
+        let spec_path = Path::new(&folder).join("../specialty_effects.json");
+        let spec_json = serde_json::to_string_pretty(&spec_rows).expect("JSON failed");
+        fs::write(&spec_path, &spec_json).expect("cannot write specialty JSON");
+        eprintln!("  wrote {}", spec_path.display());
+    }
 }

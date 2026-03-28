@@ -14,7 +14,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 EFFECT_BASELINE = "different_effect_baseline"
-BASE = Path(f"out/cpzp/matching_analysis/non_inj_analysis/{EFFECT_BASELINE}")
+BASE = Path(f"out/cpzp/matching_analysis/every_prescription_analysis/{EFFECT_BASELINE}")
 
 PERIODS = [
     ("3_years_back_matching_analysis", "3 roky zpět"),
@@ -189,7 +189,9 @@ def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes):
             vax_count = entry.get("počet očko", 0)
             spec_count = entry.get("počet u spec.", 0)
             if vax_count and rightmost != 0.0:
-                label = f"n={vax_count:,} ({spec_count:,} u spec.)".replace(",", "\u2009")
+                label = f"n={vax_count:,} ({spec_count:,} u spec.)".replace(
+                    ",", "\u2009"
+                )
                 ax.annotate(
                     label,
                     (rightmost, y),

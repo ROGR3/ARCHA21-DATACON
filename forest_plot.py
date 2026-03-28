@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 EFFECT_BASELINE = "different_effect_baseline"  # "unified_effect_baseline" or "different_effect_baseline"
 
-BASE = Path(f"out/cpzp/matching_analysis/every_prescription_analysis/{EFFECT_BASELINE}")
+BASE = Path(f"out/cpzp/matching_analysis/non_inj_analysis/{EFFECT_BASELINE}")
 
 PERIODS = [
     ("3_years_back_matching_analysis", "3 roky zpět"),
@@ -274,6 +274,71 @@ def make_raw_effects_plot(bucket: str, ax: plt.Axes):
     ax.margins(x=0.15)
 
 
+VAX_PERIOD_IDX = 3  # "0_years_back_matching_analysis" = vaccination period
+
+
+def make_single_period_forest(bucket: str, ax: plt.Axes):
+    """Forest plot showing only the vaccination period (blue markers)."""
+    if (
+        EFFECT_BASELINE == "unified_effect_baseline"
+        or bucket in DIFF_BASELINE_RATIO_BUCKETS
+    ):
+        ref_line = 0.0
+    else:
+        ref_line = 1.0
+
+    dir_name, _ = PERIODS[VAX_PERIOD_IDX]
+    style = PERIOD_STYLES[VAX_PERIOD_IDX]
+    data = load_effects(BASE / dir_name / "whole_period", bucket)
+
+    for age_idx, age in enumerate(AGE_ORDER):
+        if data is None or age not in data:
+            continue
+        entry = data[age]
+        med = entry["Med"]
+        if med is None or entry["95% CI"] is None:
+            continue
+        ci_lo, ci_hi = entry["95% CI"]
+
+        ax.errorbar(
+            med,
+            age_idx,
+            xerr=[[max(0, med - ci_lo)], [max(0, ci_hi - med)]],
+            fmt=style["marker"],
+            color=style["color"],
+            markersize=style["ms"],
+            capsize=3,
+            linewidth=1.5,
+            markeredgewidth=1.5,
+        )
+        ax.annotate(
+            _fmt_n(entry["počet očko"]),
+            (ci_hi, age_idx),
+            textcoords="offset points",
+            xytext=(5, 0),
+            fontsize=7,
+            color=style["color"],
+            va="center",
+        )
+
+    ax.set_yticks(range(len(AGE_ORDER)))
+    ax.set_yticklabels([AGE_LABELS[a] for a in AGE_ORDER], fontsize=9)
+    ax.invert_yaxis()
+
+    ax.axvline(ref_line, color="grey", linestyle="--", linewidth=0.8, zorder=0)
+    ax.set_title(
+        f"{BUCKET_LABELS[bucket]} — očkovací období",
+        fontsize=12,
+        fontweight="bold",
+        pad=10,
+    )
+    ax.set_xlabel("Medián efektu (95% CI)", fontsize=9)
+    ax.grid(axis="x", alpha=0.2, linewidth=0.5)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.margins(x=0.15, y=0.1)
+
+
 def main():
     period_legend = [
         plt.Line2D(
@@ -367,6 +432,15 @@ def main():
         fig2.savefig(out_path2, dpi=200, bbox_inches="tight", facecolor="white")
         plt.close(fig2)
         print(f"Saved → {out_path2}")
+
+        # — vaccination-only forest plot —
+        fig3, ax3 = plt.subplots(figsize=(8, max(3, len(AGE_ORDER) * 0.7)))
+        make_single_period_forest(bucket, ax3)
+        fig3.tight_layout()
+        out_path3 = out_dir / f"no_history_forest_{bucket.lower()}.png"
+        fig3.savefig(out_path3, dpi=200, bbox_inches="tight", facecolor="white")
+        plt.close(fig3)
+        print(f"Saved → {out_path3}")
 
 
 if __name__ == "__main__":

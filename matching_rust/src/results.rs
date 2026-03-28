@@ -1,0 +1,106 @@
+use std::fs;
+use std::path::Path;
+
+use serde::Serialize;
+
+use crate::config::Config;
+use crate::matching::MatchingResult;
+use crate::types::{AgeCohort, PeGroupName, Person};
+
+#[derive(Serialize)]
+struct SummaryRow {
+    #[serde(rename = "věk")]
+    age: String,
+    #[serde(rename = "Med")]
+    median: Option<f64>,
+    #[serde(rename = "IQR")]
+    iqr: Option<(f64, f64)>,
+    #[serde(rename = "95% CI")]
+    ci: Option<(f64, f64)>,
+    #[serde(rename = "počet očko")]
+    vax_count: u64,
+    #[serde(rename = "očko po-před")]
+    vax_effect: Option<f64>,
+    #[serde(rename = "očko 95% CI")]
+    vax_effect_ci: Option<(f64, f64)>,
+    #[serde(rename = "neočko po-před")]
+    novax_effect: Option<f64>,
+    #[serde(rename = "neočko 95% CI")]
+    novax_effect_ci: Option<(f64, f64)>,
+}
+
+pub fn write_results(
+    result: &MatchingResult,
+    persons: &[Person],
+    group_indices: &[usize],
+    config: &Config,
+    group_name: PeGroupName,
+    aggregation_days: i32,
+) {
+    let inj_sub = config.inj_subfolder();
+    let effect_sub = config.effect_baseline_folder();
+    let year_back = format!("{}_years_back_matching_analysis", config.year_offset);
+
+    let out = &config.out_dir;
+    let folder = if inj_sub.is_empty() {
+        format!(
+            "{out}/{company}/matching_analysis/{effect_sub}/{year_back}/whole_period/{group}/{agg}_days_aggregation",
+            company = config.company,
+            group = group_name.label(),
+            agg = aggregation_days,
+        )
+    } else {
+        format!(
+            "{out}/{company}/matching_analysis/{inj_sub}/{effect_sub}/{year_back}/whole_period/{group}/{agg}_days_aggregation",
+            company = config.company,
+            group = group_name.label(),
+            agg = aggregation_days,
+        )
+    };
+
+    fs::create_dir_all(&folder).expect("cannot create output dir");
+
+    // Vax-date counts per cohort
+    let ref_year = config.year_for_age();
+    let mut vax_counts: std::collections::HashMap<AgeCohort, u64> = std::collections::HashMap::new();
+    for &idx in group_indices {
+        let ac = persons[idx].age_cohort(ref_year);
+        *vax_counts.entry(ac).or_default() += 1;
+    }
+
+    let rows: Vec<SummaryRow> = AgeCohort::ALL
+        .iter()
+        .map(|&ac| {
+            let get_first = |map: &crate::matching::EffectMap| -> Option<f64> {
+                map.get(&ac)
+                    .and_then(|dm| dm.values().next())
+                    .copied()
+            };
+            let get_first_ci = |map: &crate::matching::CiMap| -> Option<(f64, f64)> {
+                map.get(&ac)
+                    .and_then(|dm| dm.values().next())
+                    .copied()
+            };
+
+            SummaryRow {
+                age: ac.label().to_string(),
+                median: get_first(&result.median),
+                iqr: get_first_ci(&result.iqr),
+                ci: get_first_ci(&result.ci),
+                vax_count: *vax_counts.get(&ac).unwrap_or(&0),
+                vax_effect: get_first(&result.vax_median),
+                vax_effect_ci: get_first_ci(&result.vax_ci),
+                novax_effect: get_first(&result.novax_median),
+                novax_effect_ci: get_first_ci(&result.novax_ci),
+            }
+        })
+        .collect();
+
+    let json_path = Path::new(&folder).join("../effects_summary.json");
+    let parent = json_path.parent().unwrap();
+    fs::create_dir_all(parent).ok();
+    let json = serde_json::to_string(&rows).expect("JSON serialization failed");
+    fs::write(&json_path, &json).expect("cannot write JSON");
+
+    eprintln!("  wrote {}", json_path.display());
+}

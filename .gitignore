@@ -9,3 +9,4 @@ joined_*/
 !/out/ozp/*.csv
 !/out/both_companies/*.csv
 *.pkl
+matching_rust/target/

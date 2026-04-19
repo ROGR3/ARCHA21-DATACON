@@ -155,7 +155,7 @@ def make_spec_treatment_effect_plot(bucket: str, spec: str, ax: plt.Axes, *, bas
             ax.errorbar(
                 med,
                 y,
-                xerr=[[med - ci_lo], [ci_hi - med]],
+                xerr=[[max(0, med - ci_lo)], [max(0, ci_hi - med)]],
                 fmt=style["marker"],
                 color=style["color"],
                 markersize=style["ms"],

@@ -34,6 +34,9 @@ check tol="0.01" min_abs="0.01":
 snapshot:
     python check_results.py snapshot
 
+plot-specialty:
+    python specialty_forest_plot.py
+
 # generate all forest plots (main + per-specialty)
 plots:
     python forest_plot.py

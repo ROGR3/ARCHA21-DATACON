@@ -55,9 +55,10 @@ def _extract(row: dict, fields: dict) -> dict[str, float]:
     return out
 
 
-def collect_all() -> dict[str, float]:
-    """Walk all result JSONs and return a flat {key: value} dict."""
+def collect_all() -> tuple[dict[str, float], dict[str, int]]:
+    """Walk all result JSONs and return (flat values, group counts)."""
     flat: dict[str, float] = {}
+    counts: dict[str, int] = {}
 
     for jpath in sorted(ROOT.rglob("effects_summary.json")):
         prefix = _rel(jpath)
@@ -65,8 +66,10 @@ def collect_all() -> dict[str, float]:
             rows = json.load(f)
         for row in rows:
             age = row["věk"]
+            group = f"{prefix}::{age}"
+            counts[group] = int(row.get("počet očko", 0))
             for k, v in _extract(row, NUMERIC_FIELDS_SUMMARY).items():
-                flat[f"{prefix}::{age}::{k}"] = v
+                flat[f"{group}::{k}"] = v
 
     for jpath in sorted(ROOT.rglob("specialty_effects.json")):
         prefix = _rel(jpath)
@@ -75,10 +78,20 @@ def collect_all() -> dict[str, float]:
         for row in rows:
             spec = row["specializace"]
             age = row["věk"]
+            group = f"{prefix}::{spec}::{age}"
+            counts[group] = int(row.get("počet u spec.", 0))
             for k, v in _extract(row, NUMERIC_FIELDS_SPECIALTY).items():
-                flat[f"{prefix}::{spec}::{age}::{k}"] = v
+                flat[f"{group}::{k}"] = v
 
-    return flat
+    return flat, counts
+
+
+def _group_of(key: str) -> str:
+    """Strip the trailing field name to get the group prefix."""
+    # keys look like "path::age::field" or "path::spec::age::field"
+    # field can contain [] so we strip from the last known separator
+    parts = key.split("::")
+    return "::".join(parts[:-1])
 
 
 def rel_diff(a: float, b: float) -> float:
@@ -89,13 +102,15 @@ def rel_diff(a: float, b: float) -> float:
 
 
 def snapshot():
-    flat = collect_all()
+    flat, counts = collect_all()
     with open(BASELINE_FILE, "w") as f:
         json.dump(flat, f, indent=2, ensure_ascii=False)
     print(f"Baseline saved → {BASELINE_FILE}  ({len(flat):,} values)")
 
 
-def is_significant(old_val: float, new_val: float, tol: float, min_abs: float) -> tuple[bool, float]:
+def is_significant(
+    old_val: float, new_val: float, tol: float, min_abs: float
+) -> tuple[bool, float]:
     """Return (is_failing, rel_diff). Skip if absolute difference is below min_abs."""
     ad = abs(old_val - new_val)
     if ad <= min_abs:
@@ -104,7 +119,7 @@ def is_significant(old_val: float, new_val: float, tol: float, min_abs: float) -
     return rd > tol, rd
 
 
-def check(tol: float, min_abs: float):
+def check(tol: float, min_abs: float, min_n: int):
     if not BASELINE_FILE.exists():
         print(
             f"ERROR: {BASELINE_FILE} not found. Run 'snapshot' first.", file=sys.stderr
@@ -114,10 +129,11 @@ def check(tol: float, min_abs: float):
     with open(BASELINE_FILE) as f:
         baseline = json.load(f)
 
-    current = collect_all()
+    current, counts = collect_all()
 
     diffs = []
     skipped_small = 0
+    skipped_low_n = 0
     missing_in_current = []
     new_in_current = []
 
@@ -125,13 +141,19 @@ def check(tol: float, min_abs: float):
         if key not in current:
             missing_in_current.append(key)
             continue
+
+        group = _group_of(key)
+        n = counts.get(group, 0)
+        if n < min_n:
+            skipped_low_n += 1
+            continue
+
         new_val = current[key]
         failing, rd = is_significant(old_val, new_val, tol, min_abs)
         if failing:
-            diffs.append((key, old_val, new_val, rd, abs(old_val - new_val)))
+            diffs.append((key, old_val, new_val, rd, abs(old_val - new_val), n))
         elif abs(old_val - new_val) > 0 and not failing:
-            ad = abs(old_val - new_val)
-            if ad <= min_abs:
+            if abs(old_val - new_val) <= min_abs:
                 skipped_small += 1
 
     for key in current:
@@ -143,11 +165,13 @@ def check(tol: float, min_abs: float):
     if diffs:
         ok = False
         diffs.sort(key=lambda x: -x[4])
-        print(f"\n{'=' * 90}")
-        print(f"  FAIL: {len(diffs)} values differ by more than {tol:.0%} (with abs diff > {min_abs})")
-        print(f"{'=' * 90}\n")
-        for key, old, new, rd, ad in diffs[:50]:
-            print(f"  {rd:>7.2%}  Δ{ad:>10.4f}  {old:>14.6f} → {new:>14.6f}  {key}")
+        print(f"\n{'=' * 95}")
+        print(
+            f"  FAIL: {len(diffs)} values differ by more than {tol:.0%} (abs > {min_abs}, n >= {min_n})"
+        )
+        print(f"{'=' * 95}\n")
+        for key, old, new, rd, ad, n in diffs[:50]:
+            print(f"  {rd:>7.2%}  Δ{ad:>10.4f}  n={n:<6}  {old:>14.6f} → {new:>14.6f}  {key}")
         if len(diffs) > 50:
             print(f"  ... and {len(diffs) - 50} more")
 
@@ -163,7 +187,8 @@ def check(tol: float, min_abs: float):
 
     if new_in_current:
         print(
-            f"\n  INFO: {len(new_in_current)} new keys not in baseline (new fields/groups)")
+            f"\n  INFO: {len(new_in_current)} new keys not in baseline (new fields/groups)"
+        )
         for k in new_in_current[:10]:
             print(f"    + {k}")
         if len(new_in_current) > 10:
@@ -171,10 +196,15 @@ def check(tol: float, min_abs: float):
 
     total = len(baseline)
     if ok:
-        print(f"\n  OK: all {total:,} values within tolerance ✓")
-    print(f"  (tolerance: {tol:.0%} relative, {min_abs} minimum absolute diff)")
+        print(f"\n  OK: all checked values within tolerance ✓")
+    print(f"  (tolerance: {tol:.0%} relative, {min_abs} min abs diff, n >= {min_n})")
+    print(f"  ({total:,} total baseline values)")
+    if skipped_low_n:
+        print(f"  ({skipped_low_n:,} values skipped — group has n < {min_n})")
     if skipped_small:
-        print(f"  ({skipped_small:,} small diffs below abs threshold {min_abs} — ignored)")
+        print(
+            f"  ({skipped_small:,} small diffs below abs threshold {min_abs} — ignored)"
+        )
     print()
 
     if not ok:
@@ -198,12 +228,18 @@ def main():
         default=0.01,
         help="Ignore differences with absolute value below this (default 0.01)",
     )
+    chk.add_argument(
+        "--min-n",
+        type=int,
+        default=10,
+        help="Skip groups with fewer than N people (default 10)",
+    )
 
     args = parser.parse_args()
     if args.cmd == "snapshot":
         snapshot()
     elif args.cmd == "check":
-        check(args.tol, args.min_abs)
+        check(args.tol, args.min_abs, args.min_n)
     else:
         parser.print_help()
 

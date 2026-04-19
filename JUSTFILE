@@ -27,8 +27,8 @@ simulate: build
     echo "All simulations done."
 
 # compare current results against baseline
-check tol="0.01" min_abs="0.01":
-    python check_results.py check --tol {{tol}} --min-abs {{min_abs}}
+check tol="0.01" min_abs="0.01" min_n="120":
+    python check_results.py check --tol {{tol}} --min-abs {{min_abs}} --min-n {{min_n}}
 
 # save current results as new baseline
 snapshot:

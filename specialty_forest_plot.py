@@ -16,8 +16,29 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-EFFECT_BASELINE = "different_effect_baseline"
-BASE = Path(f"out/cpzp/matching_analysis/non_inj_analysis/{EFFECT_BASELINE}")
+ROOT = Path("out/cpzp/matching_analysis")
+
+ANALYSIS_MODES = [
+    "non_inj_analysis",
+    "inj_analysis",
+    "every_prescription_analysis",
+]
+
+EFFECT_BASELINES = [
+    "different_effect_baseline",
+    "unified_effect_baseline",
+]
+
+MODE_LABELS = {
+    "non_inj_analysis": "non-inj",
+    "inj_analysis": "inj",
+    "every_prescription_analysis": "every-rx",
+}
+
+BASELINE_LABELS = {
+    "different_effect_baseline": "diff-baseline",
+    "unified_effect_baseline": "uni-baseline",
+}
 
 PERIODS = [
     ("3_years_back_matching_analysis", "3 roky zpět"),
@@ -108,11 +129,11 @@ def load_specialty_data(directory: Path, bucket: str) -> dict | None:
     return result
 
 
-def make_spec_treatment_effect_plot(bucket: str, spec: str, ax: plt.Axes):
+def make_spec_treatment_effect_plot(bucket: str, spec: str, ax: plt.Axes, *, base: Path):
     """Treatment-effect forest plot for one specialty: Med + 95% CI across periods."""
     all_data = []
     for dir_name, _ in PERIODS:
-        d = load_specialty_data(BASE / dir_name / "whole_period", bucket)
+        d = load_specialty_data(base / dir_name / "whole_period", bucket)
         all_data.append(d)
 
     for age_idx, age in enumerate(AGE_ORDER):
@@ -188,11 +209,11 @@ def make_spec_treatment_effect_plot(bucket: str, spec: str, ax: plt.Axes):
     ax.margins(x=0.15)
 
 
-def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes):
+def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes, *, base: Path):
     """Forest plot for one specialty: 5 periods × age cohorts, vax + novax."""
     all_data = []
     for dir_name, _ in PERIODS:
-        d = load_specialty_data(BASE / dir_name / "whole_period", bucket)
+        d = load_specialty_data(base / dir_name / "whole_period", bucket)
         all_data.append(d)
 
     for age_idx, age in enumerate(AGE_ORDER):
@@ -320,9 +341,6 @@ def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes):
 
 
 def main():
-    out_dir = BASE / "forest_plots" / "per_spec"
-    out_dir.mkdir(parents=True, exist_ok=True)
-
     period_legend = [
         plt.Line2D(
             [0],
@@ -357,43 +375,52 @@ def main():
         ),
     ]
 
-    for bucket in BUCKETS:
-        for spec in SPECIALTIES:
-            fig_height = max(5, len(AGE_ORDER) * 1.8)
+    for mode in ANALYSIS_MODES:
+        for eb in EFFECT_BASELINES:
+            base = ROOT / mode / eb
+            if not base.exists():
+                continue
+            out_dir = base / "forest_plots" / "per_spec"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            tag = f"{MODE_LABELS[mode]}/{BASELINE_LABELS[eb]}"
 
-            # — treatment effect forest plot —
-            fig_te, ax_te = plt.subplots(figsize=(10, fig_height))
-            make_spec_treatment_effect_plot(bucket, spec, ax_te)
-            fig_te.legend(
-                handles=period_legend,
-                loc="upper right",
-                fontsize=7,
-                frameon=True,
-                fancybox=True,
-                edgecolor="#cccccc",
-            )
-            fig_te.tight_layout()
-            out_te = out_dir / f"spec_te_{spec}_{bucket.lower()}.png"
-            fig_te.savefig(out_te, dpi=200, bbox_inches="tight", facecolor="white")
-            plt.close(fig_te)
-            print(f"Saved → {out_te}")
+            for bucket in BUCKETS:
+                for spec in SPECIALTIES:
+                    fig_height = max(5, len(AGE_ORDER) * 1.8)
 
-            # — raw effects forest plot —
-            fig, ax = plt.subplots(figsize=(10, fig_height))
-            make_spec_period_plot(bucket, spec, ax)
-            fig.legend(
-                handles=period_legend + type_legend,
-                loc="upper right",
-                fontsize=7,
-                frameon=True,
-                fancybox=True,
-                edgecolor="#cccccc",
-            )
-            fig.tight_layout()
-            out_path = out_dir / f"spec_{spec}_{bucket.lower()}.png"
-            fig.savefig(out_path, dpi=200, bbox_inches="tight", facecolor="white")
-            plt.close(fig)
-            print(f"Saved → {out_path}")
+                    # — treatment effect forest plot —
+                    fig_te, ax_te = plt.subplots(figsize=(10, fig_height))
+                    make_spec_treatment_effect_plot(bucket, spec, ax_te, base=base)
+                    fig_te.legend(
+                        handles=period_legend,
+                        loc="upper right",
+                        fontsize=7,
+                        frameon=True,
+                        fancybox=True,
+                        edgecolor="#cccccc",
+                    )
+                    fig_te.tight_layout()
+                    out_te = out_dir / f"spec_te_{spec}_{bucket.lower()}.png"
+                    fig_te.savefig(out_te, dpi=200, bbox_inches="tight", facecolor="white")
+                    plt.close(fig_te)
+                    print(f"[{tag}] Saved → {out_te}")
+
+                    # — raw effects forest plot —
+                    fig, ax = plt.subplots(figsize=(10, fig_height))
+                    make_spec_period_plot(bucket, spec, ax, base=base)
+                    fig.legend(
+                        handles=period_legend + type_legend,
+                        loc="upper right",
+                        fontsize=7,
+                        frameon=True,
+                        fancybox=True,
+                        edgecolor="#cccccc",
+                    )
+                    fig.tight_layout()
+                    out_path = out_dir / f"spec_{spec}_{bucket.lower()}.png"
+                    fig.savefig(out_path, dpi=200, bbox_inches="tight", facecolor="white")
+                    plt.close(fig)
+                    print(f"[{tag}] Saved → {out_path}")
 
 
 if __name__ == "__main__":

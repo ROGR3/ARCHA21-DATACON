@@ -380,8 +380,11 @@ def main():
             base = ROOT / mode / eb
             if not base.exists():
                 continue
-            out_dir = base / "forest_plots" / "per_spec"
-            out_dir.mkdir(parents=True, exist_ok=True)
+            plots_root = base / "forest_plots" / "per_spec"
+            te_dir = plots_root / "treatment_effect"
+            raw_dir = plots_root / "raw_effects"
+            for d in (te_dir, raw_dir):
+                d.mkdir(parents=True, exist_ok=True)
             tag = f"{MODE_LABELS[mode]}/{BASELINE_LABELS[eb]}"
 
             for bucket in BUCKETS:
@@ -400,7 +403,7 @@ def main():
                         edgecolor="#cccccc",
                     )
                     fig_te.tight_layout()
-                    out_te = out_dir / f"spec_te_{spec}_{bucket.lower()}.png"
+                    out_te = te_dir / f"spec_{spec}_forest_{bucket.lower()}.png"
                     fig_te.savefig(out_te, dpi=200, bbox_inches="tight", facecolor="white")
                     plt.close(fig_te)
                     print(f"[{tag}] Saved → {out_te}")
@@ -417,7 +420,7 @@ def main():
                         edgecolor="#cccccc",
                     )
                     fig.tight_layout()
-                    out_path = out_dir / f"spec_{spec}_{bucket.lower()}.png"
+                    out_path = raw_dir / f"spec_{spec}_raw_effects_{bucket.lower()}.png"
                     fig.savefig(out_path, dpi=200, bbox_inches="tight", facecolor="white")
                     plt.close(fig)
                     print(f"[{tag}] Saved → {out_path}")

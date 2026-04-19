@@ -406,8 +406,12 @@ def main():
             base = ROOT / mode / eb
             if not base.exists():
                 continue
-            out_dir = base / "forest_plots"
-            out_dir.mkdir(parents=True, exist_ok=True)
+            plots_root = base / "forest_plots"
+            te_dir = plots_root / "treatment_effect"
+            raw_dir = plots_root / "raw_effects"
+            nh_dir = plots_root / "no_history"
+            for d in (te_dir, raw_dir, nh_dir):
+                d.mkdir(parents=True, exist_ok=True)
             tag = f"{MODE_LABELS[mode]}/{BASELINE_LABELS[eb]}"
 
             for bucket in BUCKETS:
@@ -426,7 +430,7 @@ def main():
                     edgecolor="#cccccc",
                 )
                 fig.tight_layout()
-                out_path = out_dir / f"forest_{bucket.lower()}.png"
+                out_path = te_dir / f"forest_{bucket.lower()}.png"
                 fig.savefig(out_path, dpi=200, bbox_inches="tight", facecolor="white")
                 plt.close(fig)
                 print(f"[{tag}] Saved → {out_path}")
@@ -456,7 +460,7 @@ def main():
                     edgecolor="#cccccc",
                 )
                 fig2.tight_layout()
-                out_path2 = out_dir / f"raw_effects_{bucket.lower()}.png"
+                out_path2 = raw_dir / f"raw_effects_{bucket.lower()}.png"
                 fig2.savefig(out_path2, dpi=200, bbox_inches="tight", facecolor="white")
                 plt.close(fig2)
                 print(f"[{tag}] Saved → {out_path2}")
@@ -465,7 +469,7 @@ def main():
                 fig3, ax3 = plt.subplots(figsize=(8, max(3, len(AGE_ORDER) * 0.7)))
                 make_single_period_forest(bucket, ax3, **kw)
                 fig3.tight_layout()
-                out_path3 = out_dir / f"no_history_forest_{bucket.lower()}.png"
+                out_path3 = nh_dir / f"no_history_forest_{bucket.lower()}.png"
                 fig3.savefig(out_path3, dpi=200, bbox_inches="tight", facecolor="white")
                 plt.close(fig3)
                 print(f"[{tag}] Saved → {out_path3}")

@@ -2,9 +2,10 @@
 Integration check for matching analysis results.
 
 Usage:
-    python check_results.py snapshot          # save current values as baseline
-    python check_results.py check             # compare current vs baseline (1% default)
-    python check_results.py check --tol 0.02  # custom tolerance (2%)
+    python check_results.py snapshot                    # save current values as baseline
+    python check_results.py check                      # compare (1% rel, 0.5 abs default)
+    python check_results.py check --tol 0.02           # custom relative tolerance (2%)
+    python check_results.py check --min-abs 1.0        # ignore abs diffs below 1.0
 """
 
 import argparse
@@ -93,9 +94,20 @@ def snapshot():
     print(f"Baseline saved → {BASELINE_FILE}  ({len(flat):,} values)")
 
 
-def check(tol: float):
+def is_significant(old_val: float, new_val: float, tol: float, min_abs: float) -> tuple[bool, float]:
+    """Return (is_failing, rel_diff). Skip if absolute difference is below min_abs."""
+    ad = abs(old_val - new_val)
+    if ad <= min_abs:
+        return False, 0.0
+    rd = rel_diff(old_val, new_val)
+    return rd > tol, rd
+
+
+def check(tol: float, min_abs: float):
     if not BASELINE_FILE.exists():
-        print(f"ERROR: {BASELINE_FILE} not found. Run 'snapshot' first.", file=sys.stderr)
+        print(
+            f"ERROR: {BASELINE_FILE} not found. Run 'snapshot' first.", file=sys.stderr
+        )
         sys.exit(1)
 
     with open(BASELINE_FILE) as f:
@@ -104,6 +116,7 @@ def check(tol: float):
     current = collect_all()
 
     diffs = []
+    skipped_small = 0
     missing_in_current = []
     new_in_current = []
 
@@ -112,9 +125,13 @@ def check(tol: float):
             missing_in_current.append(key)
             continue
         new_val = current[key]
-        rd = rel_diff(old_val, new_val)
-        if rd > tol:
-            diffs.append((key, old_val, new_val, rd))
+        failing, rd = is_significant(old_val, new_val, tol, min_abs)
+        if failing:
+            diffs.append((key, old_val, new_val, rd, abs(old_val - new_val)))
+        elif abs(old_val - new_val) > 0 and not failing:
+            ad = abs(old_val - new_val)
+            if ad <= min_abs:
+                skipped_small += 1
 
     for key in current:
         if key not in baseline:
@@ -124,34 +141,42 @@ def check(tol: float):
 
     if diffs:
         ok = False
-        diffs.sort(key=lambda x: -x[3])
-        print(f"\n{'='*80}")
-        print(f"  FAIL: {len(diffs)} values differ by more than {tol:.0%}")
-        print(f"{'='*80}\n")
-        for key, old, new, rd in diffs[:50]:
-            print(f"  {rd:>7.2%}  {old:>14.6f} → {new:>14.6f}  {key}")
+        diffs.sort(key=lambda x: -x[4])
+        print(f"\n{'=' * 90}")
+        print(f"  FAIL: {len(diffs)} values differ by more than {tol:.0%} (with abs diff > {min_abs})")
+        print(f"{'=' * 90}\n")
+        for key, old, new, rd, ad in diffs[:50]:
+            print(f"  {rd:>7.2%}  Δ{ad:>10.4f}  {old:>14.6f} → {new:>14.6f}  {key}")
         if len(diffs) > 50:
             print(f"  ... and {len(diffs) - 50} more")
 
     if missing_in_current:
         ok = False
-        print(f"\n  WARNING: {len(missing_in_current)} baseline keys missing in current results")
+        print(
+            f"\n  WARNING: {len(missing_in_current)} baseline keys missing in current results"
+        )
         for k in missing_in_current[:10]:
             print(f"    - {k}")
         if len(missing_in_current) > 10:
             print(f"    ... and {len(missing_in_current) - 10} more")
 
     if new_in_current:
-        print(f"\n  INFO: {len(new_in_current)} new keys not in baseline (new fields/groups)")
+        print(
+            f"\n  INFO: {len(new_in_current)} new keys not in baseline (new fields/groups)")
         for k in new_in_current[:10]:
             print(f"    + {k}")
         if len(new_in_current) > 10:
             print(f"    ... and {len(new_in_current) - 10} more")
 
+    total = len(baseline)
     if ok:
-        total = len(baseline)
-        print(f"\n  OK: all {total:,} values within {tol:.0%} tolerance ✓\n")
-    else:
+        print(f"\n  OK: all {total:,} values within tolerance ✓")
+    print(f"  (tolerance: {tol:.0%} relative, {min_abs} minimum absolute diff)")
+    if skipped_small:
+        print(f"  ({skipped_small:,} small diffs below abs threshold {min_abs} — ignored)")
+    print()
+
+    if not ok:
         sys.exit(1)
 
 
@@ -160,13 +185,24 @@ def main():
     sub = parser.add_subparsers(dest="cmd")
     sub.add_parser("snapshot", help="Save current results as baseline")
     chk = sub.add_parser("check", help="Compare current results against baseline")
-    chk.add_argument("--tol", type=float, default=0.01, help="Relative tolerance (default 0.01 = 1%%)")
+    chk.add_argument(
+        "--tol",
+        type=float,
+        default=0.01,
+        help="Relative tolerance (default 0.01 = 1%%)",
+    )
+    chk.add_argument(
+        "--min-abs",
+        type=float,
+        default=0.01,
+        help="Ignore differences with absolute value below this (default 0.01)",
+    )
 
     args = parser.parse_args()
     if args.cmd == "snapshot":
         snapshot()
     elif args.cmd == "check":
-        check(args.tol)
+        check(args.tol, args.min_abs)
     else:
         parser.print_help()
 

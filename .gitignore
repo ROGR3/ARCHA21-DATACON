@@ -10,3 +10,4 @@ joined_*/
 !/out/both_companies/*.csv
 *.pkl
 matching_rust/target/
+results_baseline.json

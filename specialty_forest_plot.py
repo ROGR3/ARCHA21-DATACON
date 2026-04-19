@@ -1,8 +1,11 @@
 """
 Per-specialty forest plots in the same style as forest_plot.py:
 5 periods (3y back → 1y forward) per age cohort, one file per
-(specialty × PE bucket). Shows vax (filled) and novax (open) PE change
-with 95% CI whiskers and sample size annotations.
+(specialty × PE bucket).
+
+Two plot types per (specialty × bucket):
+  1. Treatment effect (Med + 95% CI) — vax−novax PE difference per person
+  2. Raw vax (filled) and novax (open) PE change with 95% CI whiskers
 """
 
 import json
@@ -103,6 +106,86 @@ def load_specialty_data(directory: Path, bucket: str) -> dict | None:
         age = row["věk"]
         result.setdefault(spec, {})[age] = row
     return result
+
+
+def make_spec_treatment_effect_plot(bucket: str, spec: str, ax: plt.Axes):
+    """Treatment-effect forest plot for one specialty: Med + 95% CI across periods."""
+    all_data = []
+    for dir_name, _ in PERIODS:
+        d = load_specialty_data(BASE / dir_name / "whole_period", bucket)
+        all_data.append(d)
+
+    for age_idx, age in enumerate(AGE_ORDER):
+        group_base = age_idx * ROW_HEIGHT
+
+        for p_idx, (data, (_, plabel), style) in enumerate(
+            zip(all_data, PERIODS, PERIOD_STYLES)
+        ):
+            if data is None or spec not in data or age not in data[spec]:
+                continue
+            entry = data[spec][age]
+            med = entry.get("Med")
+            ci = entry.get("95% CI")
+            if med is None or ci is None:
+                continue
+            ci_lo, ci_hi = ci
+            y = group_base + p_idx
+
+            ax.errorbar(
+                med,
+                y,
+                xerr=[[med - ci_lo], [ci_hi - med]],
+                fmt=style["marker"],
+                color=style["color"],
+                markersize=style["ms"],
+                capsize=3,
+                linewidth=1.5,
+                markeredgewidth=1.5,
+            )
+
+            vax_count = entry.get("počet očko", 0)
+            spec_count = entry.get("počet u spec.", 0)
+            if vax_count:
+                label = f"n={vax_count:,} ({spec_count:,} u spec.)".replace(
+                    ",", "\u2009"
+                )
+                ax.annotate(
+                    label,
+                    (ci_hi, y),
+                    textcoords="offset points",
+                    xytext=(5, 0),
+                    fontsize=5.5,
+                    color=style["color"],
+                    va="center",
+                )
+
+    yticks = []
+    ylabels = []
+    for age_idx, age in enumerate(AGE_ORDER):
+        mid = age_idx * ROW_HEIGHT + (N_PERIODS - 1) / 2
+        yticks.append(mid)
+        ylabels.append(AGE_LABELS[age])
+
+    ax.set_yticks(yticks)
+    ax.set_yticklabels(ylabels, fontsize=9)
+    ax.invert_yaxis()
+    ax.axvline(0, color="grey", linestyle="--", linewidth=0.8, zorder=0)
+
+    for age_idx in range(len(AGE_ORDER) - 1):
+        sep_y = (age_idx + 1) * ROW_HEIGHT - 1
+        ax.axhline(sep_y, color="#dddddd", linestyle="-", linewidth=0.5, zorder=0)
+
+    ax.set_title(
+        f"{BUCKET_LABELS[bucket]} — {SPEC_LABELS[spec]} (treatment effect)",
+        fontsize=12,
+        fontweight="bold",
+        pad=10,
+    )
+    ax.set_xlabel("Medián efektu (95% CI) — PE na osobu (vax−novax)", fontsize=9)
+    ax.grid(axis="x", alpha=0.2, linewidth=0.5)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.margins(x=0.15)
 
 
 def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes):
@@ -277,6 +360,25 @@ def main():
     for bucket in BUCKETS:
         for spec in SPECIALTIES:
             fig_height = max(5, len(AGE_ORDER) * 1.8)
+
+            # — treatment effect forest plot —
+            fig_te, ax_te = plt.subplots(figsize=(10, fig_height))
+            make_spec_treatment_effect_plot(bucket, spec, ax_te)
+            fig_te.legend(
+                handles=period_legend,
+                loc="upper right",
+                fontsize=7,
+                frameon=True,
+                fancybox=True,
+                edgecolor="#cccccc",
+            )
+            fig_te.tight_layout()
+            out_te = out_dir / f"spec_te_{spec}_{bucket.lower()}.png"
+            fig_te.savefig(out_te, dpi=200, bbox_inches="tight", facecolor="white")
+            plt.close(fig_te)
+            print(f"Saved → {out_te}")
+
+            # — raw effects forest plot —
             fig, ax = plt.subplots(figsize=(10, fig_height))
             make_spec_period_plot(bucket, spec, ax)
             fig.legend(

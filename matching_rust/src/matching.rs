@@ -27,6 +27,8 @@ pub struct MatchingResult {
 }
 
 pub struct SpecialtyResult {
+    pub median: EffectMap,
+    pub ci: CiMap,
     pub vax_median: EffectMap,
     pub novax_median: EffectMap,
     pub vax_ci: CiMap,
@@ -48,6 +50,7 @@ struct RunResult {
     /// per-specialty vax/novax raw PE (only Some when specialty_analysis=true)
     spec_vax: Option<HashMap<SpecialtyGroup, FlatEffects>>,
     spec_novax: Option<HashMap<SpecialtyGroup, FlatEffects>>,
+    spec_effects: Option<HashMap<SpecialtyGroup, FlatEffects>>,
 }
 
 // ---------------------------------------------------------------------------
@@ -164,6 +167,7 @@ pub fn run_matching_analysis(
 
     let mut spec_vax_lists: HashMap<SpecialtyGroup, ValueLists> = HashMap::new();
     let mut spec_novax_lists: HashMap<SpecialtyGroup, ValueLists> = HashMap::new();
+    let mut spec_effects_lists: HashMap<SpecialtyGroup, ValueLists> = HashMap::new();
 
     for run in &all_runs {
         merge_into(&mut effects_lists, &run.effects);
@@ -180,18 +184,24 @@ pub fn run_matching_analysis(
                 merge_into(spec_novax_lists.entry(sg).or_default(), eff);
             }
         }
+        if let Some(se) = &run.spec_effects {
+            for (&sg, eff) in se {
+                merge_into(spec_effects_lists.entry(sg).or_default(), eff);
+            }
+        }
     }
 
     let specialty = if spec {
         let mut map = HashMap::new();
+        let empty: ValueLists = HashMap::new();
         for &sg in &SpecialtyGroup::ALL {
-            let sv = spec_vax_lists.get(&sg);
-            let sn = spec_novax_lists.get(&sg);
-            let empty: ValueLists = HashMap::new();
-            let sv = sv.unwrap_or(&empty);
-            let sn = sn.unwrap_or(&empty);
+            let sv = spec_vax_lists.get(&sg).unwrap_or(&empty);
+            let sn = spec_novax_lists.get(&sg).unwrap_or(&empty);
+            let se = spec_effects_lists.get(&sg).unwrap_or(&empty);
             let pc = spec_person_counts.get(&sg).cloned().unwrap_or_default();
             map.insert(sg, SpecialtyResult {
+                median: compute_median(se),
+                ci: compute_percentiles(se, 2.5, 97.5),
                 vax_median: compute_median(sv),
                 novax_median: compute_median(sn),
                 vax_ci: compute_percentiles(sv, 2.5, 97.5),
@@ -329,9 +339,11 @@ fn single_run(
     }
 
     // Compute per-specialty raw PE averages (per-person average = sum / count)
-    let (sv, sn) = if specialty_analysis {
+    // and per-specialty treatment effects (vax_diff - novax_diff)
+    let (sv, sn, se) = if specialty_analysis {
         let mut sv_out: HashMap<SpecialtyGroup, FlatEffects> = HashMap::new();
         let mut sn_out: HashMap<SpecialtyGroup, FlatEffects> = HashMap::new();
+        let mut se_out: HashMap<SpecialtyGroup, FlatEffects> = HashMap::new();
         for &sg in &SpecialtyGroup::ALL {
             let svb = spec_vax_before.get(&sg);
             let sva = spec_vax_after.get(&sg);
@@ -347,13 +359,16 @@ fn single_run(
                 let nb = snb.and_then(|m| m.get(&key)).copied().unwrap_or(0.0);
                 let na = sna.and_then(|m| m.get(&key)).copied().unwrap_or(0.0);
 
-                sv_out.entry(sg).or_default().entry(ac).or_default().insert(dt, (va - vb) / n);
-                sn_out.entry(sg).or_default().entry(ac).or_default().insert(dt, (na - nb) / n);
+                let vax_diff = (va - vb) / n;
+                let novax_diff = (na - nb) / n;
+                sv_out.entry(sg).or_default().entry(ac).or_default().insert(dt, vax_diff);
+                sn_out.entry(sg).or_default().entry(ac).or_default().insert(dt, novax_diff);
+                se_out.entry(sg).or_default().entry(ac).or_default().insert(dt, vax_diff - novax_diff);
             }
         }
-        (Some(sv_out), Some(sn_out))
+        (Some(sv_out), Some(sn_out), Some(se_out))
     } else {
-        (None, None)
+        (None, None, None)
     };
 
     RunResult {
@@ -362,6 +377,7 @@ fn single_run(
         novax_effects: novax_eff,
         spec_vax: sv,
         spec_novax: sn,
+        spec_effects: se,
     }
 }
 

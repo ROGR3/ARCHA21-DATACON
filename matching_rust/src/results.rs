@@ -39,6 +39,10 @@ struct SpecialtyRow {
     vax_count: u64,
     #[serde(rename = "počet u spec.")]
     spec_count: u64,
+    #[serde(rename = "Med")]
+    median: Option<f64>,
+    #[serde(rename = "95% CI")]
+    ci: Option<(f64, f64)>,
     #[serde(rename = "očko PE po-před")]
     vax_pe: Option<f64>,
     #[serde(rename = "očko 95% CI")]
@@ -144,6 +148,8 @@ pub fn write_results(
                     age: ac.label().to_string(),
                     vax_count: *vax_counts.get(&ac).unwrap_or(&0),
                     spec_count: sc,
+                    median: sr.and_then(|s| get_first(&s.median)),
+                    ci: sr.and_then(|s| get_first_ci(&s.ci)),
                     vax_pe: sr.and_then(|s| get_first(&s.vax_median)),
                     vax_ci: sr.and_then(|s| get_first_ci(&s.vax_ci)),
                     novax_pe: sr.and_then(|s| get_first(&s.novax_median)),

@@ -1,7 +1,7 @@
 set dotenv-load := false
 
 rust_dir := "matching_rust"
-common_args := "--company cpzp --num-runs 100 --data-dir ../DATACON_data --out-dir ../out --specialty-analysis"
+common_args := "--company cpzp --num-runs 100 --data-dir DATACON_data --out-dir out --specialty-analysis"
 
 # list available recipes
 default:

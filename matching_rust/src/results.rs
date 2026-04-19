@@ -19,6 +19,8 @@ struct SummaryRow {
     ci: Option<(f64, f64)>,
     #[serde(rename = "počet očko")]
     vax_count: u64,
+    #[serde(rename = "počet s PE po")]
+    vax_with_pe_after: u64,
     #[serde(rename = "očko po-před")]
     vax_effect: Option<f64>,
     #[serde(rename = "očko 95% CI")]
@@ -86,10 +88,18 @@ pub fn write_results(
 
     // Vax-date counts per cohort
     let ref_year = config.year_for_age();
+    let inj_mode = config.inj_mode;
     let mut vax_counts: std::collections::HashMap<AgeCohort, u64> = std::collections::HashMap::new();
+    let mut vax_pe_after: std::collections::HashMap<AgeCohort, u64> = std::collections::HashMap::new();
     for &idx in group_indices {
-        let ac = persons[idx].age_cohort(ref_year);
+        let p = &persons[idx];
+        let ac = p.age_cohort(ref_year);
         *vax_counts.entry(ac).or_default() += 1;
+        if let Some(vax_date) = p.first_vax_date() {
+            if p.pe_after(vax_date, inj_mode) > 0.0 {
+                *vax_pe_after.entry(ac).or_default() += 1;
+            }
+        }
     }
 
     let rows: Vec<SummaryRow> = AgeCohort::ALL
@@ -112,6 +122,7 @@ pub fn write_results(
                 iqr: get_first_ci(&result.iqr),
                 ci: get_first_ci(&result.ci),
                 vax_count: *vax_counts.get(&ac).unwrap_or(&0),
+                vax_with_pe_after: *vax_pe_after.get(&ac).unwrap_or(&0),
                 vax_effect: get_first(&result.vax_median),
                 vax_effect_ci: get_first_ci(&result.vax_ci),
                 novax_effect: get_first(&result.novax_median),

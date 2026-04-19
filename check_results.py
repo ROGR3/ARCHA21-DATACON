@@ -20,6 +20,7 @@ NUMERIC_FIELDS_SUMMARY = {
     "Med": "scalar",
     "IQR": "pair",
     "95% CI": "pair",
+    "počet s PE po": "scalar",
     "očko po-před": "scalar",
     "očko 95% CI": "pair",
     "neočko po-před": "scalar",

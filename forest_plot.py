@@ -144,12 +144,15 @@ def make_forest_plot(bucket: str, ax: plt.Axes, *, base: Path, effect_baseline: 
                 linewidth=1.5,
                 markeredgewidth=1.5,
             )
+            pe_after = entry.get("počet s PE po", 0)
+            vax_n = entry["počet očko"]
+            label = f"n={vax_n:,} ({pe_after:,} s PE po)".replace(",", "\u2009")
             ax.annotate(
-                _fmt_n(entry["počet očko"]),
+                label,
                 (ci_hi, y),
                 textcoords="offset points",
                 xytext=(5, 0),
-                fontsize=6,
+                fontsize=5.5,
                 color=style["color"],
                 va="center",
             )
@@ -332,12 +335,15 @@ def make_single_period_forest(bucket: str, ax: plt.Axes, *, base: Path, effect_b
             linewidth=1.5,
             markeredgewidth=1.5,
         )
+        pe_after = entry.get("počet s PE po", 0)
+        vax_n = entry["počet očko"]
+        label = f"n={vax_n:,} ({pe_after:,} s PE po)".replace(",", "\u2009")
         ax.annotate(
-            _fmt_n(entry["počet očko"]),
+            label,
             (ci_hi, age_idx),
             textcoords="offset points",
             xytext=(5, 0),
-            fontsize=7,
+            fontsize=6,
             color=style["color"],
             va="center",
         )

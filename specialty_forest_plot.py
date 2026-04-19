@@ -9,6 +9,7 @@ Two plot types per (specialty × bucket):
 """
 
 import json
+import multiprocessing as mp
 from pathlib import Path
 
 import matplotlib
@@ -340,8 +341,8 @@ def make_spec_period_plot(bucket: str, spec: str, ax: plt.Axes, *, base: Path):
     ax.margins(x=0.15)
 
 
-def main():
-    period_legend = [
+def _period_legend():
+    return [
         plt.Line2D(
             [0],
             [0],
@@ -353,7 +354,10 @@ def main():
         )
         for (_, label), s in zip(PERIODS, PERIOD_STYLES)
     ]
-    type_legend = [
+
+
+def _type_legend():
+    return [
         plt.Line2D(
             [0],
             [0],
@@ -375,6 +379,45 @@ def main():
         ),
     ]
 
+
+def _worker(job: tuple) -> str:
+    kind, bucket, spec, base_str, out_str = job
+    base = Path(base_str)
+    out_path = Path(out_str)
+    fig_height = max(5, len(AGE_ORDER) * 1.8)
+
+    if kind == "forest":
+        fig, ax = plt.subplots(figsize=(10, fig_height))
+        make_spec_treatment_effect_plot(bucket, spec, ax, base=base)
+        fig.legend(
+            handles=_period_legend(),
+            loc="upper right",
+            fontsize=7,
+            frameon=True,
+            fancybox=True,
+            edgecolor="#cccccc",
+        )
+    elif kind == "raw":
+        fig, ax = plt.subplots(figsize=(10, fig_height))
+        make_spec_period_plot(bucket, spec, ax, base=base)
+        fig.legend(
+            handles=_period_legend() + _type_legend(),
+            loc="upper right",
+            fontsize=7,
+            frameon=True,
+            fancybox=True,
+            edgecolor="#cccccc",
+        )
+
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=200, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    return str(out_path)
+
+
+def main():
+    jobs = []
+
     for mode in ANALYSIS_MODES:
         for eb in EFFECT_BASELINES:
             base = ROOT / mode / eb
@@ -385,45 +428,17 @@ def main():
             raw_dir = plots_root / "raw_effects"
             for d in (te_dir, raw_dir):
                 d.mkdir(parents=True, exist_ok=True)
-            tag = f"{MODE_LABELS[mode]}/{BASELINE_LABELS[eb]}"
 
+            bs = str(base)
             for bucket in BUCKETS:
                 for spec in SPECIALTIES:
-                    fig_height = max(5, len(AGE_ORDER) * 1.8)
+                    jobs.append(("forest", bucket, spec, bs, str(te_dir / f"spec_{spec}_forest_{bucket.lower()}.png")))
+                    jobs.append(("raw", bucket, spec, bs, str(raw_dir / f"spec_{spec}_raw_effects_{bucket.lower()}.png")))
 
-                    # — treatment effect forest plot —
-                    fig_te, ax_te = plt.subplots(figsize=(10, fig_height))
-                    make_spec_treatment_effect_plot(bucket, spec, ax_te, base=base)
-                    fig_te.legend(
-                        handles=period_legend,
-                        loc="upper right",
-                        fontsize=7,
-                        frameon=True,
-                        fancybox=True,
-                        edgecolor="#cccccc",
-                    )
-                    fig_te.tight_layout()
-                    out_te = te_dir / f"spec_{spec}_forest_{bucket.lower()}.png"
-                    fig_te.savefig(out_te, dpi=200, bbox_inches="tight", facecolor="white")
-                    plt.close(fig_te)
-                    print(f"[{tag}] Saved → {out_te}")
-
-                    # — raw effects forest plot —
-                    fig, ax = plt.subplots(figsize=(10, fig_height))
-                    make_spec_period_plot(bucket, spec, ax, base=base)
-                    fig.legend(
-                        handles=period_legend + type_legend,
-                        loc="upper right",
-                        fontsize=7,
-                        frameon=True,
-                        fancybox=True,
-                        edgecolor="#cccccc",
-                    )
-                    fig.tight_layout()
-                    out_path = raw_dir / f"spec_{spec}_raw_effects_{bucket.lower()}.png"
-                    fig.savefig(out_path, dpi=200, bbox_inches="tight", facecolor="white")
-                    plt.close(fig)
-                    print(f"[{tag}] Saved → {out_path}")
+    print(f"Generating {len(jobs)} plots across {mp.cpu_count()} cores...")
+    with mp.Pool() as pool:
+        for path in pool.imap_unordered(_worker, jobs):
+            print(f"  Saved → {path}")
 
 
 if __name__ == "__main__":

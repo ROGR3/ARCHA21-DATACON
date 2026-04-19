@@ -10,6 +10,7 @@ Two plot types per bucket:
 """
 
 import json
+import multiprocessing as mp
 from pathlib import Path
 
 import matplotlib
@@ -359,8 +360,8 @@ def make_single_period_forest(bucket: str, ax: plt.Axes, *, base: Path, effect_b
     ax.margins(x=0.15, y=0.1)
 
 
-def main():
-    period_legend = [
+def _period_legend():
+    return [
         plt.Line2D(
             [0],
             [0],
@@ -373,33 +374,89 @@ def main():
         for (_, label), s in zip(PERIODS, PERIOD_STYLES)
     ]
 
-    def _raw_legend(bucket: str, effect_baseline: str) -> list:
-        is_ratio = (
-            effect_baseline == "different_effect_baseline"
-            and bucket in DIFF_BASELINE_RATIO_BUCKETS
+
+def _raw_legend(bucket: str, effect_baseline: str) -> list:
+    is_ratio = (
+        effect_baseline == "different_effect_baseline"
+        and bucket in DIFF_BASELINE_RATIO_BUCKETS
+    )
+    op = "po/před" if is_ratio else "po–před"
+    return [
+        plt.Line2D(
+            [0],
+            [0],
+            marker="o",
+            color=VAX_COLOR,
+            linestyle="None",
+            markersize=5,
+            label=f"Očkovaní ({op})",
+        ),
+        plt.Line2D(
+            [0],
+            [0],
+            marker="o",
+            color=NOVAX_COLOR,
+            linestyle="None",
+            markersize=5,
+            fillstyle="none",
+            label=f"Neočkovaní ({op})",
+        ),
+    ]
+
+
+def _worker(job: tuple) -> str:
+    kind, bucket, base_str, eb, out_str = job
+    base = Path(base_str)
+    out_path = Path(out_str)
+    kw = dict(base=base, effect_baseline=eb)
+    fig_height = max(5, len(AGE_ORDER) * 1.8)
+
+    if kind == "forest":
+        fig, ax = plt.subplots(figsize=(10, fig_height))
+        make_forest_plot(bucket, ax, **kw)
+        fig.legend(
+            handles=_period_legend(),
+            loc="upper right",
+            fontsize=8,
+            frameon=True,
+            fancybox=True,
+            edgecolor="#cccccc",
         )
-        op = "po/před" if is_ratio else "po–před"
-        return [
+    elif kind == "raw":
+        fig, ax = plt.subplots(figsize=(10, fig_height))
+        make_raw_effects_plot(bucket, ax, **kw)
+        period_raw_legend = [
             plt.Line2D(
                 [0],
                 [0],
-                marker="o",
-                color=VAX_COLOR,
+                marker=VAX_MARKERS[i],
+                color="#555555",
                 linestyle="None",
                 markersize=5,
-                label=f"Očkovaní ({op})",
-            ),
-            plt.Line2D(
-                [0],
-                [0],
-                marker="o",
-                color=NOVAX_COLOR,
-                linestyle="None",
-                markersize=5,
-                fillstyle="none",
-                label=f"Neočkovaní ({op})",
-            ),
+                label=label,
+            )
+            for i, (_, label) in enumerate(PERIODS)
         ]
+        fig.legend(
+            handles=_raw_legend(bucket, eb) + period_raw_legend,
+            loc="upper right",
+            fontsize=8,
+            frameon=True,
+            fancybox=True,
+            edgecolor="#cccccc",
+        )
+    elif kind == "no_history":
+        fig, ax = plt.subplots(figsize=(8, max(3, len(AGE_ORDER) * 0.7)))
+        make_single_period_forest(bucket, ax, **kw)
+
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=200, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    return str(out_path)
+
+
+def main():
+    jobs = []
 
     for mode in ANALYSIS_MODES:
         for eb in EFFECT_BASELINES:
@@ -412,67 +469,17 @@ def main():
             nh_dir = plots_root / "no_history"
             for d in (te_dir, raw_dir, nh_dir):
                 d.mkdir(parents=True, exist_ok=True)
-            tag = f"{MODE_LABELS[mode]}/{BASELINE_LABELS[eb]}"
 
             for bucket in BUCKETS:
-                fig_height = max(5, len(AGE_ORDER) * 1.8)
-                kw = dict(base=base, effect_baseline=eb)
+                bs = str(base)
+                jobs.append(("forest", bucket, bs, eb, str(te_dir / f"forest_{bucket.lower()}.png")))
+                jobs.append(("raw", bucket, bs, eb, str(raw_dir / f"raw_effects_{bucket.lower()}.png")))
+                jobs.append(("no_history", bucket, bs, eb, str(nh_dir / f"no_history_forest_{bucket.lower()}.png")))
 
-                # — treatment effect forest plot —
-                fig, ax = plt.subplots(figsize=(10, fig_height))
-                make_forest_plot(bucket, ax, **kw)
-                fig.legend(
-                    handles=period_legend,
-                    loc="upper right",
-                    fontsize=8,
-                    frameon=True,
-                    fancybox=True,
-                    edgecolor="#cccccc",
-                )
-                fig.tight_layout()
-                out_path = te_dir / f"forest_{bucket.lower()}.png"
-                fig.savefig(out_path, dpi=200, bbox_inches="tight", facecolor="white")
-                plt.close(fig)
-                print(f"[{tag}] Saved → {out_path}")
-
-                # — raw vax/novax before→after plot —
-                fig2, ax2 = plt.subplots(figsize=(10, fig_height))
-                make_raw_effects_plot(bucket, ax2, **kw)
-
-                period_raw_legend = [
-                    plt.Line2D(
-                        [0],
-                        [0],
-                        marker=VAX_MARKERS[i],
-                        color="#555555",
-                        linestyle="None",
-                        markersize=5,
-                        label=label,
-                    )
-                    for i, (_, label) in enumerate(PERIODS)
-                ]
-                fig2.legend(
-                    handles=_raw_legend(bucket, eb) + period_raw_legend,
-                    loc="upper right",
-                    fontsize=8,
-                    frameon=True,
-                    fancybox=True,
-                    edgecolor="#cccccc",
-                )
-                fig2.tight_layout()
-                out_path2 = raw_dir / f"raw_effects_{bucket.lower()}.png"
-                fig2.savefig(out_path2, dpi=200, bbox_inches="tight", facecolor="white")
-                plt.close(fig2)
-                print(f"[{tag}] Saved → {out_path2}")
-
-                # — vaccination-only forest plot —
-                fig3, ax3 = plt.subplots(figsize=(8, max(3, len(AGE_ORDER) * 0.7)))
-                make_single_period_forest(bucket, ax3, **kw)
-                fig3.tight_layout()
-                out_path3 = nh_dir / f"no_history_forest_{bucket.lower()}.png"
-                fig3.savefig(out_path3, dpi=200, bbox_inches="tight", facecolor="white")
-                plt.close(fig3)
-                print(f"[{tag}] Saved → {out_path3}")
+    print(f"Generating {len(jobs)} plots across {mp.cpu_count()} cores...")
+    with mp.Pool() as pool:
+        for path in pool.imap_unordered(_worker, jobs):
+            print(f"  Saved → {path}")
 
 
 if __name__ == "__main__":

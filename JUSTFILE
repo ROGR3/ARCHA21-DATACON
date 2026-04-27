@@ -56,6 +56,12 @@ plots:
     python forest_plot.py
     python specialty_forest_plot.py
 
+# generate forest plots for the immuno-as-corticoid-500pe variant
+# plots land under out/cpzp/matching_analysis/immuno_as_corticoid_500pe/<mode>/<eb>/forest_plots/
+plots-immuno:
+    python forest_plot.py --variant immuno_as_corticoid_500pe
+    python specialty_forest_plot.py --variant immuno_as_corticoid_500pe
+
 # pretty-print all result JSONs (indent=2)
 fmt-json:
     find out/cpzp/matching_analysis -name "*.json" -exec python -c "import json,sys;p=sys.argv[1];d=json.load(open(p));json.dump(d,open(p,'w'),indent=2,ensure_ascii=False)" {} \;

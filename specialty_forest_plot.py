@@ -8,6 +8,7 @@ Two plot types per (specialty × bucket):
   2. Raw vax (filled) and novax (open) PE change with 95% CI whiskers
 """
 
+import argparse
 import json
 import multiprocessing as mp
 from pathlib import Path
@@ -416,11 +417,27 @@ def _worker(job: tuple) -> str:
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--variant",
+        default="",
+        help=(
+            "Optional subfolder under matching_analysis/ to plot from "
+            "(e.g. 'immuno_as_corticoid_500pe'). Plots land inside the same "
+            "variant subtree so they never overwrite the standard ones."
+        ),
+    )
+    args = parser.parse_args()
+
+    root = ROOT / args.variant if args.variant else ROOT
+    if args.variant:
+        print(f"Variant root: {root}")
+
     jobs = []
 
     for mode in ANALYSIS_MODES:
         for eb in EFFECT_BASELINES:
-            base = ROOT / mode / eb
+            base = root / mode / eb
             if not base.exists():
                 continue
             plots_root = base / "forest_plots" / "per_spec"

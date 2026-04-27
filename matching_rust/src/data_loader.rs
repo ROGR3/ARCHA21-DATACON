@@ -207,11 +207,12 @@ fn load_csv(path: &str, is_cpzp: bool, config: &Config) -> Vec<Person> {
     eprintln!("  parsed {} unique person IDs", groups.len());
 
     let day_offset = config.day_offset();
+    let immuno_as_corticoid_500pe = config.immuno_as_corticoid_500pe;
 
     groups
         .into_iter()
         .filter_map(|(id_str, rows)| {
-            build_person(&id_str, &rows, is_cpzp, day_offset)
+            build_person(&id_str, &rows, is_cpzp, day_offset, immuno_as_corticoid_500pe)
         })
         .collect()
 }
@@ -221,6 +222,7 @@ fn build_person(
     rows: &[RawRow],
     is_cpzp: bool,
     day_offset: chrono::Duration,
+    immuno_as_corticoid_500pe: bool,
 ) -> Option<Person> {
     let first = &rows[0];
 
@@ -258,9 +260,17 @@ fn build_person(
                 Some(a) if a.starts_with("H02") || a.starts_with("L04") => a.clone(),
                 _ => continue,
             };
-            let _ = atc;
+            let is_immuno = atc.starts_with("L04");
 
-            let pe_value = compute_pe(&row.prednison_equiv, &row.pocet_baleni, &row.pocet_v_baleni, &row.sila);
+            // When the immuno-as-corticoid override is on, every L04 prescription is
+            // counted as a 500 mg prednison-equivalent corticoid prescription. This
+            // is intentionally a coarse approximation so we get *some* picture of
+            // the cohort once immunosuppressives are folded in.
+            let pe_value = if immuno_as_corticoid_500pe && is_immuno {
+                500.0
+            } else {
+                compute_pe(&row.prednison_equiv, &row.pocet_baleni, &row.pocet_v_baleni, &row.sila)
+            };
 
             let spec = row
                 .specializace

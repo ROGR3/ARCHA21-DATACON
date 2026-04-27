@@ -65,24 +65,25 @@ pub fn write_results(
 ) {
     let inj_sub = config.inj_subfolder();
     let effect_sub = config.effect_baseline_folder();
+    let immuno_sub = config.immuno_subfolder();
     let year_back = format!("{}_years_back_matching_analysis", config.year_offset);
 
     let out = &config.out_dir;
-    let folder = if inj_sub.is_empty() {
-        format!(
-            "{out}/{company}/matching_analysis/{effect_sub}/{year_back}/whole_period/{group}/{agg}_days_aggregation",
-            company = config.company,
-            group = group_name.label(),
-            agg = aggregation_days,
-        )
-    } else {
-        format!(
-            "{out}/{company}/matching_analysis/{inj_sub}/{effect_sub}/{year_back}/whole_period/{group}/{agg}_days_aggregation",
-            company = config.company,
-            group = group_name.label(),
-            agg = aggregation_days,
-        )
+    let immuno_segment = match immuno_sub {
+        Some(s) => format!("{s}/"),
+        None => String::new(),
     };
+    let inj_segment = if inj_sub.is_empty() {
+        String::new()
+    } else {
+        format!("{inj_sub}/")
+    };
+    let folder = format!(
+        "{out}/{company}/matching_analysis/{immuno_segment}{inj_segment}{effect_sub}/{year_back}/whole_period/{group}/{agg}_days_aggregation",
+        company = config.company,
+        group = group_name.label(),
+        agg = aggregation_days,
+    );
 
     fs::create_dir_all(&folder).expect("cannot create output dir");
 

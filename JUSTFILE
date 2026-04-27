@@ -26,6 +26,20 @@ simulate: build
     done
     echo "All simulations done."
 
+# run the 5 non-INJ simulations with L04 immunosuppressives folded in as 500 PE corticoids
+# results land under out/<company>/matching_analysis/immuno_as_corticoid_500pe/non_inj_analysis/...
+simulate-immuno: build
+    #!/usr/bin/env bash
+    set -e
+    for offset in 3 2 1 0 -1; do
+        echo "========================================"
+        echo "Running (immuno-as-corticoid-500pe, non-inj): year-offset=$offset"
+        echo "========================================"
+        cargo run --release --manifest-path {{rust_dir}}/Cargo.toml -- {{common_args}} --immuno-as-corticoid-500pe --year-offset "$offset"
+        echo ""
+    done
+    echo "All immuno-as-corticoid simulations done."
+
 # compare current results against baseline
 check tol="0.01" min_abs="0.01" min_n="120":
     python check_results.py check --tol {{tol}} --min-abs {{min_abs}} --min-n {{min_n}}

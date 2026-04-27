@@ -34,6 +34,12 @@ pub struct Cli {
     #[arg(long, default_value_t = false)]
     pub every_prescription: bool,
 
+    /// Treat every L04 (immunosuppressive) prescription as a corticoid prescription
+    /// with prednison-equivalent 500 mg. Not strictly correct, but gives a rough
+    /// signal of what the cohorts look like once immunosuppressives are folded in.
+    #[arg(long, default_value_t = false)]
+    pub immuno_as_corticoid_500pe: bool,
+
     /// Number of matching runs
     #[arg(long, default_value_t = 100)]
     pub num_runs: usize,
@@ -59,6 +65,7 @@ pub struct Config {
     pub year_offset: i32,
     pub unified_effect_baseline: bool,
     pub inj_mode: InjMode,
+    pub immuno_as_corticoid_500pe: bool,
     pub num_runs: usize,
     pub data_dir: String,
     pub out_dir: String,
@@ -82,6 +89,7 @@ impl Config {
             year_offset: cli.year_offset,
             unified_effect_baseline: cli.unified_effect_baseline,
             inj_mode,
+            immuno_as_corticoid_500pe: cli.immuno_as_corticoid_500pe,
             num_runs: cli.num_runs,
             data_dir: cli.data_dir.clone(),
             out_dir: cli.out_dir.clone(),
@@ -128,6 +136,17 @@ impl Config {
             "unified_effect_baseline"
         } else {
             "different_effect_baseline"
+        }
+    }
+
+    /// Optional extra subfolder describing the immunosuppressive override.
+    /// When `--immuno-as-corticoid-500pe` is on, results live under this
+    /// dedicated branch so they never collide with the standard baselines.
+    pub fn immuno_subfolder(&self) -> Option<&'static str> {
+        if self.immuno_as_corticoid_500pe {
+            Some("immuno_as_corticoid_500pe")
+        } else {
+            None
         }
     }
 }

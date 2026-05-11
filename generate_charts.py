@@ -138,11 +138,9 @@ def plot_chart(
 ) -> None:
     sorted_weeks = sorted(weekly_averages.keys())
     values = [weekly_averages[w] for w in sorted_weeks]
-    counts = [weekly_counts[w] for w in sorted_weeks]
 
-    fig, ax1 = plt.subplots(figsize=(12, 5))
-
-    ax1.plot(
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(
         sorted_weeks,
         values,
         marker="o",
@@ -151,35 +149,18 @@ def plot_chart(
         color="steelblue",
         label=ylabel,
     )
-    ax1.axvline(
+    ax.axvline(
         HIGHLIGHT_DATE,
         color="red",
         linestyle="--",
         linewidth=2,
         label="9.6.2021",
     )
-    ax1.set_xlabel("Začátek týdne")
-    ax1.set_ylabel(ylabel, color="steelblue")
-    ax1.tick_params(axis="y", labelcolor="steelblue")
-    ax1.grid(True, alpha=0.3)
-
-    ax2 = ax1.twinx()
-    ax2.bar(
-        sorted_weeks,
-        counts,
-        width=5,
-        alpha=0.15,
-        color="gray",
-        label="Počet osob v týdnu",
-    )
-    ax2.set_ylabel("Počet osob v týdnu", color="gray")
-    ax2.tick_params(axis="y", labelcolor="gray")
-
-    lines1, labels1 = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left", fontsize=8)
-
-    ax1.set_title(title)
+    ax.set_title(title)
+    ax.set_xlabel("Začátek týdne")
+    ax.set_ylabel(ylabel)
+    ax.legend()
+    ax.grid(True, alpha=0.3)
     fig.autofmt_xdate()
     plt.tight_layout()
 

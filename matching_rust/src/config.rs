@@ -55,6 +55,11 @@ pub struct Cli {
     /// Enable per-specialty PE decomposition
     #[arg(long, default_value_t = false)]
     pub specialty_analysis: bool,
+
+    /// Restrict vax cohort to persons with at most N vaccine doses (booster filter).
+    /// Default: no limit. Use 2 to exclude boostered persons.
+    #[arg(long)]
+    pub max_doses: Option<usize>,
 }
 
 /// Derived configuration used throughout the pipeline.
@@ -70,6 +75,7 @@ pub struct Config {
     pub data_dir: String,
     pub out_dir: String,
     pub specialty_analysis: bool,
+    pub max_doses: Option<usize>,
 }
 
 impl Config {
@@ -94,6 +100,7 @@ impl Config {
             data_dir: cli.data_dir.clone(),
             out_dir: cli.out_dir.clone(),
             specialty_analysis: cli.specialty_analysis,
+            max_doses: cli.max_doses,
         }
     }
 

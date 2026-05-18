@@ -18,7 +18,23 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-ROOT = Path("out/cpzp/matching_analysis")
+DEFAULT_OUT_ROOT = Path("out")
+DEFAULT_COMPANIES = ["cpzp"]
+
+COMPANY_LABELS = {
+    "cpzp": "Data z ČPZP",
+    "ozp": "Data z OZP",
+    "both_companies": "Souhrnná data",
+}
+
+INJ_LABELS = {
+    "non_inj_analysis": "Jen systémově podávané (bez injekcí)",
+    "inj_analysis": "Jen injekce",
+}
+
+DIL5 = "Výsledky - srovnání s virtuálním očkováním (5. díl)"
+
+PUB_BUCKETS = ["0_PE", "1_to_500_PE", "500_to_5000_PE", "NEVER_PRESCRIBED"]
 
 ANALYSIS_MODES = [
     "non_inj_analysis",
@@ -131,7 +147,9 @@ def load_specialty_data(directory: Path, bucket: str) -> dict | None:
     return result
 
 
-def make_spec_treatment_effect_plot(bucket: str, spec: str, ax: plt.Axes, *, base: Path):
+def make_spec_treatment_effect_plot(
+    bucket: str, spec: str, ax: plt.Axes, *, base: Path
+):
     """Treatment-effect forest plot for one specialty: Med + 95% CI across periods."""
     all_data = []
     for dir_name, _ in PERIODS:
@@ -416,6 +434,23 @@ def _worker(job: tuple) -> str:
     return str(out_path)
 
 
+def _publish_per_spec_dirs(
+    publish_root: Path, company: str, mode: str
+) -> tuple[Path, Path]:
+    """Return (per_spec/treatment_effect, per_spec/raw_effects) leaf dirs in the Czech hierarchy."""
+    inj_dir = (
+        publish_root
+        / COMPANY_LABELS[company]
+        / INJ_LABELS[mode]
+        / DIL5
+        / "Po specializacích"
+    )
+    return (
+        inj_dir / "Souhrnné výsledky",
+        inj_dir / "Zvlášť pro očkované a neočkované",
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -427,30 +462,105 @@ def main():
             "variant subtree so they never overwrite the standard ones."
         ),
     )
+    parser.add_argument(
+        "--companies",
+        nargs="+",
+        default=DEFAULT_COMPANIES,
+        help="Insurance companies to plot for (only companies with specialty data).",
+    )
+    parser.add_argument(
+        "--out-root",
+        default=str(DEFAULT_OUT_ROOT),
+        help="Root output directory containing <company>/matching_analysis/... (default: out).",
+    )
+    parser.add_argument(
+        "--publish-dir",
+        default=None,
+        help=(
+            "If set, write plots directly into a Czech-named hierarchy under this dir "
+            "(e.g. 'Finální matchingová analýza'). Only non_inj/inj × different_effect_baseline "
+            "are published; susceptible buckets and immuno/every-rx variants are skipped."
+        ),
+    )
     args = parser.parse_args()
 
-    root = ROOT / args.variant if args.variant else ROOT
-    if args.variant:
-        print(f"Variant root: {root}")
+    out_root = Path(args.out_root)
+    publish_root = Path(args.publish_dir) if args.publish_dir else None
+    publish_mode = publish_root is not None
+
+    if publish_mode and args.variant:
+        print(
+            f"Skipping publish for variant '{args.variant}' (only main results are published)."
+        )
+        return
 
     jobs = []
 
-    for mode in ANALYSIS_MODES:
-        for eb in EFFECT_BASELINES:
-            base = root / mode / eb
-            if not base.exists():
-                continue
-            plots_root = base / "forest_plots" / "per_spec"
-            te_dir = plots_root / "treatment_effect"
-            raw_dir = plots_root / "raw_effects"
-            for d in (te_dir, raw_dir):
-                d.mkdir(parents=True, exist_ok=True)
+    for company in args.companies:
+        company_root = out_root / company / "matching_analysis"
+        root = company_root / args.variant if args.variant else company_root
+        if not root.exists():
+            print(f"Skipping {company}: {root} does not exist")
+            continue
+        if args.variant:
+            print(f"Variant root for {company}: {root}")
 
-            bs = str(base)
-            for bucket in BUCKETS:
-                for spec in SPECIALTIES:
-                    jobs.append(("forest", bucket, spec, bs, str(te_dir / f"spec_{spec}_forest_{bucket.lower()}.png")))
-                    jobs.append(("raw", bucket, spec, bs, str(raw_dir / f"spec_{spec}_raw_effects_{bucket.lower()}.png")))
+        for mode in ANALYSIS_MODES:
+            if publish_mode and mode not in INJ_LABELS:
+                continue
+            for eb in EFFECT_BASELINES:
+                if publish_mode and eb != "different_effect_baseline":
+                    continue
+
+                base = root / mode / eb
+                if not base.exists():
+                    continue
+
+                has_specialty = any(
+                    (
+                        base
+                        / period_dir
+                        / "whole_period"
+                        / bucket
+                        / "specialty_effects.json"
+                    ).exists()
+                    for period_dir, _ in PERIODS
+                    for bucket in BUCKETS
+                )
+                if not has_specialty:
+                    print(f"Skipping {base}: no specialty_effects.json found")
+                    continue
+
+                if publish_mode:
+                    te_dir, raw_dir = _publish_per_spec_dirs(
+                        publish_root, company, mode
+                    )
+                else:
+                    plots_root = base / "forest_plots" / "per_spec"
+                    te_dir = plots_root / "treatment_effect"
+                    raw_dir = plots_root / "raw_effects"
+
+                for d in (te_dir, raw_dir):
+                    d.mkdir(parents=True, exist_ok=True)
+
+                bs = str(base)
+                buckets = PUB_BUCKETS if publish_mode else BUCKETS
+
+                for bucket in buckets:
+                    for spec in SPECIALTIES:
+                        if publish_mode:
+                            te_name = (
+                                f"{SPEC_LABELS[spec]} - {BUCKET_LABELS[bucket]}.png"
+                            )
+                            raw_name = (
+                                f"{SPEC_LABELS[spec]} - {BUCKET_LABELS[bucket]}.png"
+                            )
+                        else:
+                            te_name = f"spec_{spec}_forest_{bucket.lower()}.png"
+                            raw_name = f"spec_{spec}_raw_effects_{bucket.lower()}.png"
+
+                        jobs.append(("forest", bucket, spec, bs, str(te_dir / te_name)))
+                        jobs.append(("raw", bucket, spec, bs, str(raw_dir / raw_name)))
 
     print(f"Generating {len(jobs)} plots across {mp.cpu_count()} cores...")
     with mp.Pool() as pool:

@@ -3,6 +3,11 @@ set dotenv-load := false
 rust_dir := "matching_rust"
 common_args := "--company cpzp --num-runs 100 --data-dir DATACON_data --out-dir out --specialty-analysis"
 
+# new-repo migration: write everything under new_out/_data and publish under new_out/Finální matchingová analýza
+new_out := "new_out/_data"
+new_dst := "new_out/Finální matchingová analýza"
+new_common := "--num-runs 100 --data-dir DATACON_data --out-dir " + new_out
+
 # list available recipes
 default:
     @just --list
@@ -39,6 +44,74 @@ simulate-immuno: build
         echo ""
     done
     echo "All immuno-as-corticoid simulations done."
+
+# === New-repo pipeline: per-company simulations into new_out/_data/ ===
+
+# 5 offsets × 3 modes for CPZP, with --specialty-analysis
+simulate-cpzp: build
+    #!/usr/bin/env bash
+    set -e
+    for flag in "" "--inj-analysis" "--every-prescription"; do
+        for offset in 3 2 1 0 -1; do
+            echo "==== cpzp / offset=$offset ${flag:-"(non-inj)"} ===="
+            cargo run --release --manifest-path {{rust_dir}}/Cargo.toml -- \
+                --company cpzp {{new_common}} --specialty-analysis \
+                --year-offset "$offset" $flag
+        done
+    done
+
+# 5 offsets × 3 modes for OZP (no specialty data in OZP CSV)
+simulate-ozp: build
+    #!/usr/bin/env bash
+    set -e
+    for flag in "" "--inj-analysis" "--every-prescription"; do
+        for offset in 3 2 1 0 -1; do
+            echo "==== ozp / offset=$offset ${flag:-"(non-inj)"} ===="
+            cargo run --release --manifest-path {{rust_dir}}/Cargo.toml -- \
+                --company ozp {{new_common}} \
+                --year-offset "$offset" $flag
+        done
+    done
+
+# 5 offsets × 3 modes for both_companies (no specialty: missing in OZP CSV)
+simulate-both: build
+    #!/usr/bin/env bash
+    set -e
+    for flag in "" "--inj-analysis" "--every-prescription"; do
+        for offset in 3 2 1 0 -1; do
+            echo "==== both_companies / offset=$offset ${flag:-"(non-inj)"} ===="
+            cargo run --release --manifest-path {{rust_dir}}/Cargo.toml -- \
+                --company both_companies {{new_common}} \
+                --year-offset "$offset" $flag
+        done
+    done
+
+# 5 offsets × 3 companies, --immuno-as-corticoid-500pe (only non-inj per existing convention)
+simulate-immuno-all: build
+    #!/usr/bin/env bash
+    set -e
+    for company in cpzp ozp both_companies; do
+        spec=""
+        if [ "$company" = "cpzp" ]; then spec="--specialty-analysis"; fi
+        for offset in 3 2 1 0 -1; do
+            echo "==== immuno / $company / offset=$offset ===="
+            cargo run --release --manifest-path {{rust_dir}}/Cargo.toml -- \
+                --company "$company" {{new_common}} $spec \
+                --immuno-as-corticoid-500pe --year-offset "$offset"
+        done
+    done
+
+simulate-all: simulate-cpzp simulate-ozp simulate-both simulate-immuno-all
+    @echo "All per-company simulations done."
+
+# generate all forest plots directly into the Czech hierarchy under new_out/Finální matchingová analýza/
+plots-all:
+    python forest_plot.py --companies cpzp ozp both_companies --out-root {{new_out}} --publish-dir "{{new_dst}}"
+    python specialty_forest_plot.py --companies cpzp --out-root {{new_out}} --publish-dir "{{new_dst}}"
+
+# full new-repo pipeline: simulate → plots (plots write directly to Czech hierarchy)
+all-new: simulate-all plots-all
+    @echo "New-repo pipeline complete. See {{new_dst}}/"
 
 # compare current results against baseline
 check tol="0.01" min_abs="0.01" min_n="120":

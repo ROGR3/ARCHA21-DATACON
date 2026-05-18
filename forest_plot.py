@@ -19,7 +19,24 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-ROOT = Path("out/cpzp/matching_analysis")
+DEFAULT_OUT_ROOT = Path("out")
+DEFAULT_COMPANIES = ["cpzp"]
+
+COMPANY_LABELS = {
+    "cpzp": "Data z ČPZP",
+    "ozp": "Data z OZP",
+    "both_companies": "Souhrnná data",
+}
+
+INJ_LABELS = {
+    "non_inj_analysis": "Jen systémově podávané (bez injekcí)",
+    "inj_analysis": "Jen injekce",
+}
+
+DIL5 = "Výsledky - srovnání s virtuálním očkováním (5. díl)"
+DIL4 = "Výsledky - jen rok očkování (4. díl)"
+
+PUB_BUCKETS = ["0_PE", "1_to_500_PE", "500_to_5000_PE", "NEVER_PRESCRIBED"]
 
 ANALYSIS_MODES = [
     "non_inj_analysis",
@@ -462,6 +479,16 @@ def _worker(job: tuple) -> str:
     return str(out_path)
 
 
+def _publish_dirs(publish_root: Path, company: str, mode: str) -> tuple[Path, Path, Path]:
+    """Return (no_history, treatment_effect, raw_effects) leaf dirs in the Czech hierarchy."""
+    inj_dir = publish_root / COMPANY_LABELS[company] / INJ_LABELS[mode]
+    return (
+        inj_dir / DIL4,
+        inj_dir / DIL5 / "Souhrnné výsledky",
+        inj_dir / DIL5 / "Zvlášť pro očkované a neočkované",
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -473,31 +500,86 @@ def main():
             "variant subtree so they never overwrite the standard ones."
         ),
     )
+    parser.add_argument(
+        "--companies",
+        nargs="+",
+        default=DEFAULT_COMPANIES,
+        help="Insurance companies to plot for (e.g. cpzp ozp both_companies).",
+    )
+    parser.add_argument(
+        "--out-root",
+        default=str(DEFAULT_OUT_ROOT),
+        help="Root output directory containing <company>/matching_analysis/... (default: out).",
+    )
+    parser.add_argument(
+        "--publish-dir",
+        default=None,
+        help=(
+            "If set, write plots directly into a Czech-named hierarchy under this dir "
+            "(e.g. 'Finální matchingová analýza'). Only non_inj/inj × different_effect_baseline "
+            "are published; susceptible buckets and immuno/every-rx variants are skipped. "
+            "Without this flag, plots land next to the JSONs under <out-root>/<company>/.../forest_plots/."
+        ),
+    )
     args = parser.parse_args()
 
-    root = ROOT / args.variant if args.variant else ROOT
-    if args.variant:
-        print(f"Variant root: {root}")
+    out_root = Path(args.out_root)
+    publish_root = Path(args.publish_dir) if args.publish_dir else None
+    publish_mode = publish_root is not None
+
+    if publish_mode and args.variant:
+        print(f"Skipping publish for variant '{args.variant}' (only main results are published).")
+        return
 
     jobs = []
 
-    for mode in ANALYSIS_MODES:
-        for eb in EFFECT_BASELINES:
-            base = root / mode / eb
-            if not base.exists():
-                continue
-            plots_root = base / "forest_plots"
-            te_dir = plots_root / "treatment_effect"
-            raw_dir = plots_root / "raw_effects"
-            nh_dir = plots_root / "no_history"
-            for d in (te_dir, raw_dir, nh_dir):
-                d.mkdir(parents=True, exist_ok=True)
+    for company in args.companies:
+        company_root = out_root / company / "matching_analysis"
+        root = company_root / args.variant if args.variant else company_root
+        if not root.exists():
+            print(f"Skipping {company}: {root} does not exist")
+            continue
+        if args.variant:
+            print(f"Variant root for {company}: {root}")
 
-            for bucket in BUCKETS:
-                bs = str(base)
-                jobs.append(("forest", bucket, bs, eb, str(te_dir / f"forest_{bucket.lower()}.png")))
-                jobs.append(("raw", bucket, bs, eb, str(raw_dir / f"raw_effects_{bucket.lower()}.png")))
-                jobs.append(("no_history", bucket, bs, eb, str(nh_dir / f"no_history_forest_{bucket.lower()}.png")))
+        for mode in ANALYSIS_MODES:
+            if publish_mode and mode not in INJ_LABELS:
+                continue
+            for eb in EFFECT_BASELINES:
+                if publish_mode and eb != "different_effect_baseline":
+                    continue
+
+                base = root / mode / eb
+                if not base.exists():
+                    continue
+
+                if publish_mode:
+                    nh_dir, te_dir, raw_dir = _publish_dirs(publish_root, company, mode)
+                else:
+                    plots_root = base / "forest_plots"
+                    te_dir = plots_root / "treatment_effect"
+                    raw_dir = plots_root / "raw_effects"
+                    nh_dir = plots_root / "no_history"
+
+                for d in (te_dir, raw_dir, nh_dir):
+                    d.mkdir(parents=True, exist_ok=True)
+
+                buckets = PUB_BUCKETS if publish_mode else BUCKETS
+
+                for bucket in buckets:
+                    bs = str(base)
+                    if publish_mode:
+                        nh_name = f"{BUCKET_LABELS[bucket]}.png"
+                        te_name = f"{BUCKET_LABELS[bucket]}.png"
+                        raw_name = f"{BUCKET_LABELS[bucket]}.png"
+                    else:
+                        nh_name = f"no_history_forest_{bucket.lower()}.png"
+                        te_name = f"forest_{bucket.lower()}.png"
+                        raw_name = f"raw_effects_{bucket.lower()}.png"
+
+                    jobs.append(("forest", bucket, bs, eb, str(te_dir / te_name)))
+                    jobs.append(("raw", bucket, bs, eb, str(raw_dir / raw_name)))
+                    jobs.append(("no_history", bucket, bs, eb, str(nh_dir / nh_name)))
 
     print(f"Generating {len(jobs)} plots across {mp.cpu_count()} cores...")
     with mp.Pool() as pool:

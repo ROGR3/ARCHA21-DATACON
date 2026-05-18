@@ -11,3 +11,5 @@ joined_*/
 *.pkl
 matching_rust/target/
 results_baseline.json
+
+new_out/_data/

@@ -83,6 +83,7 @@ pub fn vax_people(persons: &[Person], config: &Config) -> Vec<usize> {
                 && p.died_at.is_none()
                 && p.insurance_start < config.insurance_start
                 && p.insurance_end > config.insurance_end
+                && config.max_doses.is_none_or(|n| p.vaccines.len() <= n)
         })
         .map(|(i, _)| i)
         .collect()

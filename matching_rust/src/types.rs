@@ -123,6 +123,7 @@ impl PeRange {
 // PE group names – which subgroup of vax people we analyse
 // ---------------------------------------------------------------------------
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PeGroupName {
     NeverPrescribed,

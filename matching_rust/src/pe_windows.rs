@@ -1,6 +1,7 @@
 use chrono::NaiveDate;
 use rayon::prelude::*;
 
+use crate::cohort_eligibility;
 use crate::config::Config;
 use crate::types::{AgeCohort, Gender, InjMode, PeMap, PeRange, Person};
 
@@ -25,13 +26,18 @@ pub fn compute_pe_map(
 
     let map = novax_indices
         .par_iter()
-        .fold(
-            PeMap::new,
-            |mut map, &pidx| {
-                process_person(&mut map, persons, pidx, anchor_dates, ref_year, inj_mode);
-                map
-            },
-        )
+        .fold(PeMap::new, |mut map, &pidx| {
+            process_person(
+                &mut map,
+                persons,
+                pidx,
+                anchor_dates,
+                ref_year,
+                config.year_offset,
+                inj_mode,
+            );
+            map
+        })
         .reduce(PeMap::new, |mut a, b| {
             merge_maps(&mut a, b);
             a
@@ -47,11 +53,15 @@ fn process_person(
     pidx: usize,
     anchor_dates: &[NaiveDate],
     ref_year: i32,
+    year_offset: i32,
     inj_mode: InjMode,
 ) {
     let person = &persons[pidx];
     let ac = person.age_cohort(ref_year);
     let gender = person.gender;
+    let Some(eligibility_date) = cohort_eligibility::eligibility_date(ac, year_offset) else {
+        return;
+    };
 
     // Precompute earliest prescription date once (across ALL forms, not just
     // inj-filtered ones) – used to decide ZeroNoPre vs ZeroPeSuspectible.
@@ -64,7 +74,10 @@ fn process_person(
         .collect();
 
     if valid_rx.is_empty() {
-        for &anchor in anchor_dates {
+        for &anchor in anchor_dates
+            .iter()
+            .filter(|&&anchor| anchor >= eligibility_date)
+        {
             insert(map, anchor, PeRange::ZeroPe, ac, gender, pidx);
             if earliest_rx.is_some_and(|d| d < anchor) {
                 insert(map, anchor, PeRange::ZeroPeSuspectible, ac, gender, pidx);
@@ -89,6 +102,9 @@ fn process_person(
     }
 
     for (aidx, &anchor) in anchor_dates.iter().enumerate() {
+        if anchor < eligibility_date {
+            continue;
+        }
         let pe_val = per_anchor[aidx];
         if pe_val == 0.0 {
             insert(map, anchor, PeRange::ZeroPe, ac, gender, pidx);

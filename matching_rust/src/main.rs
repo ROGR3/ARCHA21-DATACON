@@ -1,3 +1,4 @@
+mod cohort_eligibility;
 mod config;
 mod data_loader;
 mod matching;
@@ -43,21 +44,14 @@ fn main() {
     let pe_map = pe_windows::compute_pe_map(persons, &novax_idx, &anchor_dates, &config);
     eprintln!("  pe_map computed in {:.1}s", t1.elapsed().as_secs_f64());
 
-    // 4. Define groups and run matching for each
+    // 4. Run only 0 PE: this analysis filters both real and virtual
+    // vaccination dates by cohort opening + 3 days.
     let aggregation_days = anchor_dates.len() as i32;
-
-    let groups = [
-        PeGroupName::NeverPrescribed,
-        PeGroupName::ZeroPeSuspectible,
-        PeGroupName::ZeroPe,
-        PeGroupName::OneToFiveHundredPe,
-        PeGroupName::FiveHundredToFiveThousandPe,
-    ];
+    let groups = [PeGroupName::ZeroPe];
 
     for group_name in &groups {
         let t2 = Instant::now();
-        let group_idx =
-            data_loader::filter_group(persons, &vax_idx, *group_name, config.inj_mode);
+        let group_idx = data_loader::filter_group(persons, &vax_idx, *group_name, &config);
         eprintln!(
             "\n  group {} — {} persons",
             group_name.label(),

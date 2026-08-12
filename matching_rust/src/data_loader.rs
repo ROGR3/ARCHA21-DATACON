@@ -3,8 +3,9 @@ use std::path::Path;
 
 use chrono::NaiveDate;
 
+use crate::cohort_eligibility;
 use crate::config::Config;
-use crate::types::{Gender, InjMode, PeGroupName, Person, PersonId, Prescription, SpecialtyGroup, Vaccine};
+use crate::types::{Gender, PeGroupName, Person, PersonId, Prescription, SpecialtyGroup, Vaccine};
 
 // ---------------------------------------------------------------------------
 // CSV row – one row from the flat CSV file
@@ -107,7 +108,7 @@ pub fn filter_group(
     persons: &[Person],
     vax_indices: &[usize],
     group: PeGroupName,
-    inj_mode: InjMode,
+    config: &Config,
 ) -> Vec<usize> {
     vax_indices
         .iter()
@@ -115,7 +116,7 @@ pub fn filter_group(
         .filter(|&i| {
             let p = &persons[i];
             let vax_date = p.first_vax_date().unwrap();
-            let pe = p.pe_before(vax_date, inj_mode);
+            let pe = p.pe_before(vax_date, config.inj_mode);
 
             match group {
                 PeGroupName::NeverPrescribed => {
@@ -124,7 +125,14 @@ pub fn filter_group(
                 PeGroupName::ZeroPeSuspectible => {
                     pe == 0.0 && p.prescriptions.iter().any(|pr| pr.date < vax_date)
                 }
-                PeGroupName::ZeroPe => pe == 0.0,
+                PeGroupName::ZeroPe => {
+                    pe == 0.0
+                        && cohort_eligibility::person_is_eligible(
+                            p,
+                            config.year_for_age(),
+                            config.year_offset,
+                        )
+                }
                 PeGroupName::OneToFiveHundredPe => pe >= 1.0 && pe < 500.0,
                 PeGroupName::FiveHundredToFiveThousandPe => pe >= 500.0 && pe < 5000.0,
             }

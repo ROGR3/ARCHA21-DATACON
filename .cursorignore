@@ -1,4 +1,5 @@
 DATACON_data/
+new_data/
 __pycache__/
 *.csv
 *.pkl

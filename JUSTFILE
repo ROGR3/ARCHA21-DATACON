@@ -45,6 +45,21 @@ simulate-immuno: build
     done
     echo "All immuno-as-corticoid simulations done."
 
+# run the 5 booster (3rd dose) simulations: boosted vs. matched 2-dose and
+# matched never-vaccinated pools, 0 PE group only.
+# results land under out/<company>/booster_analysis/...
+simulate-booster: build
+    #!/usr/bin/env bash
+    set -e
+    for offset in 3 2 1 0 -1; do
+        echo "========================================"
+        echo "Running booster analysis: year-offset=$offset"
+        echo "========================================"
+        cargo run --release --manifest-path {{rust_dir}}/Cargo.toml -- {{common_args}} --booster-analysis --year-offset "$offset"
+        echo ""
+    done
+    echo "All booster simulations done."
+
 # === New-repo pipeline: per-company simulations into new_out/_data/ ===
 
 # 5 offsets × 3 modes for CPZP, with --specialty-analysis
@@ -134,6 +149,11 @@ plots:
 plots-immuno:
     python forest_plot.py --variant immuno_as_corticoid_500pe
     python specialty_forest_plot.py --variant immuno_as_corticoid_500pe
+
+# generate forest plots for the booster (3rd dose) analysis
+# plots land under out/cpzp/booster_analysis/<mode>/<eb>/forest_plots/
+plots-booster:
+    python booster_forest_plot.py
 
 # pretty-print all result JSONs (indent=2)
 fmt-json:

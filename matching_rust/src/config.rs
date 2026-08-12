@@ -60,6 +60,12 @@ pub struct Cli {
     /// Default: no limit. Use 2 to exclude boostered persons.
     #[arg(long)]
     pub max_doses: Option<usize>,
+
+    /// Run the booster (3rd dose) analysis instead of the regular first-dose
+    /// matching analysis: boosted (effective 3+ doses) vs. matched 2-dose
+    /// and matched never-vaccinated pools, 0 PE group only.
+    #[arg(long, default_value_t = false)]
+    pub booster_analysis: bool,
 }
 
 /// Derived configuration used throughout the pipeline.
@@ -76,6 +82,7 @@ pub struct Config {
     pub out_dir: String,
     pub specialty_analysis: bool,
     pub max_doses: Option<usize>,
+    pub booster_analysis: bool,
 }
 
 impl Config {
@@ -101,6 +108,7 @@ impl Config {
             out_dir: cli.out_dir.clone(),
             specialty_analysis: cli.specialty_analysis,
             max_doses: cli.max_doses,
+            booster_analysis: cli.booster_analysis,
         }
     }
 

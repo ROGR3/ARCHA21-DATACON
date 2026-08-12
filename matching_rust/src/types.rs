@@ -244,7 +244,15 @@ pub struct Prescription {
 #[derive(Debug, Clone)]
 pub struct Vaccine {
     pub date: NaiveDate,
+    /// Chronological order among this person's real injections (1-indexed).
+    #[allow(dead_code)]
     pub dose_number: u32,
+    /// Running total of "effective" doses after this injection. Equal to
+    /// `dose_number` for all vaccines except when the person's very first
+    /// injection is Janssen (single-shot, counts as 2 effective doses): in
+    /// that case this jumps straight to 2 for the first shot, and every
+    /// subsequent real injection is one effective dose higher than usual.
+    pub effective_dose_number: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -266,6 +274,39 @@ impl Person {
 
     pub fn first_vax_date(&self) -> Option<NaiveDate> {
         self.vaccines.first().map(|v| v.date)
+    }
+
+    /// Date of the injection where the effective dose count first reaches 3
+    /// (the booster), accounting for Janssen's single-shot-counts-as-2 rule.
+    /// `None` if the person never reached an effective 3rd dose.
+    pub fn third_effective_dose_date(&self) -> Option<NaiveDate> {
+        self.vaccines
+            .iter()
+            .find(|v| v.effective_dose_number >= 3)
+            .map(|v| v.date)
+    }
+
+    /// True if the person is fully vaccinated (effective dose count == 2)
+    /// and never received a further injection afterwards. Covers both a
+    /// single Janssen shot and a normal two-shot primary series.
+    pub fn is_two_dose_no_booster(&self) -> bool {
+        self.vaccines
+            .last()
+            .is_some_and(|v| v.effective_dose_number == 2)
+    }
+
+    #[cfg(test)]
+    fn test_person(vaccines: Vec<Vaccine>) -> Person {
+        Person {
+            id: PersonId::Numeric(1),
+            gender: Gender::Male,
+            born_year: 1980,
+            insurance_start: NaiveDate::from_ymd_opt(2015, 1, 1).unwrap(),
+            insurance_end: NaiveDate::from_ymd_opt(2050, 12, 31).unwrap(),
+            died_at: None,
+            vaccines,
+            prescriptions: Vec::new(),
+        }
     }
 
     /// Sum of prednison_equiv in the 365 days BEFORE `anchor`.
@@ -359,3 +400,66 @@ use std::collections::HashMap;
 
 /// pe_map[anchor_date][pe_range][age_cohort][gender] → list of novax person indices
 pub type PeMap = HashMap<NaiveDate, HashMap<PeRange, HashMap<AgeCohort, HashMap<Gender, Vec<usize>>>>>;
+
+#[cfg(test)]
+mod booster_tests {
+    use super::*;
+
+    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
+        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    }
+
+    #[test]
+    fn normal_vaccine_reaches_effective_dose_3_on_third_shot() {
+        let vaccines = vec![
+            Vaccine { date: d(2021, 1, 1), dose_number: 1, effective_dose_number: 1 },
+            Vaccine { date: d(2021, 2, 1), dose_number: 2, effective_dose_number: 2 },
+            Vaccine { date: d(2021, 9, 1), dose_number: 3, effective_dose_number: 3 },
+        ];
+        let p = Person::test_person(vaccines);
+        assert_eq!(p.third_effective_dose_date(), Some(d(2021, 9, 1)));
+        assert!(!p.is_two_dose_no_booster());
+    }
+
+    #[test]
+    fn janssen_first_shot_counts_as_two_effective_doses() {
+        // A single Janssen shot already counts as effective dose 2; the next
+        // real injection (if any) becomes effective dose 3 == booster.
+        let vaccines = vec![
+            Vaccine { date: d(2021, 3, 1), dose_number: 1, effective_dose_number: 2 },
+            Vaccine { date: d(2021, 10, 1), dose_number: 2, effective_dose_number: 3 },
+        ];
+        let p = Person::test_person(vaccines);
+        assert_eq!(p.third_effective_dose_date(), Some(d(2021, 10, 1)));
+    }
+
+    #[test]
+    fn janssen_only_with_no_further_shot_is_two_dose_no_booster() {
+        let vaccines = vec![Vaccine {
+            date: d(2021, 3, 1),
+            dose_number: 1,
+            effective_dose_number: 2,
+        }];
+        let p = Person::test_person(vaccines);
+        assert!(p.is_two_dose_no_booster());
+        assert_eq!(p.third_effective_dose_date(), None);
+    }
+
+    #[test]
+    fn two_normal_doses_with_no_booster_is_two_dose_no_booster() {
+        let vaccines = vec![
+            Vaccine { date: d(2021, 1, 1), dose_number: 1, effective_dose_number: 1 },
+            Vaccine { date: d(2021, 2, 1), dose_number: 2, effective_dose_number: 2 },
+        ];
+        let p = Person::test_person(vaccines);
+        assert!(p.is_two_dose_no_booster());
+        assert_eq!(p.third_effective_dose_date(), None);
+    }
+
+    #[test]
+    fn never_vaccinated_has_no_third_dose_and_is_not_two_dose() {
+        let p = Person::test_person(Vec::new());
+        assert_eq!(p.third_effective_dose_date(), None);
+        assert!(!p.is_two_dose_no_booster());
+    }
+}

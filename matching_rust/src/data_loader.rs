@@ -27,6 +27,28 @@ struct RawRow {
     pocet_baleni: Option<f64>,
     pocet_v_baleni: Option<f64>,
     sila: Option<String>,
+    /// CPZP: free-text vaccine name (e.g. "COVID-19 - OČKOVÁNÍ - JOHNSON & JOHNSON").
+    kod_udalosti: Option<String>,
+    /// OZP: numeric VZP performance code (e.g. "99933"). CPZP: same code, unused here.
+    detail_udalosti: Option<String>,
+}
+
+/// VZP performance codes that identify a Johnson & Johnson (Janssen) injection.
+/// Mirrors `OZP_VACCINE_NAZEV` codes 99933 / 99939 in `reshape_common.py`.
+const JANSSEN_OZP_CODES: [&str; 2] = ["99933", "99939"];
+
+/// True if this vaccination row is a Janssen (Johnson & Johnson) injection —
+/// a single-shot vaccine that counts as 2 effective doses.
+fn is_janssen_row(row: &RawRow, is_cpzp: bool) -> bool {
+    if is_cpzp {
+        row.kod_udalosti
+            .as_deref()
+            .is_some_and(|s| s.to_uppercase().contains("JOHNSON"))
+    } else {
+        row.detail_udalosti
+            .as_deref()
+            .is_some_and(|s| JANSSEN_OZP_CODES.contains(&s))
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -104,6 +126,38 @@ pub fn novax_people(persons: &[Person], config: &Config) -> Vec<usize> {
         .collect()
 }
 
+/// Boosted persons: effective dose count reached ≥3 at some point (Janssen's
+/// first-shot-counts-as-2 rule already baked into `effective_dose_number`).
+pub fn booster_people(persons: &[Person], config: &Config) -> Vec<usize> {
+    persons
+        .iter()
+        .enumerate()
+        .filter(|(_, p)| {
+            p.died_at.is_none()
+                && p.insurance_start < config.insurance_start
+                && p.insurance_end > config.insurance_end
+                && p.third_effective_dose_date().is_some()
+        })
+        .map(|(i, _)| i)
+        .collect()
+}
+
+/// Fully vaccinated (effective dose count == 2) persons who never went on to
+/// receive a booster. Used as the "2-dose, unboostered" comparison pool.
+pub fn two_dose_no_booster_people(persons: &[Person], config: &Config) -> Vec<usize> {
+    persons
+        .iter()
+        .enumerate()
+        .filter(|(_, p)| {
+            p.died_at.is_none()
+                && p.insurance_start < config.insurance_start
+                && p.insurance_end > config.insurance_end
+                && p.is_two_dose_no_booster()
+        })
+        .map(|(i, _)| i)
+        .collect()
+}
+
 pub fn filter_group(
     persons: &[Person],
     vax_indices: &[usize],
@@ -170,6 +224,8 @@ fn load_csv(path: &str, is_cpzp: bool, config: &Config) -> Vec<Person> {
     let v_baleni_col = col("Pocet_v_baleni");
     let sila_col = col("síla").or_else(|| col("sila"));
     let spec_col = col("Specializace");
+    let kod_udalosti_col = col("Kod_udalosti");
+    let detail_udalosti_col = col("Detail_udalosti");
 
     // Accumulate raw rows grouped by person ID
     let mut groups: HashMap<String, Vec<RawRow>> = HashMap::new();
@@ -208,6 +264,8 @@ fn load_csv(path: &str, is_cpzp: bool, config: &Config) -> Vec<Person> {
             pocet_baleni: get_opt(baleni_col).and_then(|s| s.parse().ok()),
             pocet_v_baleni: get_opt(v_baleni_col).and_then(|s| s.parse().ok()),
             sila: get_opt(sila_col),
+            kod_udalosti: get_opt(kod_udalosti_col),
+            detail_udalosti: get_opt(detail_udalosti_col),
         };
 
         groups.entry(id_raw).or_default().push(row);
@@ -256,7 +314,7 @@ fn build_person(
     let died_at = first.death_date;
 
     let mut prescriptions = Vec::new();
-    let mut vaccines = Vec::new();
+    let mut vaccines: Vec<(NaiveDate, bool)> = Vec::new();
 
     for row in rows {
         let event_date = match row.event_date {
@@ -296,18 +354,28 @@ fn build_person(
         } else if row.event_type.contains("vakcinace") {
             let mut date = event_date;
             date -= day_offset;
-            vaccines.push(Vaccine {
-                date,
-                dose_number: (vaccines.len() + 1) as u32,
-            });
+            vaccines.push((date, is_janssen_row(row, is_cpzp)));
         }
     }
 
-    // Sort vaccines by date so vaccines[0] is the first dose
-    vaccines.sort_by_key(|v| v.date);
-    for (i, v) in vaccines.iter_mut().enumerate() {
-        v.dose_number = (i + 1) as u32;
-    }
+    // Sort injections chronologically, then assign chronological dose numbers
+    // and Janssen-aware effective dose numbers: if the very first real
+    // injection is Janssen it counts for 2 effective doses at once, and
+    // every subsequent injection adds 1 effective dose as usual.
+    vaccines.sort_by_key(|(date, _)| *date);
+    let mut effective_count = 0u32;
+    let vaccines: Vec<Vaccine> = vaccines
+        .into_iter()
+        .enumerate()
+        .map(|(i, (date, is_janssen))| {
+            effective_count += if i == 0 && is_janssen { 2 } else { 1 };
+            Vaccine {
+                date,
+                dose_number: (i + 1) as u32,
+                effective_dose_number: effective_count,
+            }
+        })
+        .collect();
 
     Some(Person {
         id,
@@ -319,6 +387,58 @@ fn build_person(
         vaccines,
         prescriptions,
     })
+}
+
+#[cfg(test)]
+mod janssen_tests {
+    use super::*;
+
+    fn row(kod: Option<&str>, detail: Option<&str>) -> RawRow {
+        RawRow {
+            gender: "M".to_string(),
+            birth_year: Some(1980),
+            insurance_start: None,
+            insurance_end: None,
+            death_date: None,
+            event_type: "vakcinace".to_string(),
+            event_date: None,
+            atc_skupina: None,
+            lekova_forma_zkr: None,
+            specializace: None,
+            prednison_equiv: None,
+            pocet_baleni: None,
+            pocet_v_baleni: None,
+            sila: None,
+            kod_udalosti: kod.map(str::to_string),
+            detail_udalosti: detail.map(str::to_string),
+        }
+    }
+
+    #[test]
+    fn cpzp_detects_johnson_and_johnson_by_name() {
+        let r = row(Some("COVID-19 - OČKOVÁNÍ - JOHNSON & JOHNSON"), None);
+        assert!(is_janssen_row(&r, true));
+    }
+
+    #[test]
+    fn cpzp_other_vaccines_are_not_janssen() {
+        let r = row(Some("COVID-19 - OČKOVÁNÍ - COMIRNATY"), None);
+        assert!(!is_janssen_row(&r, true));
+        let r_none = row(None, None);
+        assert!(!is_janssen_row(&r_none, true));
+    }
+
+    #[test]
+    fn ozp_detects_janssen_by_performance_code() {
+        assert!(is_janssen_row(&row(None, Some("99933")), false));
+        assert!(is_janssen_row(&row(None, Some("99939")), false));
+    }
+
+    #[test]
+    fn ozp_other_codes_are_not_janssen() {
+        assert!(!is_janssen_row(&row(None, Some("99912")), false));
+        assert!(!is_janssen_row(&row(None, None), false));
+    }
 }
 
 fn compute_pe(

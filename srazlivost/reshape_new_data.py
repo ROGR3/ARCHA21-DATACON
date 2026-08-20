@@ -19,7 +19,7 @@ def main() -> None:
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=Path("new_out/_data"),
+        default=Path("out"),
         help="Output directory for *_preskladane.csv",
     )
     args = parser.parse_args()
@@ -31,7 +31,7 @@ def main() -> None:
         out = args.out_dir / "OZP_preskladane.csv"
         print("=== OZP ===")
         stats = reshape_ozp(
-            Path("new_data/OZP-Janosek_2025_06_B01_N02BF_N06AA.txt"), out
+            Path("data/OZP-Janosek_2025_06_B01_N02BF_N06AA.txt"), out
         )
         print(
             f"Wrote {stats['rows']:,} rows / {stats['persons']:,} persons → {stats['output']}"
@@ -46,7 +46,7 @@ def main() -> None:
 
         out = args.out_dir / "CPZP_preskladane.csv"
         print("=== CPZP ===")
-        stats = reshape_cpzp(Path("new_data/CPZP-POJ205_zadost25037.xlsx"), out)
+        stats = reshape_cpzp(Path("data/CPZP-POJ205_zadost25037.xlsx"), out)
         print(
             f"Wrote {stats['rows']:,} rows / {stats['persons']:,} persons → {stats['output']}"
         )

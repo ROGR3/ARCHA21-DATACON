@@ -25,8 +25,8 @@ from reshape_common import (
     parse_pocet_v_baleni,
 )
 
-DEFAULT_INPUT = Path("new_data/CPZP-POJ205_zadost25037.xlsx")
-DEFAULT_OUTPUT = Path("new_out/_data/CPZP_preskladane.csv")
+DEFAULT_INPUT = Path("data/CPZP-POJ205_zadost25037.xlsx")
+DEFAULT_OUTPUT = Path("out/CPZP_preskladane.csv")
 
 NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 

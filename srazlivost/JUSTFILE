@@ -1,0 +1,40 @@
+set dotenv-load := false
+
+rust_dir := "matching_rust"
+common_args := "--company cpzp --num-runs 100 --data-dir data --out-dir out --specialty-analysis"
+
+# list available recipes
+default:
+    @just --list
+
+# reshape raw OZP + CPZP dumps (B01 srážlivost + N02BF/N06AA neuropatie) into
+# unified preskladane CSVs under out/
+reshape:
+    python reshape_new_data.py --out-dir out
+
+# reshape only OZP
+reshape-ozp:
+    python reshape_new_data.py --company ozp --out-dir out
+
+# reshape only CPZP
+reshape-cpzp:
+    python reshape_new_data.py --company cpzp --out-dir out
+
+# build the Rust matching binary (release)
+build:
+    cargo build --release --manifest-path {{rust_dir}}/Cargo.toml
+
+# run all 15 simulations (5 offsets × 3 analysis modes)
+simulate: build
+    #!/usr/bin/env bash
+    set -e
+    for flag in "" "--inj-analysis" "--every-prescription"; do
+        for offset in 3 2 1 0 -1; do
+            echo "========================================"
+            echo "Running: year-offset=$offset ${flag:-"(no extra flag)"}"
+            echo "========================================"
+            cargo run --release --manifest-path {{rust_dir}}/Cargo.toml -- {{common_args}} --year-offset "$offset" $flag
+            echo ""
+        done
+    done
+    echo "All simulations done."

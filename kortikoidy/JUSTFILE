@@ -1,12 +1,12 @@
 set dotenv-load := false
 
 rust_dir := "matching_rust"
-common_args := "--company cpzp --num-runs 100 --data-dir DATACON_data --out-dir out --specialty-analysis"
+common_args := "--company cpzp --num-runs 100 --data-dir data --out-dir out --specialty-analysis"
 
-# new-repo migration: write everything under new_out/_data and publish under new_out/Finální matchingová analýza
-new_out := "new_out/_data"
-new_dst := "new_out/Finální matchingová analýza"
-new_common := "--num-runs 100 --data-dir DATACON_data --out-dir " + new_out
+# new-repo pipeline: write everything under out_new and publish under published/
+new_out := "out_new"
+new_dst := "published"
+new_common := "--num-runs 100 --data-dir data --out-dir " + new_out
 
 # list available recipes
 default:
@@ -60,7 +60,7 @@ simulate-booster: build
     done
     echo "All booster simulations done."
 
-# === New-repo pipeline: per-company simulations into new_out/_data/ ===
+# === New-repo pipeline: per-company simulations into out_new/ ===
 
 # 5 offsets × 3 modes for CPZP, with --specialty-analysis
 simulate-cpzp: build
@@ -119,7 +119,7 @@ simulate-immuno-all: build
 simulate-all: simulate-cpzp simulate-ozp simulate-both simulate-immuno-all
     @echo "All per-company simulations done."
 
-# generate all forest plots directly into the Czech hierarchy under new_out/Finální matchingová analýza/
+# generate all forest plots directly into the Czech hierarchy under published/
 plots-all:
     python forest_plot.py --companies cpzp ozp both_companies --out-root {{new_out}} --publish-dir "{{new_dst}}"
     python specialty_forest_plot.py --companies cpzp --out-root {{new_out}} --publish-dir "{{new_dst}}"

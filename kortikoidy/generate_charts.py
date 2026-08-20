@@ -29,12 +29,12 @@ MIN_PERSONS_PER_WEEK = 5
 
 def load_persons(pojistovna: str) -> list[Person]:
     if pojistovna == "both":
-        with open("./DATACON_data/cpzp_persons.pkl", "rb") as f:
+        with open("./data/cpzp_persons.pkl", "rb") as f:
             cpzp: list[Person] = pickle.load(f)
-        with open("./DATACON_data/ozp_persons.pkl", "rb") as f:
+        with open("./data/ozp_persons.pkl", "rb") as f:
             ozp: list[Person] = pickle.load(f)
         return cpzp + ozp
-    with open(f"./DATACON_data/{pojistovna}_persons.pkl", "rb") as f:
+    with open(f"./data/{pojistovna}_persons.pkl", "rb") as f:
         return pickle.load(f)
 
 

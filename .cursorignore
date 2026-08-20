@@ -1,7 +1,9 @@
-DATACON_data/
-new_data/
+kortikoidy/data/
+srazlivost/data/
 __pycache__/
 *.csv
 *.pkl
-out/
-results_baseline.json
+kortikoidy/out/
+kortikoidy/out_new/
+srazlivost/out/
+kortikoidy/results_baseline.json

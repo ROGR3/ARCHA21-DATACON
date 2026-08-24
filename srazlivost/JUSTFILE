@@ -8,17 +8,23 @@ default:
     @just --list
 
 # reshape raw OZP + CPZP dumps (B01 srážlivost + N02BF/N06AA neuropatie) into
-# unified preskladane CSVs under out/
+# unified preskladane CSVs under data/
 reshape:
-    python reshape_new_data.py --out-dir out
+    python reshape_new_data.py --out-dir data
 
 # reshape only OZP
 reshape-ozp:
-    python reshape_new_data.py --company ozp --out-dir out
+    python reshape_new_data.py --company ozp --out-dir data
 
 # reshape only CPZP
 reshape-cpzp:
-    python reshape_new_data.py --company cpzp --out-dir out
+    python reshape_new_data.py --company cpzp --out-dir data
+
+# krok 1: měsíční křivky předpisů B01AA/AB/AE/AF/AX + celkem, po věku,
+# po očko/neočko a po specializaci (cpzp, ozp, both_companies)
+# výstupy: charts/<company>/*.png
+charts:
+    python generate_charts.py
 
 # build the Rust matching binary (release)
 build:

@@ -11,7 +11,7 @@ import polars as pl
 from reshape_common import OUTPUT_COLUMNS, OZP_VACCINE_NAZEV
 
 DEFAULT_INPUT = Path("data/OZP-Janosek_2025_06_B01_N02BF_N06AA.txt")
-DEFAULT_OUTPUT = Path("out/OZP_preskladane.csv")
+DEFAULT_OUTPUT = Path("data/OZP_preskladane.csv")
 
 
 def reshape_ozp(input_path: Path, output_path: Path) -> dict:

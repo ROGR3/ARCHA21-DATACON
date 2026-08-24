@@ -26,7 +26,7 @@ from reshape_common import (
 )
 
 DEFAULT_INPUT = Path("data/CPZP-POJ205_zadost25037.xlsx")
-DEFAULT_OUTPUT = Path("out/CPZP_preskladane.csv")
+DEFAULT_OUTPUT = Path("data/CPZP_preskladane.csv")
 
 NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 

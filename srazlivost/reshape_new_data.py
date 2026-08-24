@@ -19,7 +19,7 @@ def main() -> None:
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=Path("out"),
+        default=Path("data"),
         help="Output directory for *_preskladane.csv",
     )
     args = parser.parse_args()

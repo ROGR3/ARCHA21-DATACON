@@ -4,9 +4,10 @@ Měsíční křivky počtu předpisů B01 (srážlivost) — krok 1 z e-mailu Pa
 
 Pro každou pojišťovnu (cpzp, ozp, both_companies) generuje:
   - "age" sadu:  celek + 7 věkových dekád, čáry B01AA/AB/AE/AF/AX + B01 celkem
+                 ("B01 celkem" = součet jen těchto pěti podskupin, BEZ B01AC/AD)
   - "vax" sadu:  očkovaní + neočkovaní (stejné čáry jako výše)
   - specializaci: top 10 kódů odbornosti dle objemu + koš "ostatní",
-    počty za celé B01 (bez ATC rozpadu)
+    počty za celé B01 (bez ATC rozpadu, tj. včetně AC/AD)
 
 Věk = rok předpisu − rok narození (hrubý odhad, u OZP chybí měsíc narození).
 Očkovaný/neočkovaný = osoba má/nemá kdykoliv v datech alespoň jeden
@@ -145,23 +146,27 @@ def full_month_index() -> pl.DataFrame:
 
 
 def monthly_atc_counts(presc: pl.DataFrame, scope_filter: pl.Expr | None) -> pl.DataFrame:
-    """Wide tabulka: month, B01AA..B01AX, B01 celkem (počty), pro dané scope."""
-    scoped = presc if scope_filter is None else presc.filter(scope_filter)
+    """Wide tabulka: month, B01AA..B01AX, B01 celkem (počty), pro dané scope.
 
-    total = scoped.group_by("month").len().rename({"len": TOTAL_LABEL})
+    "B01 celkem" je součet jen zobrazených podskupin (AA/AB/AE/AF/AX) —
+    B01AC a B01AD se nevykreslují ani nezapočítávají do celkem."""
+    scoped = presc.filter(pl.col("atc5").is_in(ATC_SUBGROUPS))
+    if scope_filter is not None:
+        scoped = scoped.filter(scope_filter)
+
     present_subgroups = [c for c in ATC_SUBGROUPS if scoped.filter(pl.col("atc5") == c).height > 0]
     sub = (
-        scoped.filter(pl.col("atc5").is_in(ATC_SUBGROUPS))
-        .group_by("month", "atc5")
+        scoped.group_by("month", "atc5")
         .len()
         .pivot(on="atc5", index="month", values="len")
         if present_subgroups
         else pl.DataFrame({"month": []}, schema={"month": pl.Date})
     )
 
-    wide = full_month_index().join(total, on="month", how="left").join(sub, on="month", how="left")
-    value_cols = [c for c in ATC_SUBGROUPS if c in wide.columns] + [TOTAL_LABEL]
+    wide = full_month_index().join(sub, on="month", how="left")
+    value_cols = [c for c in ATC_SUBGROUPS if c in wide.columns]
     wide = wide.with_columns([pl.col(c).fill_null(0) for c in value_cols])
+    wide = wide.with_columns(pl.sum_horizontal(value_cols).alias(TOTAL_LABEL))
     return wide.sort("month")
 
 

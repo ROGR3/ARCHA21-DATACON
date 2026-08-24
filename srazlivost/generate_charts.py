@@ -6,6 +6,10 @@ Pro každou pojišťovnu (cpzp, ozp, both_companies) generuje:
   - "age" sadu:  celek + 7 věkových dekád, čáry B01AA/AB/AE/AF/AX + B01 celkem
                  ("B01 celkem" = součet jen těchto pěti podskupin, BEZ B01AC/AD)
   - "vax" sadu:  očkovaní + neočkovaní (stejné čáry jako výše)
+  - "crosstab" sadu: pro každou věkovou skupinu (+ všechny věky) graf se dvěma
+    panely vedle sebe (očkovaní / neočkovaní, sdílená osa y) — umožňuje
+    posoudit, jestli je trend AA→AF (warfarin→NOAC) stejný u obou skupin
+    v rámci stejného věku, nebo jde jen o věkový/sekulární efekt
   - specializaci: top 10 kódů odbornosti dle objemu + koš "ostatní",
     počty za celé B01 (bez ATC rozpadu, tj. včetně AC/AD)
 
@@ -219,6 +223,39 @@ def plot_lines(
     print(f"  → uloženo: {output_path}")
 
 
+def plot_crosstab(
+    wide_left: pl.DataFrame,
+    wide_right: pl.DataFrame,
+    series: list[tuple[str, dict]],
+    suptitle: str,
+    left_title: str,
+    right_title: str,
+    output_path: Path,
+) -> None:
+    """Dva panely vedle sebe se sdílenou osou y — pro přímé srovnání tvaru
+    křivek (např. AA vs. AF) mezi dvěma scope (typicky očko/neočko)."""
+    fig, axes = plt.subplots(1, 2, figsize=(16, 5), sharey=True)
+    for ax, wide, subtitle in ((axes[0], wide_left, left_title), (axes[1], wide_right, right_title)):
+        months = wide["month"].to_list()
+        for col, style in series:
+            if col not in wide.columns:
+                continue
+            ax.plot(months, wide[col].to_list(), label=col, **style)
+        ax.set_title(subtitle)
+        ax.set_xlabel("Měsíc")
+        ax.grid(True, alpha=0.3)
+    axes[0].set_ylabel("Počet předpisů")
+    axes[0].legend(loc="upper left", fontsize=8, ncol=2)
+    fig.suptitle(suptitle)
+    fig.autofmt_xdate()
+    plt.tight_layout()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  → uloženo: {output_path}")
+
+
 def atc_series() -> list[tuple[str, dict]]:
     series = [
         (c, {"color": ATC_COLORS[c], "linewidth": 1.2, "marker": "o", "markersize": 2})
@@ -288,6 +325,32 @@ def process_company(company: str) -> None:
         f"{label} — B01 předpisy měsíčně (neočkovaní)",
         out_dir / "atc_predpisy_mesicne_neockovani.png",
     )
+
+    print("  age × vax cross-tab…")
+    crosstab_dir = out_dir / "crosstab"
+    plot_crosstab(
+        wide_vax,
+        wide_novax,
+        atc_series(),
+        f"{label} — B01 předpisy měsíčně: očkovaní vs. neočkovaní (všechny věky)",
+        "Očkovaní",
+        "Neočkovaní",
+        crosstab_dir / "vsechny_veky.png",
+    )
+    for age_label, slug in AGE_BUCKETS:
+        wide_vax_age = monthly_atc_counts(presc, (pl.col("age_bucket") == age_label) & pl.col("is_vax"))
+        wide_novax_age = monthly_atc_counts(
+            presc, (pl.col("age_bucket") == age_label) & ~pl.col("is_vax")
+        )
+        plot_crosstab(
+            wide_vax_age,
+            wide_novax_age,
+            atc_series(),
+            f"{label} — B01 předpisy měsíčně: očkovaní vs. neočkovaní (věk {age_label})",
+            "Očkovaní",
+            "Neočkovaní",
+            crosstab_dir / f"vek_{slug}.png",
+        )
 
     print("  specializace…")
     wide_spec, top_codes = specialty_chart_data(presc)

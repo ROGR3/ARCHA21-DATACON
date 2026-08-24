@@ -13,6 +13,9 @@ Pro každou pojišťovnu (cpzp, ozp, both_companies) generuje:
   - specializaci: top 10 kódů odbornosti dle objemu + koš "ostatní",
     počty za celé B01 (bez ATC rozpadu, tj. včetně AC/AD)
 
+Velikost populace N (= počet distinct osob s ≥1 předpisem B01AA/AB/AE/AF/AX
+v daném scope) je vypsaná v titulku každého grafu.
+
 Věk = rok předpisu − rok narození (hrubý odhad, u OZP chybí měsíc narození).
 Očkovaný/neočkovaný = osoba má/nemá kdykoliv v datech alespoň jeden
 vakcinační řádek (celoobdobní ever-vaccinated, ne zarovnané k datu vakcinace).
@@ -138,7 +141,7 @@ def build_prescriptions(df: pl.LazyFrame) -> pl.DataFrame:
             .cast(pl.Utf8)
             .alias("age_bucket")
         )
-        .select("month", "atc5", "age_bucket", "is_vax", "Specializace")
+        .select("Id_pojistence", "month", "atc5", "age_bucket", "is_vax", "Specializace")
     )
     return presc.collect()
 
@@ -174,6 +177,15 @@ def monthly_atc_counts(presc: pl.DataFrame, scope_filter: pl.Expr | None) -> pl.
     return wide.sort("month")
 
 
+def population_size(presc: pl.DataFrame, scope_filter: pl.Expr | None) -> int:
+    """Počet distinct osob s ≥1 předpisem B01AA/AB/AE/AF/AX v daném scope
+    (napříč celým obdobím) — používá se jako "N" v titulcích grafů."""
+    scoped = presc.filter(pl.col("atc5").is_in(ATC_SUBGROUPS))
+    if scope_filter is not None:
+        scoped = scoped.filter(scope_filter)
+    return scoped.select(pl.col("Id_pojistence").n_unique()).item()
+
+
 def specialty_chart_data(presc: pl.DataFrame) -> tuple[pl.DataFrame, list[str]]:
     top_codes = (
         presc.group_by("Specializace")
@@ -197,12 +209,19 @@ def specialty_chart_data(presc: pl.DataFrame) -> tuple[pl.DataFrame, list[str]]:
     return wide.sort("month"), top_codes
 
 
+def _fmt_n(n: int) -> str:
+    return f"{n:,}".replace(",", " ")
+
+
 def plot_lines(
     wide: pl.DataFrame,
     series: list[tuple[str, dict]],
     title: str,
     output_path: Path,
+    n_population: int | None = None,
 ) -> None:
+    if n_population is not None:
+        title = f"{title}\n(N = {_fmt_n(n_population)} osob)"
     months = wide["month"].to_list()
     fig, ax = plt.subplots(figsize=(12, 5))
     for col, style in series:
@@ -231,9 +250,15 @@ def plot_crosstab(
     left_title: str,
     right_title: str,
     output_path: Path,
+    n_left: int | None = None,
+    n_right: int | None = None,
 ) -> None:
     """Dva panely vedle sebe se sdílenou osou y — pro přímé srovnání tvaru
     křivek (např. AA vs. AF) mezi dvěma scope (typicky očko/neočko)."""
+    if n_left is not None:
+        left_title = f"{left_title} (N = {_fmt_n(n_left)})"
+    if n_right is not None:
+        right_title = f"{right_title} (N = {_fmt_n(n_right)})"
     fig, axes = plt.subplots(1, 2, figsize=(16, 5), sharey=True)
     for ax, wide, subtitle in ((axes[0], wide_left, left_title), (axes[1], wide_right, right_title)):
         months = wide["month"].to_list()
@@ -293,63 +318,63 @@ def process_company(company: str) -> None:
     print(f"  {presc.height:,} B01 předpisů")
     out_dir = CHARTS_DIR / company
 
+    age_scopes: list[tuple[str, str, pl.Expr | None]] = [("vsechny_veky", "všechny věky", None)]
+    age_scopes += [
+        (f"vek_{slug}", f"věk {age_label}", pl.col("age_bucket") == age_label)
+        for age_label, slug in AGE_BUCKETS
+    ]
+
     print("  age sada…")
-    wide_all = monthly_atc_counts(presc, None)
-    plot_lines(
-        wide_all,
-        atc_series(),
-        f"{label} — B01 předpisy měsíčně (všechny věky)",
-        out_dir / "atc_predpisy_mesicne_vsechny_veky.png",
-    )
-    for age_label, slug in AGE_BUCKETS:
-        wide = monthly_atc_counts(presc, pl.col("age_bucket") == age_label)
+    for slug, desc, scope in age_scopes:
+        wide = monthly_atc_counts(presc, scope)
+        n = population_size(presc, scope)
         plot_lines(
             wide,
             atc_series(),
-            f"{label} — B01 předpisy měsíčně (věk {age_label})",
-            out_dir / f"atc_predpisy_mesicne_vek_{slug}.png",
+            f"{label} — B01 předpisy měsíčně ({desc})",
+            out_dir / f"atc_predpisy_mesicne_{slug}.png",
+            n_population=n,
         )
 
     print("  vax sada…")
-    wide_vax = monthly_atc_counts(presc, pl.col("is_vax"))
-    plot_lines(
-        wide_vax,
-        atc_series(),
-        f"{label} — B01 předpisy měsíčně (očkovaní)",
-        out_dir / "atc_predpisy_mesicne_ockovani.png",
-    )
-    wide_novax = monthly_atc_counts(presc, ~pl.col("is_vax"))
-    plot_lines(
-        wide_novax,
-        atc_series(),
-        f"{label} — B01 předpisy měsíčně (neočkovaní)",
-        out_dir / "atc_predpisy_mesicne_neockovani.png",
-    )
+    vax_scopes = [
+        ("ockovani", "očkovaní", pl.col("is_vax")),
+        ("neockovani", "neočkovaní", ~pl.col("is_vax")),
+    ]
+    for slug, desc, scope in vax_scopes:
+        wide = monthly_atc_counts(presc, scope)
+        n = population_size(presc, scope)
+        plot_lines(
+            wide,
+            atc_series(),
+            f"{label} — B01 předpisy měsíčně ({desc})",
+            out_dir / f"atc_predpisy_mesicne_{slug}.png",
+            n_population=n,
+        )
 
     print("  age × vax cross-tab…")
     crosstab_dir = out_dir / "crosstab"
-    plot_crosstab(
-        wide_vax,
-        wide_novax,
-        atc_series(),
-        f"{label} — B01 předpisy měsíčně: očkovaní vs. neočkovaní (všechny věky)",
-        "Očkovaní",
-        "Neočkovaní",
-        crosstab_dir / "vsechny_veky.png",
-    )
-    for age_label, slug in AGE_BUCKETS:
-        wide_vax_age = monthly_atc_counts(presc, (pl.col("age_bucket") == age_label) & pl.col("is_vax"))
-        wide_novax_age = monthly_atc_counts(
-            presc, (pl.col("age_bucket") == age_label) & ~pl.col("is_vax")
-        )
+    crosstab_scopes: list[tuple[str, str, pl.Expr | None]] = [("vsechny_veky", "všechny věky", None)]
+    crosstab_scopes += [
+        (f"vek_{slug}", f"věk {age_label}", pl.col("age_bucket") == age_label)
+        for age_label, slug in AGE_BUCKETS
+    ]
+    for slug, desc, age_scope in crosstab_scopes:
+        vax_scope = pl.col("is_vax") if age_scope is None else (age_scope & pl.col("is_vax"))
+        novax_scope = ~pl.col("is_vax") if age_scope is None else (age_scope & ~pl.col("is_vax"))
+
+        wide_vax_scope = monthly_atc_counts(presc, vax_scope)
+        wide_novax_scope = monthly_atc_counts(presc, novax_scope)
         plot_crosstab(
-            wide_vax_age,
-            wide_novax_age,
+            wide_vax_scope,
+            wide_novax_scope,
             atc_series(),
-            f"{label} — B01 předpisy měsíčně: očkovaní vs. neočkovaní (věk {age_label})",
+            f"{label} — B01 předpisy měsíčně: očkovaní vs. neočkovaní ({desc})",
             "Očkovaní",
             "Neočkovaní",
-            crosstab_dir / f"vek_{slug}.png",
+            crosstab_dir / f"{slug}.png",
+            n_left=population_size(presc, vax_scope),
+            n_right=population_size(presc, novax_scope),
         )
 
     print("  specializace…")
@@ -359,6 +384,7 @@ def process_company(company: str) -> None:
         specialty_series(top_codes),
         f"{label} — B01 předpisy měsíčně dle odbornosti lékaře (top {TOP_N_SPECIALTIES})",
         out_dir / "specializace_predpisy_mesicne.png",
+        n_population=population_size(presc, None),
     )
 
 

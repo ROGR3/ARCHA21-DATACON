@@ -5,7 +5,6 @@ Měsíční křivky počtu předpisů B01 (srážlivost) — krok 1 z e-mailu Pa
 Pro každou pojišťovnu (cpzp, ozp, both_companies) generuje:
   - "age" sadu:  celek + 7 věkových dekád, čáry B01AA/AB/AE/AF/AX + B01 celkem
                  ("B01 celkem" = součet jen těchto pěti podskupin, BEZ B01AC/AD)
-  - "vax" sadu:  očkovaní + neočkovaní (stejné čáry jako výše)
   - "crosstab" sadu: pro každou věkovou skupinu (+ všechny věky) graf se dvěma
     panely vedle sebe (očkovaní / neočkovaní, sdílená osa y) — umožňuje
     posoudit, jestli je trend AA→AF (warfarin→NOAC) stejný u obou skupin
@@ -326,22 +325,6 @@ def process_company(company: str) -> None:
 
     print("  age sada…")
     for slug, desc, scope in age_scopes:
-        wide = monthly_atc_counts(presc, scope)
-        n = population_size(presc, scope)
-        plot_lines(
-            wide,
-            atc_series(),
-            f"{label} — B01 předpisy měsíčně ({desc})",
-            out_dir / f"atc_predpisy_mesicne_{slug}.png",
-            n_population=n,
-        )
-
-    print("  vax sada…")
-    vax_scopes = [
-        ("ockovani", "očkovaní", pl.col("is_vax")),
-        ("neockovani", "neočkovaní", ~pl.col("is_vax")),
-    ]
-    for slug, desc, scope in vax_scopes:
         wide = monthly_atc_counts(presc, scope)
         n = population_size(presc, scope)
         plot_lines(

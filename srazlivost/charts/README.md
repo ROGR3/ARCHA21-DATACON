@@ -29,7 +29,7 @@ Uvnitř každé z nich je úplně stejná struktura, popsaná níž.
 Hepariny se předepisují jak preventivně (po operaci, po zlomenině...), tak k léčbě trombózy — a v datech to jde odlišit jen podle síly/dávky léku. Proto jsou tu tři varianty, které si můžeš mezi sebou porovnat:
 
 - `vse/` — úplně všechny předpisy B01AB, žádné filtrování (nejvíc "syrová" varianta)
-- `jen_vyssi_davky/` — B01AB je omezené jen na vyšší (terapeutické) dávky, tedy odfiltrované ty typicky preventivní/profylaktické (např. Heparin 5000 IU, Bemiparin 2500/3500 IU apod.) — je to jen heuristika podle textového pole "síla", takže berte s rezervou
+- `jen_vyssi_davky/` — B01AB je omezené jen na vyšší (terapeutické) dávky, tedy odfiltrované ty typicky preventivní/profylaktické (např. Heparin 5000 IU, Bemiparin 2500/3500 IU apod.) — je to jen heuristika podle textového pole "síla", takže berte s rezervou. Přesný seznam, co přesně počítáme jako "vyšší dávka", je v příloze na konci dokumentu.
 - `bez_heparinu/` — B01AB úplně vyřazené z grafu i ze součtu. Heparin má tak vysoká čísla, že ostatní léky (AA, AE, AF, AX) by se v jeho měřítku "plazily po nule" — tady je jejich vývoj konečně vidět
 
 ## Co je v každé z těchto tří variant
@@ -45,3 +45,15 @@ V titulku každého grafu je i **N** = kolik lidí v dané skupině mělo aspoň
 ## Specializace
 
 `specializace_predpisy_mesicne.png` (jeden v `2015-2024/`, jeden v `2019-2024/`) — počty předpisů podle odbornosti předepisujícího lékaře, top 10 odborností + koš "ostatní". Tohle je za celé B01 (bez rozpadu na jednotlivé léky, tedy včetně AC/AD) a bez dávkového filtrování.
+
+## Příloha: co přesně je "vyšší dávka" u heparinů (B01AB) ve variantě `jen_vyssi_davky/`
+
+Filtrujeme podle dvojice (léčivá látka, síla), jak je zapsaná v datech. Kombinace, které tu nejsou vypsané vůbec (jiná neznámá síla/látka), se konzervativně berou jako **profylaktické** (tedy vyřazené).
+
+- **Enoxaparin** — vyřazeno: 20 mg, 40 mg. Zahrnuto (léčba): 60 mg a víc (60/80/100/120/150 mg)
+- **Nadroparin** — vyřazeno: běžný 9500 IU/ml (bez "Forte" — ze samotné síly nejde poznat podaný objem, takže je to nejednoznačné a raději ho vyřazujeme). Zahrnuto: "Forte" 19000 IU/ml
+- **Heparin** (nefrakcionovaný) — vyřazeno: 5000 IU/ml (klasická profylaktická podkožní dávka). Žádná síla tu není označená jako léčebná, takže nefrakcionovaný heparin je v `jen_vyssi_davky/` fakticky vždy vyřazený
+- **Bemiparin** — vyřazeno: 2500 IU, 3500 IU (standardní fixní profylaktické dávky). Zahrnuto: 12 500 IU a víc (12 500/17 500/25 000 IU — dávkuje se podle váhy, používá se k léčbě)
+- **Dalteparin** — zahrnuto: 12 500 IU/ml a 25 000 IU/ml (vysoké koncentrace, používané pro váhově dávkovanou léčbu)
+- **Sulodexid** — vyřazeno vždy (jiná indikace, ne léčba akutní trombózy/embolie)
+- **Antitrombin III** — vyřazeno vždy (jiná indikace)

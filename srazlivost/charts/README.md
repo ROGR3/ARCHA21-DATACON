@@ -34,7 +34,7 @@ Hepariny se předepisují jak preventivně (po operaci, po zlomenině...), tak k
 
 ## Co je v každé z těchto tří variant
 
-- `atc_predpisy_mesicne_<věk>.png` — křivky B01AA/AB/AE/AF/AX + celkem, samostatně pro každou věkovou dekádu (`vek_pod_30`, `vek_30-39`, ... `vek_80_plus`) a pro `vsechny_veky`
+- `atc_predpisy_mesicne_<věk>.png` — křivky B01AA/AB/AE/AF/AX + celkem, samostatně pro každou věkovou dekádu (`vek_0-9`, `vek_10-19`, `vek_20-29`, `vek_30-39`, ... `vek_80_plus`) a pro `vsechny_veky`
 - `crosstab/vedle_sebe/<věk>.png` — totéž, ale rozdělené na očkované a neočkované, oba panely vedle sebe se stejnou osou y (dobré pro porovnání výšky/velikosti křivek)
 - `crosstab/nad_sebou/<věk>.png` — stejná data jako výš, jen panely nad sebou se sdílenou osou x (dobré pro porovnání, KDY přesně se co děje — stejný měsíc je přesně pod sebou)
 

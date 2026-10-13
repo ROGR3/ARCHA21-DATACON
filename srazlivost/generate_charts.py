@@ -27,7 +27,7 @@ Pro každou pojišťovnu (cpzp, ozp, both_companies) generuje strukturu:
   - "bez_heparinu"    — B01AB úplně vynechané (jen AA/AE/AF/AX + jejich
     součet) — když i "jen_vyssi_davky" pořád dominuje měřítko kvůli AA/AF
 
-<scope> = "vsechny_veky" nebo "vek_<bucket>" (7 věkových dekád).
+<scope> = "vsechny_veky" nebo "vek_<bucket>" (9 věkových dekád od 0–9).
 
 Velikost populace N (= počet distinct osob s ≥1 předpisem v dané dávkové
 variantě a scope) je vypsaná v titulku každého grafu.
@@ -141,7 +141,9 @@ HEPARIN_STRENGTH_IS_THERAPEUTIC: dict[tuple[str, str], bool] = {
 
 # (zobrazovaný label, bezpečný slug pro název souboru)
 AGE_BUCKETS = [
-    ("<30", "pod_30"),
+    ("0-9", "0-9"),
+    ("10-19", "10-19"),
+    ("20-29", "20-29"),
     ("30-39", "30-39"),
     ("40-49", "40-49"),
     ("50-59", "50-59"),
@@ -149,7 +151,7 @@ AGE_BUCKETS = [
     ("70-79", "70-79"),
     ("80+", "80_plus"),
 ]
-AGE_BREAKS = [30, 40, 50, 60, 70, 80]
+AGE_BREAKS = [10, 20, 30, 40, 50, 60, 70, 80]
 AGE_LABELS = [label for label, _ in AGE_BUCKETS]
 
 TOP_N_SPECIALTIES = 10

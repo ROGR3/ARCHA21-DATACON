@@ -42,6 +42,12 @@ Očkovaný/neočkovaný = má/nemá kdykoliv v datech aspoň jeden záznam o vak
 
 V titulku každého grafu je i **N** = kolik lidí v dané skupině mělo aspoň jeden předpis z těchhle pěti kategorií.
 
+## Kdy se očkovalo
+
+`vax_period/` (jeden v `cpzp/`, `ozp/` i `both_companies/`) — kolik lidí se v daný den nechalo očkovat. Jedna čára = jedna dávka v pořadí u daného člověka (1. dávka, 2. dávka, … až po poslední, která v datech je, klidně 10.). Všechny dávky jsou v jednom grafu. Číslo je 7denní průměr, ať denní šum neskáče. Zelené pásmo „období vakcinace“ tu není.
+
+Soubory jsou po stejných věkových dekádách jako předpisy (`vek_0-9` … `vek_80_plus`) plus `vsechny_veky`. Věk je rok očkování minus rok narození. N v titulku = kolik lidí v té skupině má aspoň jedno očkování.
+
 ## Specializace
 
 `specializace_predpisy_mesicne.png` (jeden v `2015-2024/`, jeden v `2019-2024/`) — počty předpisů podle odbornosti předepisujícího lékaře, top 10 odborností + koš "ostatní". Tohle je za celé B01 (bez rozpadu na jednotlivé léky, tedy včetně AC/AD) a bez dávkového filtrování.

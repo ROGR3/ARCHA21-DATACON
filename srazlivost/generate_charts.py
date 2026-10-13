@@ -9,6 +9,10 @@ Pro každou pojišťovnu (cpzp, ozp, both_companies) generuje strukturu:
       crosstab/vedle_sebe/<scope>.png              (očko|neočko, 2 panely vedle sebe)
       crosstab/nad_sebou/<scope>.png               (očko nad neočko, sdílená osa x)
   charts/<company>/<období>/specializace_predpisy_mesicne.png
+  charts/<company>/vax_period/<scope>.png
+      denní počty očkování (7denní průměr), jedna čára na každou dávku
+      v pořadí u daného člověka (1. až poslední, i 10.). Bez zvýraznění
+      období vakcinace.
 
 <období>:
   - "2015-2024" — celý rozsah dat, roční popisky osy x
@@ -497,6 +501,119 @@ def specialty_series(top_codes: list[str]) -> list[tuple[str, dict]]:
     ]
 
 
+def build_vaccinations(df: pl.LazyFrame) -> pl.DataFrame:
+    """Jeden řádek na vakcinaci. `dose` = pořadí záznamu u člověka podle data
+    (1 = první očkování, 10 = desáté), ne efektivní dávka (Janssen ≠ 2)."""
+    return (
+        df.filter(pl.col("Typ_udalosti") == "vakcinace")
+        .select("Id_pojistence", "Rok_narozeni", "Datum_udalosti")
+        .drop_nulls("Datum_udalosti")
+        .with_columns(
+            (pl.col("Datum_udalosti").dt.year() - pl.col("Rok_narozeni")).alias("age")
+        )
+        .sort("Id_pojistence", "Datum_udalosti")
+        .with_columns(
+            pl.col("Datum_udalosti")
+            .rank("ordinal")
+            .over("Id_pojistence")
+            .cast(pl.Int32)
+            .alias("dose")
+        )
+        .with_columns(
+            pl.col("age")
+            .cut(AGE_BREAKS, labels=AGE_LABELS, left_closed=True)
+            .cast(pl.Utf8)
+            .alias("age_bucket")
+        )
+        .select("Id_pojistence", "Datum_udalosti", "dose", "age_bucket")
+        .collect()
+    )
+
+
+def vaccination_ma(
+    vax: pl.DataFrame, scope: pl.Expr | None
+) -> tuple[pl.DataFrame, list[int], int]:
+    """Denní počty očkování v scope, doplněné nulami na celé období a
+    vyhlazené 7denním klouzavým průměrem. Osa x je společná pro celou
+    pojišťovnu, ať jdou dekády srovnat."""
+    scoped = vax if scope is None else vax.filter(scope)
+    n = scoped.select(pl.col("Id_pojistence").n_unique()).item() if scoped.height else 0
+    if scoped.height == 0:
+        return pl.DataFrame(), [], n
+
+    start, end = vax["Datum_udalosti"].min(), vax["Datum_udalosti"].max()
+    counts = scoped.group_by("Datum_udalosti", "dose").len().pivot(
+        on="dose", index="Datum_udalosti", values="len"
+    )
+    days = pl.DataFrame(
+        {"Datum_udalosti": pl.date_range(start, end, interval="1d", eager=True)}
+    )
+    wide = days.join(counts, on="Datum_udalosti", how="left")
+    dose_cols = sorted(int(c) for c in wide.columns if c != "Datum_udalosti")
+    wide = wide.with_columns(
+        [
+            pl.col(str(c))
+            .fill_null(0)
+            .rolling_mean(window_size=7, min_samples=1, center=True)
+            for c in dose_cols
+        ]
+    )
+    present = [c for c in dose_cols if wide[str(c)].sum() > 0]
+    return wide.sort("Datum_udalosti"), present, n
+
+
+def plot_vax_doses(
+    wide: pl.DataFrame,
+    doses: list[int],
+    title: str,
+    output_path: Path,
+    n_population: int,
+) -> None:
+    dates = wide["Datum_udalosti"].to_list()
+    cmap = plt.get_cmap("tab10")
+    fig, ax = plt.subplots(figsize=(12, 5))
+    for i, dose in enumerate(doses):
+        ax.plot(
+            dates,
+            wide[str(dose)].to_list(),
+            label=f"{dose}. dávka",
+            color=cmap(i % 10),
+            linewidth=1.4,
+        )
+    ax.set_title(f"{title}\n(N = {_fmt_n(n_population)} osob, 7denní průměr)")
+    ax.set_xlabel("Datum")
+    ax.set_ylabel("Počet očkování")
+    ax.legend(loc="upper right", fontsize=8, ncol=2)
+    ax.grid(True, alpha=0.3)
+    fig.autofmt_xdate()
+    plt.tight_layout()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  → uloženo: {output_path}")
+
+
+def process_vax_timelines(company: str) -> None:
+    label = COMPANY_LABELS[company]
+    print(f"=== {company}: očkování po dávkách ===")
+    vax = build_vaccinations(load_company(company))
+    print(f"  {vax.height:,} vakcinací, max dávka {vax['dose'].max()}")
+    out_dir = CHARTS_DIR / company / "vax_period"
+    for slug, desc, scope in AGE_SCOPES:
+        wide, doses, n = vaccination_ma(vax, scope)
+        if not doses:
+            print(f"  {slug}: žádná očkování, přeskakuji")
+            continue
+        plot_vax_doses(
+            wide,
+            doses,
+            f"{label} — očkování ({desc})",
+            out_dir / f"{slug}.png",
+            n_population=n,
+        )
+
+
 # (slug složky, popisek, počátek rozsahu, měsíční popisky osy x)
 PERIODS: list[tuple[str, str, date, bool]] = [
     ("2015-2024", "2015–2023", MONTH_START, False),
@@ -590,6 +707,8 @@ def process_company(company: str) -> None:
             monthly_ticks=monthly_ticks,
         )
 
+    process_vax_timelines(company)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -600,9 +719,17 @@ def main() -> None:
         default=COMPANIES,
         help="Které pojišťovny zpracovat (default: všechny)",
     )
+    parser.add_argument(
+        "--only-vax",
+        action="store_true",
+        help="Jen grafy očkování po dávkách (charts/<company>/vax_period/)",
+    )
     args = parser.parse_args()
     for company in args.companies:
-        process_company(company)
+        if args.only_vax:
+            process_vax_timelines(company)
+        else:
+            process_company(company)
     print("\nHotovo!")
 
 

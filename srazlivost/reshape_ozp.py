@@ -12,6 +12,32 @@ from reshape_common import OUTPUT_COLUMNS, OZP_VACCINE_NAZEV
 
 DEFAULT_INPUT = Path("data/OZP-Janosek_2025_06_B01_N02BF_N06AA.txt")
 DEFAULT_OUTPUT = Path("data/OZP_preskladane.csv")
+SUKL_LOOKUP = Path(__file__).resolve().parent / "lookup" / "ozp_sukl.csv"
+
+
+def _sukl_lookup() -> pl.DataFrame:
+    """SÚKL code → trade name, CPZP-style substance, form, registration number.
+
+    Built from the DLP open data plus the April 2024 API dose for codes the
+    current snapshot no longer lists. Substance strings match CPZP.
+    """
+    return (
+        pl.read_csv(SUKL_LOOKUP, null_values=[""])
+        .with_columns(
+            pl.col("kod")
+            .cast(pl.Utf8)
+            .str.strip_chars()
+            .str.replace(r"^0+", "")
+            .alias("_sukl_kod")
+        )
+        .select(
+            "_sukl_kod",
+            pl.col("nazev").alias("_sukl_nazev"),
+            pl.col("lecive_latky").alias("_sukl_latky"),
+            pl.col("lekova_forma").alias("_sukl_forma"),
+            pl.col("registracni_cislo").alias("_sukl_rc"),
+        )
+    )
 
 
 def reshape_ozp(input_path: Path, output_path: Path) -> dict:
@@ -163,15 +189,15 @@ def reshape_ozp(input_path: Path, output_path: Path) -> dict:
                 .str.strip_chars()
                 .alias("Specializace"),
                 pl.lit(None).cast(pl.Int64).alias("Mesic_narozeni"),
-                pl.lit(None).cast(pl.Utf8).alias("léková_forma_zkr"),
-                pl.lit(None).cast(pl.Utf8).alias("léčivé_látky"),
                 pl.col("Velikost_baleni")
                 .cast(pl.Utf8, strict=False)
                 .str.strip_chars()
                 .alias("velikost_baleni"),
+                detail_str.str.replace(r"^0+", "").alias("_sukl_kod"),
             ]
         )
         .join(vax_map, on="Detail_udalosti", how="left")
+        .join(_sukl_lookup(), on="_sukl_kod", how="left")
         .with_columns(
             pl.when(pl.col("Typ_udalosti") == "vakcinace")
             .then(
@@ -185,8 +211,22 @@ def reshape_ozp(input_path: Path, output_path: Path) -> dict:
                     ),
                 )
             )
+            .when(pl.col("Typ_udalosti") == "předpis")
+            .then(pl.col("_sukl_nazev"))
             .otherwise(None)
-            .alias("Nazev")
+            .alias("Nazev"),
+            pl.when(pl.col("Typ_udalosti") == "předpis")
+            .then(pl.col("_sukl_latky"))
+            .otherwise(None)
+            .alias("léčivé_látky"),
+            pl.when(pl.col("Typ_udalosti") == "předpis")
+            .then(pl.col("_sukl_forma"))
+            .otherwise(None)
+            .alias("léková_forma_zkr"),
+            pl.when(pl.col("Typ_udalosti") == "předpis")
+            .then(pl.col("_sukl_rc"))
+            .otherwise(None)
+            .alias("registracni_cislo"),
         )
         .select(OUTPUT_COLUMNS)
     )

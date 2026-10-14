@@ -70,4 +70,4 @@ Warfarin (B01AA), altepláza (B01AD) a B01AX se sílou nefiltrují. Všechno, co
 - **Apixaban** (B01AF02) — ponecháno 5 mg a 10 mg. 2,5 mg je pryč. 10 mg v datech zatím není, pravidlo ho ale nechává.
 - **Edoxaban** (B01AF03) — ponecháno 30 mg a 60 mg. 15 mg je pryč.
 
-Filtr je podle ATC a síly (u Fraxiparinu podle objemu stříkačky), ne podle názvu léčivé látky. U OZP látka v datech není a filtr stejně funguje.
+Filtr je podle ATC a síly (u Fraxiparinu podle objemu stříkačky). Léčivá látka, léková forma, obchodní název a registrační číslo jsou u OZP doplněné z číselníku SÚKL (`lookup/ozp_sukl.csv`) a látka je napsaná stejně jako u ČPZP. U 61 starých kódů registr obchodní název už nevede; látka u nich je.

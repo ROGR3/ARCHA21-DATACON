@@ -150,6 +150,7 @@ def row_to_output(row: list[str | None], sheet_name: str) -> dict | None:
             "Datum_udalosti": None,
             "lekova_skupina": None,
             "velikost_baleni": None,
+            "registracni_cislo": None,
         }
 
     while len(row) < EVENT_WIDTH:
@@ -190,6 +191,7 @@ def row_to_output(row: list[str | None], sheet_name: str) -> dict | None:
         "Datum_udalosti": date_to_str(excel_serial_to_date(row[16])),
         "lekova_skupina": lekova_skupina_from_atc(atc),
         "velikost_baleni": velikost if typ == "předpis" else None,
+        "registracni_cislo": detail if typ == "předpis" else None,
     }
 
 

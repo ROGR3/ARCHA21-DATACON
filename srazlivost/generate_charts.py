@@ -93,8 +93,8 @@ ATC_COLORS = {
 }
 TOTAL_LABEL = "B01 celkem"
 
-# Terapeutické síly NOAC. Klíč je sedmimístné ATC, takže to jde i u OZP,
-# kde chybí léčivá látka. Apixaban 10 mg v datech není, v pravidle je.
+# Terapeutické síly NOAC. Klíč je sedmimístné ATC. Apixaban 10 mg v datech
+# není, v pravidle je. Látka u OZP je doplněná ze SÚKL, filtr ji nepotřebuje.
 NOAC_HIGHER_STRENGTHS: dict[str, set[str]] = {
     "B01AE07": {"150MG"},
     "B01AF01": {"15MG", "20MG"},

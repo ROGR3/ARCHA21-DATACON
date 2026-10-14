@@ -24,13 +24,13 @@ Uvnitř každé z nich je úplně stejná struktura, popsaná níž.
 - `2015-2024/` — celý dostupný rozsah dat, popisky osy x po rocích
 - `2019-2024/` — jen od roku 2019, popisky osy x po měsících — aby šlo přesně vidět, kdy se co v roce 2021/2022 hýbe (covid vs. konkrétní vlny očkování)
 
-## Tři varianty podle dávky heparinu (B01AB)
+## Tři varianty podle dávky
 
-Hepariny se předepisují jak preventivně (po operaci, po zlomenině...), tak k léčbě trombózy — a v datech to jde odlišit jen podle síly/dávky léku. Proto jsou tu tři varianty, které si můžeš mezi sebou porovnat:
+Hepariny i NOAC se dávají jak preventivně, tak k léčbě. Proto jsou tu tři varianty:
 
-- `vse/` — úplně všechny předpisy B01AB, žádné filtrování (nejvíc "syrová" varianta)
-- `jen_vyssi_davky/` — B01AB je omezené jen na vyšší (terapeutické) dávky, tedy odfiltrované ty typicky preventivní/profylaktické (např. Heparin 5000 IU, Bemiparin 2500/3500 IU apod.) — je to jen heuristika podle textového pole "síla", takže berte s rezervou. Přesný seznam, co přesně počítáme jako "vyšší dávka", je v příloze na konci dokumentu.
-- `bez_heparinu/` — B01AB úplně vyřazené z grafu i ze součtu. Heparin má tak vysoká čísla, že ostatní léky (AA, AE, AF, AX) by se v jeho měřítku "plazily po nule" — tady je jejich vývoj konečně vidět
+- `vse/` — úplně všechny předpisy, žádné filtrování síly
+- `jen_vyssi_davky/` — jen terapeutické dávky. Přesný seznam je v příloze na konci dokumentu
+- `bez_heparinu/` — B01AB úplně vyřazené z grafu i ze součtu, ostatní léky bez filtru síly. Heparin má tak vysoká čísla, že ostatní by se v jeho měřítku "plazily po nule"
 
 ## Co je v každé z těchto tří variant
 
@@ -48,18 +48,25 @@ V titulku každého grafu je i **N** = kolik lidí v dané skupině mělo aspoň
 
 Soubory jsou po stejných věkových dekádách jako předpisy (`vek_0-9` … `vek_80_plus`) plus `vsechny_veky`. Věk je rok očkování minus rok narození. N v titulku = kolik lidí v té skupině má aspoň jedno očkování.
 
+## Kolikrát měl kdo předpis
+
+`histogram_vyssi_davky/<rok>.png` — roky 2019, 2020, 2021 a 2022, zvlášť. Osa x je počet předpisů **jedné** ATC skupiny u jednoho člověka v tom roce (1, 2, … 12, poslední sloupec je 13 a víc). Osa y je počet lidí s právě tolika předpisy. Barva sloupce je ATC skupina.
+
+Platí stejný filtr jako `jen_vyssi_davky` (příloha na konci). Člověk s nulou v dané skupině v grafu není. Kdo má třeba warfarin i rivaroxaban, je ve dvou skupinách zvlášť, dohromady se to nesčítá.
+
 ## Specializace
 
 `specializace_predpisy_mesicne.png` (jeden v `2015-2024/`, jeden v `2019-2024/`) — počty předpisů podle odbornosti předepisujícího lékaře, top 10 odborností + koš "ostatní". Tohle je za celé B01 (bez rozpadu na jednotlivé léky, tedy včetně AC/AD) a bez dávkového filtrování.
 
-## Příloha: co přesně je "vyšší dávka" u heparinů (B01AB) ve variantě `jen_vyssi_davky/`
+## Příloha: co je "vyšší dávka" ve variantě `jen_vyssi_davky/`
 
-Filtrujeme podle dvojice (léčivá látka, síla), jak je zapsaná v datech. Kombinace, které tu nejsou vypsané vůbec (jiná neznámá síla/látka), se konzervativně berou jako **profylaktické** (tedy vyřazené).
+Warfarin (B01AA) a B01AX se sílou nefiltrují. Všechno, co tu není vypsané jako ponechané, je z téhle varianty pryč.
 
-- **Enoxaparin** — vyřazeno: 20 mg, 40 mg. Zahrnuto (léčba): 60 mg a víc (60/80/100/120/150 mg)
-- **Nadroparin** — vyřazeno: běžný 9500 IU/ml (bez "Forte" — ze samotné síly nejde poznat podaný objem, takže je to nejednoznačné a raději ho vyřazujeme). Zahrnuto: "Forte" 19000 IU/ml
-- **Heparin** (nefrakcionovaný) — vyřazeno: 5000 IU/ml (klasická profylaktická podkožní dávka). Žádná síla tu není označená jako léčebná, takže nefrakcionovaný heparin je v `jen_vyssi_davky/` fakticky vždy vyřazený
-- **Bemiparin** — vyřazeno: 2500 IU, 3500 IU (standardní fixní profylaktické dávky). Zahrnuto: 12 500 IU a víc (12 500/17 500/25 000 IU — dávkuje se podle váhy, používá se k léčbě)
-- **Dalteparin** — zahrnuto: 12 500 IU/ml a 25 000 IU/ml (vysoké koncentrace, používané pro váhově dávkovanou léčbu)
-- **Sulodexid** — vyřazeno vždy (jiná indikace, ne léčba akutní trombózy/embolie)
-- **Antitrombin III** — vyřazeno vždy (jiná indikace)
+- **Nadroparin / Fraxiparin** (B01AB06) — ponecháno, když je stříkačka 0,6 ml a větší (0,6 / 0,8 / 1 ml), a to i u Forte. Objem je z velikosti balení, třeba `10X0,6ML`. Stříkačky 0,3 a 0,4 ml jsou profylaxe a jsou pryč. Když objem v záznamu chybí, řádek je pryč.
+- **Ostatní hepariny** (enoxaparin, nefrakcionovaný heparin, bemiparin, dalteparin, sulodexid, antitrombin) — v téhle variantě nejsou, i kdyby šlo o vyšší sílu.
+- **Dabigatran** (B01AE07) — ponecháno jen 150 mg. 110 mg a 75 mg jsou pryč.
+- **Rivaroxaban** (B01AF01) — ponecháno 15 mg a 20 mg. 10 mg, 2,5 mg a sirup 1 mg/ml jsou pryč.
+- **Apixaban** (B01AF02) — ponecháno 5 mg a 10 mg. 2,5 mg je pryč. 10 mg v datech zatím není, pravidlo ho ale nechává.
+- **Edoxaban** (B01AF03) — ponecháno 30 mg a 60 mg. 15 mg je pryč.
+
+Filtr je podle ATC a síly (u Fraxiparinu podle objemu stříkačky), ne podle názvu léčivé látky. U OZP látka v datech není a filtr stejně funguje.

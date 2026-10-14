@@ -13,23 +13,27 @@ Pro každou pojišťovnu (cpzp, ozp, both_companies) generuje strukturu:
       denní počty očkování (7denní průměr), jedna čára na každou dávku
       v pořadí u daného člověka (1. až poslední, i 10.). Bez zvýraznění
       období vakcinace.
+  charts/<company>/histogram_vyssi_davky/<rok>.png
+      pro roky 2019–2022: osa x = kolik předpisů dané ATC skupiny měl
+      jeden člověk v tom roce, osa y = kolik takových lidí. Sloupec =
+      ATC skupina. Jen varianta vyšších dávek (Fraxiparin ≥0,6 ml a
+      terapeutické síly NOAC, viz příloha v charts/README.md).
 
 <období>:
   - "2015-2024" — celý rozsah dat, roční popisky osy x
   - "2019-2024" — jen od 2019, měsíční popisky osy x (vidět jednotlivé
     měsíce 2021/2022 — kdy přesně se co zvedá)
 
-<dávková varianta> (B01AB = hepariny a příbuzné látky):
-  - "vse"             — beze změny, všechny síly/látky B01AB tak, jak jsou v datech
-  - "jen_vyssi_davky" — B01AB filtrované jen na terapeutické dávky (viz
-    HEPARIN_STRENGTH_IS_THERAPEUTIC níže) — vyřazuje profylaktické dávky
-    (Heparin 5000 IU, Bemiparin 2500/3500 IU apod.) a látky, co se k léčbě
-    trombózy nepoužívají (Sulodexid, Antitrombin III). Klasifikace je
-    heuristika podle textového pole "síla"; u nadroparinu 9500 IU/ml (bez
-    Forte) je konzervativně vyřazena jako neprůkazná (ze "síly" nepoznáme
-    podaný objem).
+<dávková varianta>:
+  - "vse"             — beze změny, všechny síly tak, jak jsou v datech
+  - "jen_vyssi_davky" — jen terapeutické dávky: nadroparin (Fraxiparin,
+    B01AB06) se stříkačkou ≥0,6 ml, dabigatran 150 mg, rivaroxaban 15 a
+    20 mg, apixaban 5 a 10 mg, edoxaban 30 a 60 mg. Warfarin (B01AA) a
+    B01AX bez filtru síly. Ostatní hepariny (enoxaparin, bemiparin, …)
+    v téhle variantě nejsou. Objem stříkačky je z "velikost_baleni"
+    (např. 10X0,6ML), takže to jde i u OZP, kde chybí léčivá látka.
   - "bez_heparinu"    — B01AB úplně vynechané (jen AA/AE/AF/AX + jejich
-    součet) — když i "jen_vyssi_davky" pořád dominuje měřítko kvůli AA/AF
+    součet, bez filtru síly NOAC)
 
 <scope> = "vsechny_veky" nebo "vek_<bucket>" (9 věkových dekád od 0–9).
 
@@ -74,6 +78,7 @@ NEEDED_COLS = [
     "Datum_udalosti",
     "síla",
     "léčivé_látky",
+    "velikost_baleni",
 ]
 
 ATC_SUBGROUPS = ["B01AA", "B01AB", "B01AE", "B01AF", "B01AX"]
@@ -87,61 +92,16 @@ ATC_COLORS = {
 }
 TOTAL_LABEL = "B01 celkem"
 
-# Klasifikace B01AB (heparinů a příbuzných látek) na "vyšší dávky" (léčba
-# trombózy/embolie) vs. profylaktické/nízké dávky nebo jinou indikaci
-# (Sulodexid, Antitrombin III). Heuristika podle (léčivá látka, síla) —
-# viz docstring modulu. Kombinace, co tu chybí, jsou brány jako
-# neprůkazné → vyřazené (konzervativní default, viz get() níže).
-HEPARIN_STRENGTH_IS_THERAPEUTIC: dict[tuple[str, str], bool] = {
-    # enoxaparin: síla už obsahuje mg i objem stříkačky — ≥60 mg/0,6 ml je
-    # léčebná dávka, 20/40 mg je profylaxe
-    ("ENOXAPARIN", "2000IU(20MG)/0,2ML"): False,
-    ("ENOXAPARIN", "4000IU(40MG)/0,4ML"): False,
-    ("ENOXAPARIN", "6000IU(60MG)/0,6ML"): True,
-    ("ENOXAPARIN", "8000IU(80MG)/0,8ML"): True,
-    ("ENOXAPARIN", "10000IU(100MG)/1ML"): True,
-    ("ENOXAPARIN", "12000IU(120MG)/0,8ML"): True,
-    ("ENOXAPARIN", "15000IU(150MG)/1ML"): True,
-    ("ENOXAPARIN", "100MG/ML"): True,
-    ("ENOXAPARIN", "150MG/ML"): True,
-    # nadroparin: "Forte" (19000 IU/ml) je vyšší koncentrace pro léčbu;
-    # standardní 9500 IU/ml se používá napříč profylaxí i léčbou podle
-    # podaného objemu, který ze "síly" neznáme → konzervativně vyřazeno
-    ("NADROPARIN", "9500IU/ML"): False,
-    ("NADROPARIN", "9.5KU/ML"): False,
-    ("NADROPARIN", "19000IU/ML"): True,
-    ("NADROPARIN", "19KU/ML"): True,
-    ("NADROPARIN", "19000IU"): True,
-    # nefrakcionovaný heparin: 5000 IU je klasická profylaktická SC dávka
-    ("HEPARIN", "5000IU/ML"): False,
-    ("HEPARIN", "5KU/ML"): False,
-    # bemiparin: 2500/3500 IU jsou standardní fixní profylaktické dávky,
-    # vyšší koncentrace (12500+) odpovídají váhově dávkované léčbě
-    ("BEMIPARIN", "2500IU"): False,
-    ("BEMIPARIN", "2500IU/0,2ML"): False,
-    ("BEMIPARIN", "3500IU"): False,
-    ("BEMIPARIN", "3500IU/0,2ML"): False,
-    ("BEMIPARIN", "12500IU/ML"): True,
-    ("BEMIPARIN", "12500UT/ML"): True,
-    ("BEMIPARIN", "17500IU/ML"): True,
-    ("BEMIPARIN", "17500UT/ML"): True,
-    ("BEMIPARIN", "25000IU"): True,
-    ("BEMIPARIN", "25000IU/ML"): True,
-    ("BEMIPARIN", "25000UT/1ML"): True,
-    # dalteparin: vysoké koncentrace, používané pro váhově dávkovanou léčbu
-    ("DALTEPARIN", "25KU/ML"): True,
-    ("DALTEPARIN", "12.5KU/ML"): True,
-    # jiná indikace, ne léčba akutní trombózy/embolie
-    ("SULODEXID", "250SU"): False,
-    ("SULODEXID", "250UT"): False,
-    ("SULODEXID", "600SU"): False,
-    ("SULODEXID", "300UT/ML"): False,
-    ("SULODEXID", "300SU/ML"): False,
-    ("ANTITROMBIN III", "50IU/ML"): False,
-    ("ANTITROMBIN III", "500IU"): False,
-    ("ANTITROMBIN III", "1000IU"): False,
-    ("ANTITROMBIN III", "50UT/ML"): False,
+# Terapeutické síly NOAC. Klíč je sedmimístné ATC, takže to jde i u OZP,
+# kde chybí léčivá látka. Apixaban 10 mg v datech není, v pravidle je.
+NOAC_HIGHER_STRENGTHS: dict[str, set[str]] = {
+    "B01AE07": {"150MG"},
+    "B01AF01": {"15MG", "20MG"},
+    "B01AF02": {"5MG", "10MG"},
+    "B01AF03": {"30MG", "60MG"},
 }
+NADROPARIN_ATC = "B01AB06"
+NADROPARIN_MIN_ML = 0.6
 
 # (zobrazovaný label, bezpečný slug pro název souboru)
 AGE_BUCKETS = [
@@ -194,17 +154,38 @@ def load_company(company: str) -> pl.LazyFrame:
     return _read_one(OUT_DIR / fname, None)
 
 
-def _heparin_dose_map() -> pl.LazyFrame:
-    rows = [
-        {"léčivé_látky": subst, "síla": strength, "b01ab_therapeutic": therapeutic}
-        for (subst, strength), therapeutic in HEPARIN_STRENGTH_IS_THERAPEUTIC.items()
-    ]
-    return pl.DataFrame(rows).lazy()
+def _higher_dose_expr() -> pl.Expr:
+    """True = řádek zůstane ve variantě jen_vyssi_davky.
+
+    Warfarin a B01AX nemají filtr síly. Nadroparin jen při objemu stříkačky
+    ≥0,6 ml. NOAC jen síly z NOAC_HIGHER_STRENGTHS. Všechno ostatní (jiné
+    hepariny, nízké NOAC, B01AC/AD) je False."""
+    sila = pl.col("síla").str.to_uppercase().str.replace_all(r"\s+", "").str.replace_all(",", ".")
+    syringe_ml = (
+        pl.col("velikost_baleni")
+        .str.replace_all(",", ".")
+        .str.extract(r"(?i)[xX×]\s*(\d+(?:\.\d+)?)\s*ML", 1)
+        .cast(pl.Float64, strict=False)
+    )
+    atc7 = pl.col("ATC_skupina").str.to_uppercase().str.strip_chars().str.slice(0, 7)
+    noac = pl.lit(False)
+    for atc, strengths in NOAC_HIGHER_STRENGTHS.items():
+        noac = noac | ((atc7 == atc) & sila.is_in(sorted(strengths)))
+    return (
+        pl.when(atc7.str.slice(0, 5).is_in(["B01AA", "B01AX"]))
+        .then(True)
+        .when((atc7 == NADROPARIN_ATC) & (syringe_ml >= NADROPARIN_MIN_ML))
+        .then(True)
+        .when(noac)
+        .then(True)
+        .otherwise(False)
+        .fill_null(False)
+    )
 
 
 def build_prescriptions(df: pl.LazyFrame) -> pl.DataFrame:
     """Vrátí (malý, materializovaný) eager frame: jeden řádek na B01 předpis,
-    doplněný o month/atc5/age_bucket/is_vax/Specializace/is_b01ab_therapeutic
+    doplněný o month/atc5/age_bucket/is_vax/Specializace/is_higher_dose
     (bez NULL). Řádky NEJSOU filtrované podle dávky — to dělá až
     `apply_dose_variant()` podle zvolené varianty (vse/jen_vyssi_davky/
     bez_heparinu)."""
@@ -224,7 +205,6 @@ def build_prescriptions(df: pl.LazyFrame) -> pl.DataFrame:
             pl.col("ATC_skupina").str.slice(0, 5).alias("atc5"),
             (pl.col("Datum_udalosti").dt.year() - pl.col("Rok_narozeni")).alias("age"),
             pl.col("Specializace").fill_null(UNKNOWN_SPECIALTY),
-            pl.col("léčivé_látky").str.to_uppercase(),
         )
         .join(vax_ids, on="Id_pojistence", how="left")
         .with_columns(pl.col("is_vax").fill_null(False))
@@ -234,11 +214,10 @@ def build_prescriptions(df: pl.LazyFrame) -> pl.DataFrame:
             .cast(pl.Utf8)
             .alias("age_bucket")
         )
-        .join(_heparin_dose_map(), on=["léčivé_látky", "síla"], how="left")
-        .with_columns(pl.col("b01ab_therapeutic").fill_null(False).alias("is_b01ab_therapeutic"))
+        .with_columns(_higher_dose_expr().alias("is_higher_dose"))
         .select(
             "Id_pojistence", "month", "atc5", "age_bucket", "is_vax", "Specializace",
-            "is_b01ab_therapeutic",
+            "is_higher_dose",
         )
     )
     return presc.collect()
@@ -246,7 +225,7 @@ def build_prescriptions(df: pl.LazyFrame) -> pl.DataFrame:
 
 DOSE_VARIANTS: list[tuple[str, str, str]] = [
     ("vse", "vše", ""),
-    ("jen_vyssi_davky", "jen vyšší dávky", " — B01AB jen vyšší dávky"),
+    ("jen_vyssi_davky", "jen vyšší dávky", " — jen vyšší dávky"),
     ("bez_heparinu", "bez heparinu", " — bez B01AB"),
 ]
 
@@ -257,8 +236,7 @@ def apply_dose_variant(presc: pl.DataFrame, variant: str) -> tuple[pl.DataFrame,
     if variant == "vse":
         return presc, ATC_SUBGROUPS
     if variant == "jen_vyssi_davky":
-        filtered = presc.filter((pl.col("atc5") != "B01AB") | pl.col("is_b01ab_therapeutic"))
-        return filtered, ATC_SUBGROUPS
+        return presc.filter(pl.col("is_higher_dose")), ATC_SUBGROUPS
     if variant == "bez_heparinu":
         return presc, ATC_SUBGROUPS_NO_HEPARIN
     raise ValueError(f"neznámá dávková varianta: {variant}")
@@ -626,7 +604,11 @@ AGE_SCOPES: list[tuple[str, str, pl.Expr | None]] = [("vsechny_veky", "všechny 
 ]
 
 
-def process_company(company: str) -> None:
+def process_company(
+    company: str,
+    variants: list[str] | None = None,
+    extras: bool = True,
+) -> None:
     label = COMPANY_LABELS[company]
     print(f"=== {company} ===")
     print("  načítám data…")
@@ -638,7 +620,10 @@ def process_company(company: str) -> None:
         print(f"  === období {period_slug} ===")
         period_dir = out_dir / period_slug
 
-        for variant_slug, variant_label, subtitle_extra in DOSE_VARIANTS:
+        selected = DOSE_VARIANTS
+        if variants is not None:
+            selected = [v for v in DOSE_VARIANTS if v[0] in variants]
+        for variant_slug, variant_label, subtitle_extra in selected:
             presc, subgroups = apply_dose_variant(presc_raw, variant_slug)
             variant_dir = period_dir / variant_slug
             series = atc_series(subgroups)
@@ -696,18 +681,107 @@ def process_company(company: str) -> None:
                     monthly_ticks=monthly_ticks,
                 )
 
-        print(f"    specializace ({period_slug})…")
-        wide_spec, top_codes = specialty_chart_data(presc_raw, start=start, end=MONTH_END)
-        plot_lines(
-            wide_spec,
-            specialty_series(top_codes),
-            f"{label} — B01 předpisy měsíčně dle odbornosti lékaře (top {TOP_N_SPECIALTIES}, {period_label})",
-            period_dir / "specializace_predpisy_mesicne.png",
-            n_population=population_size(presc_raw, None),
-            monthly_ticks=monthly_ticks,
-        )
+        if variants is None:
+            print(f"    specializace ({period_slug})…")
+            wide_spec, top_codes = specialty_chart_data(presc_raw, start=start, end=MONTH_END)
+            plot_lines(
+                wide_spec,
+                specialty_series(top_codes),
+                f"{label} — B01 předpisy měsíčně dle odbornosti lékaře (top {TOP_N_SPECIALTIES}, {period_label})",
+                period_dir / "specializace_predpisy_mesicne.png",
+                n_population=population_size(presc_raw, None),
+                monthly_ticks=monthly_ticks,
+            )
 
-    process_vax_timelines(company)
+    if extras:
+        process_vax_timelines(company)
+        process_histograms(company, presc_raw)
+
+
+HIST_YEARS = (2019, 2020, 2021, 2022)
+# 95. percentil je kolem 6 předpisů za rok; nad 12 už jsou jen desítky lidí,
+# proto poslední sloupec sčítá 13 a víc, ať osa x zůstane čitelná.
+HIST_BIN_CAP = 12
+
+
+def prescription_count_bins(
+    presc: pl.DataFrame, year: int, subgroups: list[str]
+) -> dict[str, list[int]]:
+    """Pro každou ATC skupinu počty lidí v koších 1, 2, …, CAP, CAP+.
+
+    Člověk s nulou předpisů v dané skupině v tom roce tu není. Kdo má
+    předpisy ve dvou skupinách, je v každé skupině zvlášť (nesčítá se)."""
+    n_bins = HIST_BIN_CAP + 1
+    counts = (
+        presc.filter((pl.col("month").dt.year() == year) & pl.col("atc5").is_in(subgroups))
+        .group_by("Id_pojistence", "atc5")
+        .len()
+        .with_columns(
+            pl.when(pl.col("len") > HIST_BIN_CAP)
+            .then(pl.lit(HIST_BIN_CAP + 1))
+            .otherwise(pl.col("len"))
+            .alias("bin")
+        )
+        .group_by("atc5", "bin")
+        .len()
+        .rename({"len": "people"})
+    )
+    out = {atc: [0] * n_bins for atc in subgroups}
+    for atc, bin_id, people in zip(
+        counts["atc5"].to_list(), counts["bin"].to_list(), counts["people"].to_list()
+    ):
+        out[atc][bin_id - 1] = people
+    return out
+
+
+def plot_prescription_count_hist(
+    bins: dict[str, list[int]],
+    subgroups: list[str],
+    title: str,
+    output_path: Path,
+) -> None:
+    labels = [str(i) for i in range(1, HIST_BIN_CAP + 1)] + [f"{HIST_BIN_CAP + 1}+"]
+    n_bins = len(labels)
+    width = 0.15
+    fig, ax = plt.subplots(figsize=(12, 5))
+    for i, atc in enumerate(subgroups):
+        offset = (i - (len(subgroups) - 1) / 2) * width
+        ax.bar(
+            [x + offset for x in range(n_bins)],
+            bins[atc],
+            width=width,
+            label=atc,
+            color=ATC_COLORS[atc],
+        )
+    ax.set_xticks(range(n_bins), labels)
+    ax.set_title(title)
+    ax.set_xlabel("Počet předpisů u jednoho člověka v daném roce")
+    ax.set_ylabel("Počet lidí")
+    ax.legend(loc="upper right", fontsize=8)
+    ax.grid(True, axis="y", alpha=0.3)
+    plt.tight_layout()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  → uloženo: {output_path}")
+
+
+def process_histograms(company: str, presc_raw: pl.DataFrame | None = None) -> None:
+    label = COMPANY_LABELS[company]
+    print(f"=== {company}: histogram počtu předpisů ===")
+    if presc_raw is None:
+        presc_raw = build_prescriptions(load_company(company))
+    presc, subgroups = apply_dose_variant(presc_raw, "jen_vyssi_davky")
+    out_dir = CHARTS_DIR / company / "histogram_vyssi_davky"
+    for year in HIST_YEARS:
+        bins = prescription_count_bins(presc, year, subgroups)
+        plot_prescription_count_hist(
+            bins,
+            subgroups,
+            f"{label} — kolik předpisů měl jeden člověk v roce {year}\n(jen vyšší dávky)",
+            out_dir / f"{year}.png",
+        )
 
 
 def main() -> None:
@@ -724,12 +798,31 @@ def main() -> None:
         action="store_true",
         help="Jen grafy očkování po dávkách (charts/<company>/vax_period/)",
     )
+    parser.add_argument(
+        "--only-histogram",
+        action="store_true",
+        help="Jen histogramy počtu předpisů na osobu (charts/<company>/histogram_vyssi_davky/)",
+    )
+    parser.add_argument(
+        "--variants",
+        nargs="+",
+        choices=[slug for slug, _, _ in DOSE_VARIANTS],
+        default=None,
+        help="Které dávkové složky překreslit (default: všechny)",
+    )
+    parser.add_argument(
+        "--no-extras",
+        action="store_true",
+        help="Nepřekreslovat vax_period ani histogramy",
+    )
     args = parser.parse_args()
     for company in args.companies:
-        if args.only_vax:
+        if args.only_histogram:
+            process_histograms(company)
+        elif args.only_vax:
             process_vax_timelines(company)
         else:
-            process_company(company)
+            process_company(company, variants=args.variants, extras=not args.no_extras)
     print("\nHotovo!")
 
 

@@ -26,6 +26,7 @@ OUTPUT_COLUMNS = [
     "Specializace",
     "Datum_udalosti",
     "lekova_skupina",
+    "velikost_baleni",
 ]
 
 # VZP performance codes → vaccine label (from VZP org. opatření 56/57/2020+)

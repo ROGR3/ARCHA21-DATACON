@@ -165,6 +165,10 @@ def reshape_ozp(input_path: Path, output_path: Path) -> dict:
                 pl.lit(None).cast(pl.Int64).alias("Mesic_narozeni"),
                 pl.lit(None).cast(pl.Utf8).alias("léková_forma_zkr"),
                 pl.lit(None).cast(pl.Utf8).alias("léčivé_látky"),
+                pl.col("Velikost_baleni")
+                .cast(pl.Utf8, strict=False)
+                .str.strip_chars()
+                .alias("velikost_baleni"),
             ]
         )
         .join(vax_map, on="Detail_udalosti", how="left")

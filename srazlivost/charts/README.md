@@ -6,10 +6,11 @@ Tady jsou grafy počtu předpisů léků na ředění krve (ATC skupina B01) po 
 
 - **B01AA** — warfarin
 - **B01AB** — hepariny (nízkomolekulární i nefrakcionovaný)
+- **B01AD** — altepláza (skoro celá tahle skupina; protein C je v ní jen pár desítek předpisů)
 - **B01AE** — dabigatran
 - **B01AF** — rivaroxaban, apixaban, edoxaban (tzv. NOAC)
 - **B01AX** — ostatní (málo používané)
-- **B01 celkem** (černá čárkovaná čára) — součet právě těchhle pěti skupin (ne celé ATC B01, takže tam není B01AC ani B01AD)
+- **B01 celkem** (černá čárkovaná čára) — součet právě těchhle šesti skupin (ne celé ATC B01, takže tam není B01AC)
 
 ## Tři složky nahoře = tři zdroje dat
 
@@ -34,13 +35,13 @@ Hepariny i NOAC se dávají jak preventivně, tak k léčbě. Proto jsou tu tři
 
 ## Co je v každé z těchto tří variant
 
-- `atc_predpisy_mesicne_<věk>.png` — křivky B01AA/AB/AE/AF/AX + celkem, samostatně pro každou věkovou dekádu (`vek_0-9`, `vek_10-19`, `vek_20-29`, `vek_30-39`, ... `vek_80_plus`) a pro `vsechny_veky`
+- `atc_predpisy_mesicne_<věk>.png` — křivky B01AA/AB/AD/AE/AF/AX + celkem, samostatně pro každou věkovou dekádu (`vek_0-9`, `vek_10-19`, `vek_20-29`, `vek_30-39`, ... `vek_80_plus`) a pro `vsechny_veky`
 - `crosstab/vedle_sebe/<věk>.png` — totéž, ale rozdělené na očkované a neočkované, oba panely vedle sebe se stejnou osou y (dobré pro porovnání výšky/velikosti křivek)
 - `crosstab/nad_sebou/<věk>.png` — stejná data jako výš, jen panely nad sebou se sdílenou osou x (dobré pro porovnání, KDY přesně se co děje — stejný měsíc je přesně pod sebou)
 
 Očkovaný/neočkovaný = má/nemá kdykoliv v datech aspoň jeden záznam o vakcinaci (tedy "ever vaccinated" za celé sledované období, ne k nějakému konkrétnímu datu).
 
-V titulku každého grafu je i **N** = kolik lidí v dané skupině mělo aspoň jeden předpis z těchhle pěti kategorií.
+V titulku každého grafu je i **N** = kolik lidí v dané skupině mělo aspoň jeden předpis z těchhle šesti kategorií.
 
 ## Kdy se očkovalo
 
@@ -60,7 +61,7 @@ Platí stejný filtr jako `jen_vyssi_davky` (příloha na konci). Člověk s nul
 
 ## Příloha: co je "vyšší dávka" ve variantě `jen_vyssi_davky/`
 
-Warfarin (B01AA) a B01AX se sílou nefiltrují. Všechno, co tu není vypsané jako ponechané, je z téhle varianty pryč.
+Warfarin (B01AA), altepláza (B01AD) a B01AX se sílou nefiltrují. Všechno, co tu není vypsané jako ponechané, je z téhle varianty pryč.
 
 - **Nadroparin / Fraxiparin** (B01AB06) — ponecháno, když je stříkačka 0,6 ml a větší (0,6 / 0,8 / 1 ml), a to i u Forte. Objem je z velikosti balení, třeba `10X0,6ML`. Stříkačky 0,3 a 0,4 ml jsou profylaxe a jsou pryč. Když objem v záznamu chybí, řádek je pryč.
 - **Ostatní hepariny** (enoxaparin, nefrakcionovaný heparin, bemiparin, dalteparin, sulodexid, antitrombin) — v téhle variantě nejsou, i kdyby šlo o vyšší sílu.

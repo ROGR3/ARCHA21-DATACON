@@ -28,11 +28,11 @@ Pro každou pojišťovnu (cpzp, ozp, both_companies) generuje strukturu:
   - "vse"             — beze změny, všechny síly tak, jak jsou v datech
   - "jen_vyssi_davky" — jen terapeutické dávky: nadroparin (Fraxiparin,
     B01AB06) se stříkačkou ≥0,6 ml, dabigatran 150 mg, rivaroxaban 15 a
-    20 mg, apixaban 5 a 10 mg, edoxaban 30 a 60 mg. Warfarin (B01AA) a
-    B01AX bez filtru síly. Ostatní hepariny (enoxaparin, bemiparin, …)
+    20 mg, apixaban 5 a 10 mg, edoxaban 30 a 60 mg. Warfarin (B01AA),
+    altepláza (B01AD) a B01AX bez filtru síly. Ostatní hepariny (enoxaparin, bemiparin, …)
     v téhle variantě nejsou. Objem stříkačky je z "velikost_baleni"
     (např. 10X0,6ML), takže to jde i u OZP, kde chybí léčivá látka.
-  - "bez_heparinu"    — B01AB úplně vynechané (jen AA/AE/AF/AX + jejich
+  - "bez_heparinu"    — B01AB úplně vynechané (jen AA/AD/AE/AF/AX + jejich
     součet, bez filtru síly NOAC)
 
 <scope> = "vsechny_veky" nebo "vek_<bucket>" (9 věkových dekád od 0–9).
@@ -81,11 +81,12 @@ NEEDED_COLS = [
     "velikost_baleni",
 ]
 
-ATC_SUBGROUPS = ["B01AA", "B01AB", "B01AE", "B01AF", "B01AX"]
+ATC_SUBGROUPS = ["B01AA", "B01AB", "B01AD", "B01AE", "B01AF", "B01AX"]
 ATC_SUBGROUPS_NO_HEPARIN = [c for c in ATC_SUBGROUPS if c != "B01AB"]
 ATC_COLORS = {
     "B01AA": "#1f77b4",
     "B01AB": "#ff7f0e",
+    "B01AD": "#17becf",
     "B01AE": "#2ca02c",
     "B01AF": "#d62728",
     "B01AX": "#9467bd",
@@ -157,9 +158,9 @@ def load_company(company: str) -> pl.LazyFrame:
 def _higher_dose_expr() -> pl.Expr:
     """True = řádek zůstane ve variantě jen_vyssi_davky.
 
-    Warfarin a B01AX nemají filtr síly. Nadroparin jen při objemu stříkačky
-    ≥0,6 ml. NOAC jen síly z NOAC_HIGHER_STRENGTHS. Všechno ostatní (jiné
-    hepariny, nízké NOAC, B01AC/AD) je False."""
+    Warfarin, altepláza (B01AD) a B01AX nemají filtr síly. Nadroparin jen
+    při objemu stříkačky ≥0,6 ml. NOAC jen síly z NOAC_HIGHER_STRENGTHS.
+    Všechno ostatní (jiné hepariny, nízké NOAC, B01AC) je False."""
     sila = pl.col("síla").str.to_uppercase().str.replace_all(r"\s+", "").str.replace_all(",", ".")
     syringe_ml = (
         pl.col("velikost_baleni")
@@ -172,7 +173,7 @@ def _higher_dose_expr() -> pl.Expr:
     for atc, strengths in NOAC_HIGHER_STRENGTHS.items():
         noac = noac | ((atc7 == atc) & sila.is_in(sorted(strengths)))
     return (
-        pl.when(atc7.str.slice(0, 5).is_in(["B01AA", "B01AX"]))
+        pl.when(atc7.str.slice(0, 5).is_in(["B01AA", "B01AD", "B01AX"]))
         .then(True)
         .when((atc7 == NADROPARIN_ATC) & (syringe_ml >= NADROPARIN_MIN_ML))
         .then(True)
@@ -256,7 +257,7 @@ def monthly_atc_counts(
     """Wide tabulka: month, <subgroups>, B01 celkem (počty), pro dané scope.
 
     "B01 celkem" je součet jen zobrazených `subgroups` — cokoliv mimo ně
-    (B01AC/AD, případně B01AB při volání s ATC_SUBGROUPS_NO_HEPARIN) se
+    (B01AC, případně B01AB při volání s ATC_SUBGROUPS_NO_HEPARIN) se
     nevykreslí ani nezapočítá do celkem."""
     scoped = presc.filter(pl.col("atc5").is_in(subgroups))
     if scope_filter is not None:

@@ -4,11 +4,12 @@ Měsíční křivky počtu předpisů B01 (srážlivost) — krok 1 z e-mailu Pa
 
 Pro každou pojišťovnu (cpzp, ozp, both_companies) generuje strukturu:
 
-  charts/<company>/<období>/<dávková varianta>/
-      atc_predpisy_mesicne_<scope>.png            (age-only, bez vax rozpadu)
-      crosstab/vedle_sebe/<scope>.png              (očko|neočko, 2 panely vedle sebe)
-      crosstab/nad_sebou/<scope>.png               (očko nad neočko, sdílená osa x)
-  charts/<company>/<období>/specializace_predpisy_mesicne.png
+  charts/<company>/<období>/absolute/<dávková varianta>/
+      atc_predpisy_mesicne_<scope>.png            (age-only, počty)
+      crosstab/vedle_sebe/<scope>.png              (očko|neočko, počty)
+      crosstab/nad_sebou/<scope>.png
+  charts/<company>/<období>/absolute/specializace_predpisy_mesicne.png
+  charts/<company>/<období>/relative/...           (stejný strom, na 1 000 osob)
   charts/<company>/vax_period/<scope>.png
       denní počty očkování (7denní průměr), jedna čára na každou dávku
       v pořadí u daného člověka (1. až poslední, i 10.). Bez zvýraznění
@@ -31,14 +32,19 @@ Pro každou pojišťovnu (cpzp, ozp, both_companies) generuje strukturu:
     20 mg, apixaban 5 a 10 mg, edoxaban 30 a 60 mg. Warfarin (B01AA),
     altepláza (B01AD) a B01AX bez filtru síly. Ostatní hepariny (enoxaparin, bemiparin, …)
     v téhle variantě nejsou. Objem stříkačky je z "velikost_baleni"
-    (např. 10X0,6ML), takže to jde i u OZP, kde chybí léčivá látka.
+    (např. 10X0,6ML). U OZP je látka doplněná ze SÚKL, filtr jede podle ATC a objemu.
   - "bez_heparinu"    — B01AB úplně vynechané (jen AA/AD/AE/AF/AX + jejich
     součet, bez filtru síly NOAC)
 
 <scope> = "vsechny_veky" nebo "vek_<bucket>" (9 věkových dekád od 0–9).
 
-Velikost populace N (= počet distinct osob s ≥1 předpisem v dané dávkové
-variantě a scope) je vypsaná v titulku každého grafu.
+V absolute/ je N počet distinct osob s ≥1 vykresleným předpisem.
+V relative/ jsou křivky vydělené velikostí populace (předpisů na 1 000 osob).
+Jmenovatel je každý člověk v datech, včetně těch bez antikoagulancia a včetně
+řádků bez jakéhokoli záznamu. U crosstabu má očkovaný a neočkovaný panel
+každý svůj jmenovatel. U grafu bez rozpadu na očkování je jmenovatel celá
+věková skupina. Do dekády člověk patří, když v některém roce období měl věk
+(rok − rok narození) v té dekádě.
 
 Věk = rok předpisu − rok narození (hrubý odhad, u OZP chybí měsíc narození).
 Očkovaný/neočkovaný = osoba má/nemá kdykoliv v datech alespoň jeden
@@ -103,6 +109,8 @@ NOAC_HIGHER_STRENGTHS: dict[str, set[str]] = {
 }
 NADROPARIN_ATC = "B01AB06"
 NADROPARIN_MIN_ML = 0.6
+# Relativní grafy: počet předpisů na tisíc osob dané populace.
+RELATIVE_PER = 1_000
 
 # (zobrazovaný label, bezpečný slug pro název souboru)
 AGE_BUCKETS = [
@@ -118,6 +126,10 @@ AGE_BUCKETS = [
 ]
 AGE_BREAKS = [10, 20, 30, 40, 50, 60, 70, 80]
 AGE_LABELS = [label for label, _ in AGE_BUCKETS]
+# (spodní věk včetně, horní věk vyjma). 80+ má horní mez mimo reálný věk.
+AGE_BOUNDS = {label: (lo, lo + 10) for lo, (label, _) in zip(AGE_BREAKS, AGE_BUCKETS[1:])}
+AGE_BOUNDS["0-9"] = (0, 10)
+AGE_BOUNDS["80+"] = (80, 10_000)
 
 TOP_N_SPECIALTIES = 10
 UNKNOWN_SPECIALTY = "neznámo"
@@ -285,11 +297,69 @@ def population_size(
     subgroups: list[str] = ATC_SUBGROUPS,
 ) -> int:
     """Počet distinct osob s ≥1 předpisem z `subgroups` v daném scope
-    (napříč celým obdobím) — používá se jako "N" v titulcích grafů."""
+    (napříč celým obdobím) — "N" v titulcích absolute grafů."""
     scoped = presc.filter(pl.col("atc5").is_in(subgroups))
     if scope_filter is not None:
         scoped = scoped.filter(scope_filter)
     return scoped.select(pl.col("Id_pojistence").n_unique()).item()
+
+
+def build_people(df: pl.LazyFrame) -> pl.DataFrame:
+    """Jedna řádka na člověka: rok narození a jestli má kdykoli vakcinaci.
+
+    Zahrnuje i lidi bez jakéhokoli záznamu (jen identifikační řádek)."""
+    return (
+        df.group_by("Id_pojistence")
+        .agg(
+            pl.col("Rok_narozeni").drop_nulls().first().alias("Rok_narozeni"),
+            (pl.col("Typ_udalosti") == "vakcinace").any().alias("is_vax"),
+        )
+        .collect()
+    )
+
+
+def age_label_of(scope_slug: str) -> str | None:
+    if scope_slug == "vsechny_veky":
+        return None
+    for label, file_slug in AGE_BUCKETS:
+        if scope_slug == f"vek_{file_slug}":
+            return label
+    raise ValueError(f"neznámý scope: {scope_slug}")
+
+
+def cohort_size(
+    people: pl.DataFrame,
+    start_year: int,
+    end_year: int,
+    age_label: str | None,
+    vax: bool | None,
+) -> int:
+    """Velikost jmenovatele. vax=True/False řeže ever-vaccinated, None nechá obě.
+
+    Věková dekáda: člověk do ní patří, když se jeho věk (rok − rok narození)
+    v některém roce <start_year, end_year> s dekádou překryje."""
+    scoped = people
+    if vax is True:
+        scoped = scoped.filter(pl.col("is_vax"))
+    elif vax is False:
+        scoped = scoped.filter(~pl.col("is_vax"))
+    if age_label is not None:
+        lo, hi = AGE_BOUNDS[age_label]
+        scoped = scoped.filter(
+            pl.col("Rok_narozeni").is_not_null()
+            & (pl.col("Rok_narozeni") > start_year - hi)
+            & (pl.col("Rok_narozeni") <= end_year - lo)
+        )
+    return scoped.height
+
+
+def per_capita(wide: pl.DataFrame, n: int, per: int = RELATIVE_PER) -> pl.DataFrame:
+    """Vydělí všechny sloupečky kromě month velikostí populace a vynásobí `per`."""
+    if n <= 0:
+        return wide
+    factor = per / n
+    cols = [c for c in wide.columns if c != "month"]
+    return wide.with_columns([(pl.col(c) * factor).alias(c) for c in cols])
 
 
 def specialty_chart_data(
@@ -328,9 +398,11 @@ def plot_lines(
     output_path: Path,
     n_population: int | None = None,
     monthly_ticks: bool = False,
+    ylabel: str = "Počet předpisů",
+    n_caption: str = "N",
 ) -> None:
     if n_population is not None:
-        title = f"{title}\n(N = {_fmt_n(n_population)} osob)"
+        title = f"{title}\n({n_caption} = {_fmt_n(n_population)} osob)"
     months = wide["month"].to_list()
     fig, ax = plt.subplots(figsize=(12, 5))
     for col, style in series:
@@ -339,7 +411,7 @@ def plot_lines(
         ax.plot(months, wide[col].to_list(), label=col, **style)
     ax.set_title(title)
     ax.set_xlabel("Měsíc")
-    ax.set_ylabel("Počet předpisů")
+    ax.set_ylabel(ylabel)
     ax.legend(loc="upper left", fontsize=8, ncol=2)
     ax.grid(True, alpha=0.3)
     if monthly_ticks:
@@ -375,13 +447,15 @@ def plot_crosstab(
     n_left: int | None = None,
     n_right: int | None = None,
     monthly_ticks: bool = False,
+    ylabel: str = "Počet předpisů",
+    n_caption: str = "N",
 ) -> None:
     """Dva panely vedle sebe se sdílenou osou y — pro přímé srovnání tvaru
     křivek (např. AA vs. AF) mezi dvěma scope (typicky očko/neočko)."""
     if n_left is not None:
-        left_title = f"{left_title} (N = {_fmt_n(n_left)})"
+        left_title = f"{left_title} ({n_caption} = {_fmt_n(n_left)})"
     if n_right is not None:
-        right_title = f"{right_title} (N = {_fmt_n(n_right)})"
+        right_title = f"{right_title} ({n_caption} = {_fmt_n(n_right)})"
     fig, axes = plt.subplots(1, 2, figsize=(16, 5), sharey=True)
     for ax, wide, subtitle in ((axes[0], wide_left, left_title), (axes[1], wide_right, right_title)):
         months = wide["month"].to_list()
@@ -394,7 +468,7 @@ def plot_crosstab(
         ax.grid(True, alpha=0.3)
         if monthly_ticks:
             _apply_monthly_ticks(ax)
-    axes[0].set_ylabel("Počet předpisů")
+    axes[0].set_ylabel(ylabel)
     axes[0].legend(loc="upper left", fontsize=8, ncol=2)
     fig.suptitle(suptitle)
     if not monthly_ticks:
@@ -418,14 +492,16 @@ def plot_crosstab_stacked(
     n_top: int | None = None,
     n_bottom: int | None = None,
     monthly_ticks: bool = False,
+    ylabel: str = "Počet předpisů",
+    n_caption: str = "N",
 ) -> None:
     """Dva panely nad sebou se sdílenou osou x — na rozdíl od plot_crosstab
     je tu lépe vidět zarovnání v čase (stejný měsíc = stejné x u obou
     panelů), na úkor přímého srovnání výšky křivek."""
     if n_top is not None:
-        top_title = f"{top_title} (N = {_fmt_n(n_top)})"
+        top_title = f"{top_title} ({n_caption} = {_fmt_n(n_top)})"
     if n_bottom is not None:
-        bottom_title = f"{bottom_title} (N = {_fmt_n(n_bottom)})"
+        bottom_title = f"{bottom_title} ({n_caption} = {_fmt_n(n_bottom)})"
     fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True, sharey=True)
     for ax, wide, subtitle in ((axes[0], wide_top, top_title), (axes[1], wide_bottom, bottom_title)):
         months = wide["month"].to_list()
@@ -434,7 +510,7 @@ def plot_crosstab_stacked(
                 continue
             ax.plot(months, wide[col].to_list(), label=col, **style)
         ax.set_title(subtitle)
-        ax.set_ylabel("Počet předpisů")
+        ax.set_ylabel(ylabel)
         ax.grid(True, alpha=0.3)
     axes[1].set_xlabel("Měsíc")
     axes[0].legend(loc="upper left", fontsize=8, ncol=2)
@@ -613,86 +689,128 @@ def process_company(
     label = COMPANY_LABELS[company]
     print(f"=== {company} ===")
     print("  načítám data…")
-    presc_raw = build_prescriptions(load_company(company))
-    print(f"  {presc_raw.height:,} B01 předpisů")
+    lazy = load_company(company)
+    people = build_people(lazy)
+    presc_raw = build_prescriptions(lazy)
+    print(f"  {presc_raw.height:,} B01 předpisů, {people.height:,} osob")
     out_dir = CHARTS_DIR / company
+    # (složka, osa y, N v titulku, None = počty / číslo = na tolik osob)
+    scales: list[tuple[str, str, str, int | None]] = [
+        ("absolute", "Počet předpisů", "N", None),
+        ("relative", f"Předpisů na {_fmt_n(RELATIVE_PER)} osob", "populace", RELATIVE_PER),
+    ]
 
     for period_slug, period_label, start, monthly_ticks in PERIODS:
         print(f"  === období {period_slug} ===")
         period_dir = out_dir / period_slug
+        end_year = MONTH_END.year
 
         selected = DOSE_VARIANTS
         if variants is not None:
             selected = [v for v in DOSE_VARIANTS if v[0] in variants]
-        for variant_slug, variant_label, subtitle_extra in selected:
-            presc, subgroups = apply_dose_variant(presc_raw, variant_slug)
-            variant_dir = period_dir / variant_slug
-            series = atc_series(subgroups)
+        for scale_slug, ylabel, n_caption, per in scales:
+            print(f"  --- {scale_slug} ---")
+            scale_dir = period_dir / scale_slug
+            for variant_slug, variant_label, subtitle_extra in selected:
+                presc, subgroups = apply_dose_variant(presc_raw, variant_slug)
+                variant_dir = scale_dir / variant_slug
+                series = atc_series(subgroups)
+                title_suffix = subtitle_extra
+                if per is not None:
+                    title_suffix += f" — na {_fmt_n(per)} osob"
 
-            print(f"    {variant_slug}: age sada…")
-            for slug, desc, scope in AGE_SCOPES:
-                wide = monthly_atc_counts(presc, scope, subgroups=subgroups, start=start)
-                n = population_size(presc, scope, subgroups=subgroups)
+                print(f"    {variant_slug}: age sada…")
+                for slug, desc, scope in AGE_SCOPES:
+                    wide = monthly_atc_counts(presc, scope, subgroups=subgroups, start=start)
+                    if per is None:
+                        n = population_size(presc, scope, subgroups=subgroups)
+                    else:
+                        n = cohort_size(people, start.year, end_year, age_label_of(slug), None)
+                        wide = per_capita(wide, n, per)
+                    plot_lines(
+                        wide,
+                        series,
+                        f"{label} — B01 předpisy měsíčně ({desc}, {period_label}){title_suffix}",
+                        variant_dir / f"atc_predpisy_mesicne_{slug}.png",
+                        n_population=n,
+                        monthly_ticks=monthly_ticks,
+                        ylabel=ylabel,
+                        n_caption=n_caption,
+                    )
+
+                print(f"    {variant_slug}: crosstab (vedle_sebe + nad_sebou)…")
+                crosstab_dir = variant_dir / "crosstab"
+                for slug, desc, age_scope in AGE_SCOPES:
+                    vax_scope = pl.col("is_vax") if age_scope is None else (age_scope & pl.col("is_vax"))
+                    novax_scope = (
+                        ~pl.col("is_vax") if age_scope is None else (age_scope & ~pl.col("is_vax"))
+                    )
+                    wide_vax = monthly_atc_counts(presc, vax_scope, subgroups=subgroups, start=start)
+                    wide_novax = monthly_atc_counts(
+                        presc, novax_scope, subgroups=subgroups, start=start
+                    )
+                    age_label = age_label_of(slug)
+                    if per is None:
+                        n_vax = population_size(presc, vax_scope, subgroups=subgroups)
+                        n_novax = population_size(presc, novax_scope, subgroups=subgroups)
+                    else:
+                        n_vax = cohort_size(people, start.year, end_year, age_label, True)
+                        n_novax = cohort_size(people, start.year, end_year, age_label, False)
+                        wide_vax = per_capita(wide_vax, n_vax, per)
+                        wide_novax = per_capita(wide_novax, n_novax, per)
+                    suptitle = (
+                        f"{label} — B01 předpisy měsíčně: očkovaní vs. neočkovaní "
+                        f"({desc}, {period_label}){title_suffix}"
+                    )
+                    plot_crosstab(
+                        wide_vax,
+                        wide_novax,
+                        series,
+                        suptitle,
+                        "Očkovaní",
+                        "Neočkovaní",
+                        crosstab_dir / "vedle_sebe" / f"{slug}.png",
+                        n_left=n_vax,
+                        n_right=n_novax,
+                        monthly_ticks=monthly_ticks,
+                        ylabel=ylabel,
+                        n_caption=n_caption,
+                    )
+                    plot_crosstab_stacked(
+                        wide_vax,
+                        wide_novax,
+                        series,
+                        suptitle,
+                        "Očkovaní",
+                        "Neočkovaní",
+                        crosstab_dir / "nad_sebou" / f"{slug}.png",
+                        n_top=n_vax,
+                        n_bottom=n_novax,
+                        monthly_ticks=monthly_ticks,
+                        ylabel=ylabel,
+                        n_caption=n_caption,
+                    )
+
+            if variants is None:
+                print(f"    specializace ({period_slug}, {scale_slug})…")
+                wide_spec, top_codes = specialty_chart_data(presc_raw, start=start, end=MONTH_END)
+                if per is None:
+                    n_spec = population_size(presc_raw, None)
+                    spec_suffix = ""
+                else:
+                    n_spec = cohort_size(people, start.year, end_year, None, None)
+                    wide_spec = per_capita(wide_spec, n_spec, per)
+                    spec_suffix = f" — na {_fmt_n(per)} osob"
                 plot_lines(
-                    wide,
-                    series,
-                    f"{label} — B01 předpisy měsíčně ({desc}, {period_label}){subtitle_extra}",
-                    variant_dir / f"atc_predpisy_mesicne_{slug}.png",
-                    n_population=n,
+                    wide_spec,
+                    specialty_series(top_codes),
+                    f"{label} — B01 předpisy měsíčně dle odbornosti lékaře (top {TOP_N_SPECIALTIES}, {period_label}){spec_suffix}",
+                    scale_dir / "specializace_predpisy_mesicne.png",
+                    n_population=n_spec,
                     monthly_ticks=monthly_ticks,
+                    ylabel=ylabel,
+                    n_caption=n_caption,
                 )
-
-            print(f"    {variant_slug}: crosstab (vedle_sebe + nad_sebou)…")
-            crosstab_dir = variant_dir / "crosstab"
-            for slug, desc, age_scope in AGE_SCOPES:
-                vax_scope = pl.col("is_vax") if age_scope is None else (age_scope & pl.col("is_vax"))
-                novax_scope = (
-                    ~pl.col("is_vax") if age_scope is None else (age_scope & ~pl.col("is_vax"))
-                )
-                wide_vax = monthly_atc_counts(presc, vax_scope, subgroups=subgroups, start=start)
-                wide_novax = monthly_atc_counts(presc, novax_scope, subgroups=subgroups, start=start)
-                n_vax = population_size(presc, vax_scope, subgroups=subgroups)
-                n_novax = population_size(presc, novax_scope, subgroups=subgroups)
-                suptitle = (
-                    f"{label} — B01 předpisy měsíčně: očkovaní vs. neočkovaní "
-                    f"({desc}, {period_label}){subtitle_extra}"
-                )
-                plot_crosstab(
-                    wide_vax,
-                    wide_novax,
-                    series,
-                    suptitle,
-                    "Očkovaní",
-                    "Neočkovaní",
-                    crosstab_dir / "vedle_sebe" / f"{slug}.png",
-                    n_left=n_vax,
-                    n_right=n_novax,
-                    monthly_ticks=monthly_ticks,
-                )
-                plot_crosstab_stacked(
-                    wide_vax,
-                    wide_novax,
-                    series,
-                    suptitle,
-                    "Očkovaní",
-                    "Neočkovaní",
-                    crosstab_dir / "nad_sebou" / f"{slug}.png",
-                    n_top=n_vax,
-                    n_bottom=n_novax,
-                    monthly_ticks=monthly_ticks,
-                )
-
-        if variants is None:
-            print(f"    specializace ({period_slug})…")
-            wide_spec, top_codes = specialty_chart_data(presc_raw, start=start, end=MONTH_END)
-            plot_lines(
-                wide_spec,
-                specialty_series(top_codes),
-                f"{label} — B01 předpisy měsíčně dle odbornosti lékaře (top {TOP_N_SPECIALTIES}, {period_label})",
-                period_dir / "specializace_predpisy_mesicne.png",
-                n_population=population_size(presc_raw, None),
-                monthly_ticks=monthly_ticks,
-            )
 
     if extras:
         process_vax_timelines(company)

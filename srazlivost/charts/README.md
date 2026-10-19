@@ -25,6 +25,21 @@ Uvnitř každé z nich je úplně stejná struktura, popsaná níž.
 - `2015-2024/` — celý dostupný rozsah dat, popisky osy x po rocích
 - `2019-2024/` — jen od roku 2019, popisky osy x po měsících — aby šlo přesně vidět, kdy se co v roce 2021/2022 hýbe (covid vs. konkrétní vlny očkování)
 
+## Absolutní a relativní počty
+
+V každém období jsou dvě složky a pod nimi je stejný strom jako dřív:
+
+- `absolute/` — počty předpisů
+- `relative/` — stejné grafy vydělené velikostí populace, jednotka je **předpisů na 1 000 osob**
+
+Populace jsou všichni lidé v datech pojišťovny. Patří tam i ti, kdo antikoagulancium nikdy nedostali, a i ti, kdo nemají vůbec žádný záznam (ani předpis, ani očkování).
+
+- graf bez rozpadu na očkování: jmenovatel je celá věková skupina
+- graf očkovaní vs. neočkovaní: každý panel má svůj jmenovatel, takže jdou srovnat i když je jedna skupina větší
+- do věkové dekády člověk patří, když v některém roce daného období měl věk (rok minus rok narození) v té dekádě. Může tak být ve dvou sousedních dekádách
+
+V `absolute/` je **N** = kolik lidí v dané skupině mělo aspoň jeden vykreslený předpis. V `relative/` je **N** = populace ve jmenovateli (v titulku „populace“).
+
 ## Tři varianty podle dávky
 
 Hepariny i NOAC se dávají jak preventivně, tak k léčbě. Proto jsou tu tři varianty:
@@ -40,8 +55,6 @@ Hepariny i NOAC se dávají jak preventivně, tak k léčbě. Proto jsou tu tři
 - `crosstab/nad_sebou/<věk>.png` — stejná data jako výš, jen panely nad sebou se sdílenou osou x (dobré pro porovnání, KDY přesně se co děje — stejný měsíc je přesně pod sebou)
 
 Očkovaný/neočkovaný = má/nemá kdykoliv v datech aspoň jeden záznam o vakcinaci (tedy "ever vaccinated" za celé sledované období, ne k nějakému konkrétnímu datu).
-
-V titulku každého grafu je i **N** = kolik lidí v dané skupině mělo aspoň jeden předpis z těchhle šesti kategorií.
 
 ## Kdy se očkovalo
 

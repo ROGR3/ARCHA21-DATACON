@@ -25,9 +25,23 @@ Uvnitř každé z nich je úplně stejná struktura, popsaná níž.
 - `2015-2024/` — celý dostupný rozsah dat, popisky osy x po rocích
 - `2019-2024/` — jen od roku 2019, popisky osy x po měsících — aby šlo přesně vidět, kdy se co v roce 2021/2022 hýbe (covid vs. konkrétní vlny očkování)
 
+## Muži a ženy
+
+V každém období jsou tři složky a pod každou je stejný strom (popsaný níž):
+
+- `vsichni/` — všichni dohromady
+- `muzi/` — jen muži
+- `zeny/` — jen ženy
+
+Každý člověk má jedno pohlaví. Pár lidí v ČPZP (asi 1 600 z 1,5 milionu) má v různých řádcích jednou M a jednou F. U nich se bere ta hodnota, která je v jejich řádcích častější.
+
+V `relative/` je jmenovatel jen dané pohlaví. Tedy třeba „předpisů na 1 000 žen ve věku 30–39“.
+
+Příklad cesty: `cpzp/2019-2024/zeny/relative/jen_vyssi_davky/crosstab/nad_sebou/vek_20-29.png`
+
 ## Absolutní a relativní počty
 
-V každém období jsou dvě složky a pod nimi je stejný strom jako dřív:
+V každé složce pohlaví jsou dvě složky a pod nimi je stejný strom jako dřív:
 
 - `absolute/` — počty předpisů
 - `relative/` — stejné grafy vydělené velikostí populace, jednotka je **předpisů na 1 000 osob**
@@ -60,17 +74,17 @@ Očkovaný/neočkovaný = má/nemá kdykoliv v datech aspoň jeden záznam o vak
 
 `vax_period/` (jeden v `cpzp/`, `ozp/` i `both_companies/`) — kolik lidí se v daný den nechalo očkovat. Jedna čára = jedna dávka v pořadí u daného člověka (1. dávka, 2. dávka, … až po poslední, která v datech je, klidně 10.). Všechny dávky jsou v jednom grafu. Číslo je 7denní průměr, ať denní šum neskáče. Zelené pásmo „období vakcinace“ tu není.
 
-Soubory jsou po stejných věkových dekádách jako předpisy (`vek_0-9` … `vek_80_plus`) plus `vsechny_veky`. Věk je rok očkování minus rok narození. N v titulku = kolik lidí v té skupině má aspoň jedno očkování.
+Je rozdělený stejně na `vsichni/`, `muzi/` a `zeny/`. Soubory jsou po stejných věkových dekádách jako předpisy (`vek_0-9` … `vek_80_plus`) plus `vsechny_veky`. Věk je rok očkování minus rok narození. N v titulku = kolik lidí v té skupině má aspoň jedno očkování.
 
 ## Kolikrát měl kdo předpis
 
-`histogram_vyssi_davky/<rok>.png` — roky 2019, 2020, 2021 a 2022, zvlášť. Osa x je počet předpisů **jedné** ATC skupiny u jednoho člověka v tom roce (1, 2, … 12, poslední sloupec je 13 a víc). Osa y je počet lidí s právě tolika předpisy. Barva sloupce je ATC skupina.
+`histogram_vyssi_davky/<rok>.png` — roky 2019, 2020, 2021 a 2022, zvlášť. Tady se muži a ženy nerozlišují. Osa x je počet předpisů **jedné** ATC skupiny u jednoho člověka v tom roce (1, 2, … 12, poslední sloupec je 13 a víc). Osa y je počet lidí s právě tolika předpisy. Barva sloupce je ATC skupina.
 
 Platí stejný filtr jako `jen_vyssi_davky` (příloha na konci). Člověk s nulou v dané skupině v grafu není. Kdo má třeba warfarin i rivaroxaban, je ve dvou skupinách zvlášť, dohromady se to nesčítá.
 
 ## Specializace
 
-`specializace_predpisy_mesicne.png` (jeden v `2015-2024/`, jeden v `2019-2024/`) — počty předpisů podle odbornosti předepisujícího lékaře, top 10 odborností + koš "ostatní". Tohle je za celé B01 (bez rozpadu na jednotlivé léky, tedy včetně AC/AD) a bez dávkového filtrování.
+`specializace_predpisy_mesicne.png` (v každé složce `absolute/` a `relative/`, tedy pro každé období a pohlaví) — počty předpisů podle odbornosti předepisujícího lékaře, top 10 odborností + koš "ostatní". Tohle je za celé B01 (bez rozpadu na jednotlivé léky, tedy včetně AC/AD) a bez dávkového filtrování.
 
 ## Příloha: co je "vyšší dávka" ve variantě `jen_vyssi_davky/`
 

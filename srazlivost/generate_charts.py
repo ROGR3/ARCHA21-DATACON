@@ -20,7 +20,7 @@ Pro každou pojišťovnu (cpzp, ozp, both_companies) generuje strukturu:
       ATC skupina. Jen varianta vyšších dávek (Fraxiparin ≥0,6 ml a
       terapeutické síly NOAC, viz příloha v charts/README.md). Černý
       sloupec "B01 celkem" = předpisy všech skupin u člověka sečtené.
-  charts/<company>/prvopredpisy/<období>/<scope>.png
+  charts/<company>/<období>/<pohlaví>/<absolute|relative>/prvopredpisy/<scope>.png
       první předpis B01 u člověka v datech, po měsících, očkovaní nad
       neočkovanými. Preventivní heparin (B01AB mimo jen_vyssi_davky) se
       nepočítá.
@@ -716,6 +716,12 @@ PERIODS: list[tuple[str, str, date, bool]] = [
     ("2019-2024", "2019–2023", RECENT_START, True),
 ]
 
+# (složka, osa y, N v titulku, None = počty / číslo = na tolik osob)
+SCALES: list[tuple[str, str, str, int | None]] = [
+    ("absolute", "Počet předpisů", "N", None),
+    ("relative", f"Předpisů na {_fmt_n(RELATIVE_PER)} osob", "populace", RELATIVE_PER),
+]
+
 AGE_SCOPES: list[tuple[str, str, pl.Expr | None]] = [("vsechny_veky", "všechny věky", None)] + [
     (f"vek_{slug}", f"věk {age_label}", pl.col("age_bucket") == age_label)
     for age_label, slug in AGE_BUCKETS
@@ -735,11 +741,6 @@ def process_company(
     presc_raw = build_prescriptions(lazy)
     print(f"  {presc_raw.height:,} B01 předpisů, {people.height:,} osob")
     out_dir = CHARTS_DIR / company
-    # (složka, osa y, N v titulku, None = počty / číslo = na tolik osob)
-    scales: list[tuple[str, str, str, int | None]] = [
-        ("absolute", "Počet předpisů", "N", None),
-        ("relative", f"Předpisů na {_fmt_n(RELATIVE_PER)} osob", "populace", RELATIVE_PER),
-    ]
 
     selected = DOSE_VARIANTS
     if variants is not None:
@@ -757,7 +758,7 @@ def process_company(
             else:
                 presc_sex = presc_raw.filter(pl.col("Pohlavi") == sex_code)
                 people_sex = people.filter(pl.col("Pohlavi") == sex_code)
-            for scale_slug, ylabel, n_caption, per in scales:
+            for scale_slug, ylabel, n_caption, per in SCALES:
                 print(f"  --- {sex_slug}/{scale_slug} ---")
                 scale_dir = sex_dir / scale_slug
                 for variant_slug, variant_label, subtitle_extra in selected:
@@ -864,7 +865,7 @@ def process_company(
     if extras:
         process_vax_timelines(company)
         process_histograms(company, presc_raw)
-        process_first_prescriptions(company, presc_raw)
+        process_first_prescriptions(company, presc_raw, people)
 
 
 def first_prescriptions(presc: pl.DataFrame) -> pl.DataFrame:
@@ -883,33 +884,64 @@ def first_prescriptions(presc: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def process_first_prescriptions(company: str, presc_raw: pl.DataFrame | None = None) -> None:
+def process_first_prescriptions(
+    company: str,
+    presc_raw: pl.DataFrame | None = None,
+    people: pl.DataFrame | None = None,
+) -> None:
+    """charts/<company>/<období>/<pohlaví>/<absolute|relative>/prvopredpisy/<scope>.png"""
     label = COMPANY_LABELS[company]
     print(f"=== {company}: prvopředpisy ===")
-    if presc_raw is None:
-        presc_raw = build_prescriptions(load_company(company))
-    first = first_prescriptions(presc_raw)
-    print(f"  {first.height:,} osob s prvopředpisem")
+    if presc_raw is None or people is None:
+        lazy = load_company(company)
+        presc_raw = build_prescriptions(lazy)
+        people = build_people(lazy)
+    first_all = first_prescriptions(presc_raw)
+    print(f"  {first_all.height:,} osob s prvopředpisem")
     series = atc_series(ATC_SUBGROUPS)
+    end_year = MONTH_END.year
     for period_slug, period_label, start, monthly_ticks in PERIODS:
-        out_dir = CHARTS_DIR / company / "prvopredpisy" / period_slug
-        for slug, desc, age_scope in AGE_SCOPES:
-            vax_scope = _and(age_scope, pl.col("is_vax"))
-            novax_scope = _and(age_scope, ~pl.col("is_vax"))
-            plot_crosstab_stacked(
-                monthly_atc_counts(first, vax_scope, start=start),
-                monthly_atc_counts(first, novax_scope, start=start),
-                series,
-                f"{label} — první B01 předpis měsíčně: očkovaní vs. neočkovaní "
-                f"({desc}, {period_label}) — bez preventivního heparinu",
-                "Očkovaní",
-                "Neočkovaní",
-                out_dir / f"{slug}.png",
-                n_top=population_size(first, vax_scope),
-                n_bottom=population_size(first, novax_scope),
-                monthly_ticks=monthly_ticks,
-                ylabel="Počet prvopředpisů",
-            )
+        for sex_slug, sex_desc, sex_code in SEXES:
+            if sex_code is None:
+                first, people_sex = first_all, people
+            else:
+                first = first_all.filter(pl.col("Pohlavi") == sex_code)
+                people_sex = people.filter(pl.col("Pohlavi") == sex_code)
+            for scale_slug, _, n_caption, per in SCALES:
+                out_dir = CHARTS_DIR / company / period_slug / sex_slug / scale_slug / "prvopredpisy"
+                ylabel = "Počet prvopředpisů" if per is None else f"Prvopředpisů na {_fmt_n(per)} osob"
+                title_suffix = " — bez preventivního heparinu"
+                if per is not None:
+                    title_suffix += f" — na {_fmt_n(per)} osob"
+                for slug, desc, age_scope in AGE_SCOPES:
+                    vax_scope = _and(age_scope, pl.col("is_vax"))
+                    novax_scope = _and(age_scope, ~pl.col("is_vax"))
+                    wide_vax = monthly_atc_counts(first, vax_scope, start=start)
+                    wide_novax = monthly_atc_counts(first, novax_scope, start=start)
+                    if per is None:
+                        n_vax = population_size(first, vax_scope)
+                        n_novax = population_size(first, novax_scope)
+                    else:
+                        age_label = age_label_of(slug)
+                        n_vax = cohort_size(people_sex, start.year, end_year, age_label, True)
+                        n_novax = cohort_size(people_sex, start.year, end_year, age_label, False)
+                        wide_vax = per_capita(wide_vax, n_vax, per)
+                        wide_novax = per_capita(wide_novax, n_novax, per)
+                    plot_crosstab_stacked(
+                        wide_vax,
+                        wide_novax,
+                        series,
+                        f"{label} — první B01 předpis měsíčně: očkovaní vs. neočkovaní "
+                        f"({sex_desc}{desc}, {period_label}){title_suffix}",
+                        "Očkovaní",
+                        "Neočkovaní",
+                        out_dir / f"{slug}.png",
+                        n_top=n_vax,
+                        n_bottom=n_novax,
+                        monthly_ticks=monthly_ticks,
+                        ylabel=ylabel,
+                        n_caption=n_caption,
+                    )
 
 
 HIST_YEARS = (2019, 2020, 2021, 2022)
@@ -1027,7 +1059,7 @@ def main() -> None:
     parser.add_argument(
         "--only-first",
         action="store_true",
-        help="Jen prvopředpisy (charts/<company>/prvopredpisy/)",
+        help="Jen prvopředpisy (charts/<company>/<období>/<pohlaví>/<škála>/prvopredpisy/)",
     )
     parser.add_argument(
         "--variants",

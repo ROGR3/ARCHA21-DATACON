@@ -4,43 +4,229 @@ Tady jsou grafy počtu předpisů léků na ředění krve (ATC skupina B01) po 
 
 ## Rozcestník
 
-Kliknutím se dostaneš rovnou do složky. U každé dávkové varianty jsou uvnitř ještě podsložky `crosstab/vedle_sebe` a `crosstab/nad_sebou` (očkovaní vs. neočkovaní). Co který graf znamená, je popsané níž.
+Kliknutím se dostaneš rovnou do složky. Ve složkách `vse/`, `jen_vyssi_davky/` a `bez_heparinu/` jsou ještě podsložky `crosstab/vedle_sebe/` a `crosstab/nad_sebou/` (očkovaní vs. neočkovaní). Co který graf znamená, je popsané níž.
 
-- **[cpzp/](cpzp/)** — ČPZP
+- [cpzp/](cpzp/) — ČPZP
   - [2015-2024/](cpzp/2015-2024/)
-    - [vsichni/](cpzp/2015-2024/vsichni/) — [absolute](cpzp/2015-2024/vsichni/absolute/): [vse](cpzp/2015-2024/vsichni/absolute/vse/) · [jen_vyssi_davky](cpzp/2015-2024/vsichni/absolute/jen_vyssi_davky/) · [bez_heparinu](cpzp/2015-2024/vsichni/absolute/bez_heparinu/) | [relative](cpzp/2015-2024/vsichni/relative/): [vse](cpzp/2015-2024/vsichni/relative/vse/) · [jen_vyssi_davky](cpzp/2015-2024/vsichni/relative/jen_vyssi_davky/) · [bez_heparinu](cpzp/2015-2024/vsichni/relative/bez_heparinu/)
-    - [muzi/](cpzp/2015-2024/muzi/) — [absolute](cpzp/2015-2024/muzi/absolute/): [vse](cpzp/2015-2024/muzi/absolute/vse/) · [jen_vyssi_davky](cpzp/2015-2024/muzi/absolute/jen_vyssi_davky/) · [bez_heparinu](cpzp/2015-2024/muzi/absolute/bez_heparinu/) | [relative](cpzp/2015-2024/muzi/relative/): [vse](cpzp/2015-2024/muzi/relative/vse/) · [jen_vyssi_davky](cpzp/2015-2024/muzi/relative/jen_vyssi_davky/) · [bez_heparinu](cpzp/2015-2024/muzi/relative/bez_heparinu/)
-    - [zeny/](cpzp/2015-2024/zeny/) — [absolute](cpzp/2015-2024/zeny/absolute/): [vse](cpzp/2015-2024/zeny/absolute/vse/) · [jen_vyssi_davky](cpzp/2015-2024/zeny/absolute/jen_vyssi_davky/) · [bez_heparinu](cpzp/2015-2024/zeny/absolute/bez_heparinu/) | [relative](cpzp/2015-2024/zeny/relative/): [vse](cpzp/2015-2024/zeny/relative/vse/) · [jen_vyssi_davky](cpzp/2015-2024/zeny/relative/jen_vyssi_davky/) · [bez_heparinu](cpzp/2015-2024/zeny/relative/bez_heparinu/)
+    - [vsichni/](cpzp/2015-2024/vsichni/) — všichni
+      - [absolute/](cpzp/2015-2024/vsichni/absolute/) — počty
+        - [vse/](cpzp/2015-2024/vsichni/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](cpzp/2015-2024/vsichni/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](cpzp/2015-2024/vsichni/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](cpzp/2015-2024/vsichni/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](cpzp/2015-2024/vsichni/relative/) — na 1 000 osob
+        - [vse/](cpzp/2015-2024/vsichni/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](cpzp/2015-2024/vsichni/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](cpzp/2015-2024/vsichni/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](cpzp/2015-2024/vsichni/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+    - [muzi/](cpzp/2015-2024/muzi/) — muži
+      - [absolute/](cpzp/2015-2024/muzi/absolute/) — počty
+        - [vse/](cpzp/2015-2024/muzi/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](cpzp/2015-2024/muzi/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](cpzp/2015-2024/muzi/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](cpzp/2015-2024/muzi/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](cpzp/2015-2024/muzi/relative/) — na 1 000 osob
+        - [vse/](cpzp/2015-2024/muzi/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](cpzp/2015-2024/muzi/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](cpzp/2015-2024/muzi/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](cpzp/2015-2024/muzi/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+    - [zeny/](cpzp/2015-2024/zeny/) — ženy
+      - [absolute/](cpzp/2015-2024/zeny/absolute/) — počty
+        - [vse/](cpzp/2015-2024/zeny/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](cpzp/2015-2024/zeny/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](cpzp/2015-2024/zeny/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](cpzp/2015-2024/zeny/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](cpzp/2015-2024/zeny/relative/) — na 1 000 osob
+        - [vse/](cpzp/2015-2024/zeny/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](cpzp/2015-2024/zeny/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](cpzp/2015-2024/zeny/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](cpzp/2015-2024/zeny/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
   - [2019-2024/](cpzp/2019-2024/)
-    - [vsichni/](cpzp/2019-2024/vsichni/) — [absolute](cpzp/2019-2024/vsichni/absolute/): [vse](cpzp/2019-2024/vsichni/absolute/vse/) · [jen_vyssi_davky](cpzp/2019-2024/vsichni/absolute/jen_vyssi_davky/) · [bez_heparinu](cpzp/2019-2024/vsichni/absolute/bez_heparinu/) | [relative](cpzp/2019-2024/vsichni/relative/): [vse](cpzp/2019-2024/vsichni/relative/vse/) · [jen_vyssi_davky](cpzp/2019-2024/vsichni/relative/jen_vyssi_davky/) · [bez_heparinu](cpzp/2019-2024/vsichni/relative/bez_heparinu/)
-    - [muzi/](cpzp/2019-2024/muzi/) — [absolute](cpzp/2019-2024/muzi/absolute/): [vse](cpzp/2019-2024/muzi/absolute/vse/) · [jen_vyssi_davky](cpzp/2019-2024/muzi/absolute/jen_vyssi_davky/) · [bez_heparinu](cpzp/2019-2024/muzi/absolute/bez_heparinu/) | [relative](cpzp/2019-2024/muzi/relative/): [vse](cpzp/2019-2024/muzi/relative/vse/) · [jen_vyssi_davky](cpzp/2019-2024/muzi/relative/jen_vyssi_davky/) · [bez_heparinu](cpzp/2019-2024/muzi/relative/bez_heparinu/)
-    - [zeny/](cpzp/2019-2024/zeny/) — [absolute](cpzp/2019-2024/zeny/absolute/): [vse](cpzp/2019-2024/zeny/absolute/vse/) · [jen_vyssi_davky](cpzp/2019-2024/zeny/absolute/jen_vyssi_davky/) · [bez_heparinu](cpzp/2019-2024/zeny/absolute/bez_heparinu/) | [relative](cpzp/2019-2024/zeny/relative/): [vse](cpzp/2019-2024/zeny/relative/vse/) · [jen_vyssi_davky](cpzp/2019-2024/zeny/relative/jen_vyssi_davky/) · [bez_heparinu](cpzp/2019-2024/zeny/relative/bez_heparinu/)
-  - [vax_period/](cpzp/vax_period/) — očkování po dávkách: [vsichni](cpzp/vax_period/vsichni/) · [muzi](cpzp/vax_period/muzi/) · [zeny](cpzp/vax_period/zeny/)
-  - [prvopredpisy/](cpzp/prvopredpisy/) — první předpis: [2015-2024](cpzp/prvopredpisy/2015-2024/) · [2019-2024](cpzp/prvopredpisy/2019-2024/)
+    - [vsichni/](cpzp/2019-2024/vsichni/) — všichni
+      - [absolute/](cpzp/2019-2024/vsichni/absolute/) — počty
+        - [vse/](cpzp/2019-2024/vsichni/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](cpzp/2019-2024/vsichni/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](cpzp/2019-2024/vsichni/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](cpzp/2019-2024/vsichni/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](cpzp/2019-2024/vsichni/relative/) — na 1 000 osob
+        - [vse/](cpzp/2019-2024/vsichni/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](cpzp/2019-2024/vsichni/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](cpzp/2019-2024/vsichni/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](cpzp/2019-2024/vsichni/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+    - [muzi/](cpzp/2019-2024/muzi/) — muži
+      - [absolute/](cpzp/2019-2024/muzi/absolute/) — počty
+        - [vse/](cpzp/2019-2024/muzi/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](cpzp/2019-2024/muzi/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](cpzp/2019-2024/muzi/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](cpzp/2019-2024/muzi/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](cpzp/2019-2024/muzi/relative/) — na 1 000 osob
+        - [vse/](cpzp/2019-2024/muzi/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](cpzp/2019-2024/muzi/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](cpzp/2019-2024/muzi/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](cpzp/2019-2024/muzi/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+    - [zeny/](cpzp/2019-2024/zeny/) — ženy
+      - [absolute/](cpzp/2019-2024/zeny/absolute/) — počty
+        - [vse/](cpzp/2019-2024/zeny/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](cpzp/2019-2024/zeny/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](cpzp/2019-2024/zeny/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](cpzp/2019-2024/zeny/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](cpzp/2019-2024/zeny/relative/) — na 1 000 osob
+        - [vse/](cpzp/2019-2024/zeny/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](cpzp/2019-2024/zeny/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](cpzp/2019-2024/zeny/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](cpzp/2019-2024/zeny/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+  - [vax_period/](cpzp/vax_period/) — očkování po dávkách
+    - [vsichni/](cpzp/vax_period/vsichni/) — všichni
+    - [muzi/](cpzp/vax_period/muzi/) — muži
+    - [zeny/](cpzp/vax_period/zeny/) — ženy
   - [histogram_vyssi_davky/](cpzp/histogram_vyssi_davky/) — kolikrát měl kdo předpis (2019–2022)
-- **[ozp/](ozp/)** — OZP
+- [ozp/](ozp/) — OZP
   - [2015-2024/](ozp/2015-2024/)
-    - [vsichni/](ozp/2015-2024/vsichni/) — [absolute](ozp/2015-2024/vsichni/absolute/): [vse](ozp/2015-2024/vsichni/absolute/vse/) · [jen_vyssi_davky](ozp/2015-2024/vsichni/absolute/jen_vyssi_davky/) · [bez_heparinu](ozp/2015-2024/vsichni/absolute/bez_heparinu/) | [relative](ozp/2015-2024/vsichni/relative/): [vse](ozp/2015-2024/vsichni/relative/vse/) · [jen_vyssi_davky](ozp/2015-2024/vsichni/relative/jen_vyssi_davky/) · [bez_heparinu](ozp/2015-2024/vsichni/relative/bez_heparinu/)
-    - [muzi/](ozp/2015-2024/muzi/) — [absolute](ozp/2015-2024/muzi/absolute/): [vse](ozp/2015-2024/muzi/absolute/vse/) · [jen_vyssi_davky](ozp/2015-2024/muzi/absolute/jen_vyssi_davky/) · [bez_heparinu](ozp/2015-2024/muzi/absolute/bez_heparinu/) | [relative](ozp/2015-2024/muzi/relative/): [vse](ozp/2015-2024/muzi/relative/vse/) · [jen_vyssi_davky](ozp/2015-2024/muzi/relative/jen_vyssi_davky/) · [bez_heparinu](ozp/2015-2024/muzi/relative/bez_heparinu/)
-    - [zeny/](ozp/2015-2024/zeny/) — [absolute](ozp/2015-2024/zeny/absolute/): [vse](ozp/2015-2024/zeny/absolute/vse/) · [jen_vyssi_davky](ozp/2015-2024/zeny/absolute/jen_vyssi_davky/) · [bez_heparinu](ozp/2015-2024/zeny/absolute/bez_heparinu/) | [relative](ozp/2015-2024/zeny/relative/): [vse](ozp/2015-2024/zeny/relative/vse/) · [jen_vyssi_davky](ozp/2015-2024/zeny/relative/jen_vyssi_davky/) · [bez_heparinu](ozp/2015-2024/zeny/relative/bez_heparinu/)
+    - [vsichni/](ozp/2015-2024/vsichni/) — všichni
+      - [absolute/](ozp/2015-2024/vsichni/absolute/) — počty
+        - [vse/](ozp/2015-2024/vsichni/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](ozp/2015-2024/vsichni/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](ozp/2015-2024/vsichni/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](ozp/2015-2024/vsichni/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](ozp/2015-2024/vsichni/relative/) — na 1 000 osob
+        - [vse/](ozp/2015-2024/vsichni/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](ozp/2015-2024/vsichni/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](ozp/2015-2024/vsichni/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](ozp/2015-2024/vsichni/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+    - [muzi/](ozp/2015-2024/muzi/) — muži
+      - [absolute/](ozp/2015-2024/muzi/absolute/) — počty
+        - [vse/](ozp/2015-2024/muzi/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](ozp/2015-2024/muzi/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](ozp/2015-2024/muzi/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](ozp/2015-2024/muzi/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](ozp/2015-2024/muzi/relative/) — na 1 000 osob
+        - [vse/](ozp/2015-2024/muzi/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](ozp/2015-2024/muzi/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](ozp/2015-2024/muzi/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](ozp/2015-2024/muzi/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+    - [zeny/](ozp/2015-2024/zeny/) — ženy
+      - [absolute/](ozp/2015-2024/zeny/absolute/) — počty
+        - [vse/](ozp/2015-2024/zeny/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](ozp/2015-2024/zeny/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](ozp/2015-2024/zeny/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](ozp/2015-2024/zeny/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](ozp/2015-2024/zeny/relative/) — na 1 000 osob
+        - [vse/](ozp/2015-2024/zeny/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](ozp/2015-2024/zeny/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](ozp/2015-2024/zeny/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](ozp/2015-2024/zeny/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
   - [2019-2024/](ozp/2019-2024/)
-    - [vsichni/](ozp/2019-2024/vsichni/) — [absolute](ozp/2019-2024/vsichni/absolute/): [vse](ozp/2019-2024/vsichni/absolute/vse/) · [jen_vyssi_davky](ozp/2019-2024/vsichni/absolute/jen_vyssi_davky/) · [bez_heparinu](ozp/2019-2024/vsichni/absolute/bez_heparinu/) | [relative](ozp/2019-2024/vsichni/relative/): [vse](ozp/2019-2024/vsichni/relative/vse/) · [jen_vyssi_davky](ozp/2019-2024/vsichni/relative/jen_vyssi_davky/) · [bez_heparinu](ozp/2019-2024/vsichni/relative/bez_heparinu/)
-    - [muzi/](ozp/2019-2024/muzi/) — [absolute](ozp/2019-2024/muzi/absolute/): [vse](ozp/2019-2024/muzi/absolute/vse/) · [jen_vyssi_davky](ozp/2019-2024/muzi/absolute/jen_vyssi_davky/) · [bez_heparinu](ozp/2019-2024/muzi/absolute/bez_heparinu/) | [relative](ozp/2019-2024/muzi/relative/): [vse](ozp/2019-2024/muzi/relative/vse/) · [jen_vyssi_davky](ozp/2019-2024/muzi/relative/jen_vyssi_davky/) · [bez_heparinu](ozp/2019-2024/muzi/relative/bez_heparinu/)
-    - [zeny/](ozp/2019-2024/zeny/) — [absolute](ozp/2019-2024/zeny/absolute/): [vse](ozp/2019-2024/zeny/absolute/vse/) · [jen_vyssi_davky](ozp/2019-2024/zeny/absolute/jen_vyssi_davky/) · [bez_heparinu](ozp/2019-2024/zeny/absolute/bez_heparinu/) | [relative](ozp/2019-2024/zeny/relative/): [vse](ozp/2019-2024/zeny/relative/vse/) · [jen_vyssi_davky](ozp/2019-2024/zeny/relative/jen_vyssi_davky/) · [bez_heparinu](ozp/2019-2024/zeny/relative/bez_heparinu/)
-  - [vax_period/](ozp/vax_period/) — očkování po dávkách: [vsichni](ozp/vax_period/vsichni/) · [muzi](ozp/vax_period/muzi/) · [zeny](ozp/vax_period/zeny/)
-  - [prvopredpisy/](ozp/prvopredpisy/) — první předpis: [2015-2024](ozp/prvopredpisy/2015-2024/) · [2019-2024](ozp/prvopredpisy/2019-2024/)
+    - [vsichni/](ozp/2019-2024/vsichni/) — všichni
+      - [absolute/](ozp/2019-2024/vsichni/absolute/) — počty
+        - [vse/](ozp/2019-2024/vsichni/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](ozp/2019-2024/vsichni/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](ozp/2019-2024/vsichni/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](ozp/2019-2024/vsichni/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](ozp/2019-2024/vsichni/relative/) — na 1 000 osob
+        - [vse/](ozp/2019-2024/vsichni/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](ozp/2019-2024/vsichni/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](ozp/2019-2024/vsichni/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](ozp/2019-2024/vsichni/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+    - [muzi/](ozp/2019-2024/muzi/) — muži
+      - [absolute/](ozp/2019-2024/muzi/absolute/) — počty
+        - [vse/](ozp/2019-2024/muzi/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](ozp/2019-2024/muzi/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](ozp/2019-2024/muzi/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](ozp/2019-2024/muzi/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](ozp/2019-2024/muzi/relative/) — na 1 000 osob
+        - [vse/](ozp/2019-2024/muzi/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](ozp/2019-2024/muzi/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](ozp/2019-2024/muzi/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](ozp/2019-2024/muzi/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+    - [zeny/](ozp/2019-2024/zeny/) — ženy
+      - [absolute/](ozp/2019-2024/zeny/absolute/) — počty
+        - [vse/](ozp/2019-2024/zeny/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](ozp/2019-2024/zeny/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](ozp/2019-2024/zeny/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](ozp/2019-2024/zeny/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](ozp/2019-2024/zeny/relative/) — na 1 000 osob
+        - [vse/](ozp/2019-2024/zeny/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](ozp/2019-2024/zeny/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](ozp/2019-2024/zeny/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](ozp/2019-2024/zeny/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+  - [vax_period/](ozp/vax_period/) — očkování po dávkách
+    - [vsichni/](ozp/vax_period/vsichni/) — všichni
+    - [muzi/](ozp/vax_period/muzi/) — muži
+    - [zeny/](ozp/vax_period/zeny/) — ženy
   - [histogram_vyssi_davky/](ozp/histogram_vyssi_davky/) — kolikrát měl kdo předpis (2019–2022)
-- **[both_companies/](both_companies/)** — obě pojišťovny
+- [both_companies/](both_companies/) — obě pojišťovny
   - [2015-2024/](both_companies/2015-2024/)
-    - [vsichni/](both_companies/2015-2024/vsichni/) — [absolute](both_companies/2015-2024/vsichni/absolute/): [vse](both_companies/2015-2024/vsichni/absolute/vse/) · [jen_vyssi_davky](both_companies/2015-2024/vsichni/absolute/jen_vyssi_davky/) · [bez_heparinu](both_companies/2015-2024/vsichni/absolute/bez_heparinu/) | [relative](both_companies/2015-2024/vsichni/relative/): [vse](both_companies/2015-2024/vsichni/relative/vse/) · [jen_vyssi_davky](both_companies/2015-2024/vsichni/relative/jen_vyssi_davky/) · [bez_heparinu](both_companies/2015-2024/vsichni/relative/bez_heparinu/)
-    - [muzi/](both_companies/2015-2024/muzi/) — [absolute](both_companies/2015-2024/muzi/absolute/): [vse](both_companies/2015-2024/muzi/absolute/vse/) · [jen_vyssi_davky](both_companies/2015-2024/muzi/absolute/jen_vyssi_davky/) · [bez_heparinu](both_companies/2015-2024/muzi/absolute/bez_heparinu/) | [relative](both_companies/2015-2024/muzi/relative/): [vse](both_companies/2015-2024/muzi/relative/vse/) · [jen_vyssi_davky](both_companies/2015-2024/muzi/relative/jen_vyssi_davky/) · [bez_heparinu](both_companies/2015-2024/muzi/relative/bez_heparinu/)
-    - [zeny/](both_companies/2015-2024/zeny/) — [absolute](both_companies/2015-2024/zeny/absolute/): [vse](both_companies/2015-2024/zeny/absolute/vse/) · [jen_vyssi_davky](both_companies/2015-2024/zeny/absolute/jen_vyssi_davky/) · [bez_heparinu](both_companies/2015-2024/zeny/absolute/bez_heparinu/) | [relative](both_companies/2015-2024/zeny/relative/): [vse](both_companies/2015-2024/zeny/relative/vse/) · [jen_vyssi_davky](both_companies/2015-2024/zeny/relative/jen_vyssi_davky/) · [bez_heparinu](both_companies/2015-2024/zeny/relative/bez_heparinu/)
+    - [vsichni/](both_companies/2015-2024/vsichni/) — všichni
+      - [absolute/](both_companies/2015-2024/vsichni/absolute/) — počty
+        - [vse/](both_companies/2015-2024/vsichni/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](both_companies/2015-2024/vsichni/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](both_companies/2015-2024/vsichni/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](both_companies/2015-2024/vsichni/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](both_companies/2015-2024/vsichni/relative/) — na 1 000 osob
+        - [vse/](both_companies/2015-2024/vsichni/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](both_companies/2015-2024/vsichni/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](both_companies/2015-2024/vsichni/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](both_companies/2015-2024/vsichni/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+    - [muzi/](both_companies/2015-2024/muzi/) — muži
+      - [absolute/](both_companies/2015-2024/muzi/absolute/) — počty
+        - [vse/](both_companies/2015-2024/muzi/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](both_companies/2015-2024/muzi/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](both_companies/2015-2024/muzi/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](both_companies/2015-2024/muzi/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](both_companies/2015-2024/muzi/relative/) — na 1 000 osob
+        - [vse/](both_companies/2015-2024/muzi/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](both_companies/2015-2024/muzi/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](both_companies/2015-2024/muzi/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](both_companies/2015-2024/muzi/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+    - [zeny/](both_companies/2015-2024/zeny/) — ženy
+      - [absolute/](both_companies/2015-2024/zeny/absolute/) — počty
+        - [vse/](both_companies/2015-2024/zeny/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](both_companies/2015-2024/zeny/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](both_companies/2015-2024/zeny/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](both_companies/2015-2024/zeny/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](both_companies/2015-2024/zeny/relative/) — na 1 000 osob
+        - [vse/](both_companies/2015-2024/zeny/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](both_companies/2015-2024/zeny/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](both_companies/2015-2024/zeny/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](both_companies/2015-2024/zeny/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
   - [2019-2024/](both_companies/2019-2024/)
-    - [vsichni/](both_companies/2019-2024/vsichni/) — [absolute](both_companies/2019-2024/vsichni/absolute/): [vse](both_companies/2019-2024/vsichni/absolute/vse/) · [jen_vyssi_davky](both_companies/2019-2024/vsichni/absolute/jen_vyssi_davky/) · [bez_heparinu](both_companies/2019-2024/vsichni/absolute/bez_heparinu/) | [relative](both_companies/2019-2024/vsichni/relative/): [vse](both_companies/2019-2024/vsichni/relative/vse/) · [jen_vyssi_davky](both_companies/2019-2024/vsichni/relative/jen_vyssi_davky/) · [bez_heparinu](both_companies/2019-2024/vsichni/relative/bez_heparinu/)
-    - [muzi/](both_companies/2019-2024/muzi/) — [absolute](both_companies/2019-2024/muzi/absolute/): [vse](both_companies/2019-2024/muzi/absolute/vse/) · [jen_vyssi_davky](both_companies/2019-2024/muzi/absolute/jen_vyssi_davky/) · [bez_heparinu](both_companies/2019-2024/muzi/absolute/bez_heparinu/) | [relative](both_companies/2019-2024/muzi/relative/): [vse](both_companies/2019-2024/muzi/relative/vse/) · [jen_vyssi_davky](both_companies/2019-2024/muzi/relative/jen_vyssi_davky/) · [bez_heparinu](both_companies/2019-2024/muzi/relative/bez_heparinu/)
-    - [zeny/](both_companies/2019-2024/zeny/) — [absolute](both_companies/2019-2024/zeny/absolute/): [vse](both_companies/2019-2024/zeny/absolute/vse/) · [jen_vyssi_davky](both_companies/2019-2024/zeny/absolute/jen_vyssi_davky/) · [bez_heparinu](both_companies/2019-2024/zeny/absolute/bez_heparinu/) | [relative](both_companies/2019-2024/zeny/relative/): [vse](both_companies/2019-2024/zeny/relative/vse/) · [jen_vyssi_davky](both_companies/2019-2024/zeny/relative/jen_vyssi_davky/) · [bez_heparinu](both_companies/2019-2024/zeny/relative/bez_heparinu/)
-  - [vax_period/](both_companies/vax_period/) — očkování po dávkách: [vsichni](both_companies/vax_period/vsichni/) · [muzi](both_companies/vax_period/muzi/) · [zeny](both_companies/vax_period/zeny/)
-  - [prvopredpisy/](both_companies/prvopredpisy/) — první předpis: [2015-2024](both_companies/prvopredpisy/2015-2024/) · [2019-2024](both_companies/prvopredpisy/2019-2024/)
+    - [vsichni/](both_companies/2019-2024/vsichni/) — všichni
+      - [absolute/](both_companies/2019-2024/vsichni/absolute/) — počty
+        - [vse/](both_companies/2019-2024/vsichni/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](both_companies/2019-2024/vsichni/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](both_companies/2019-2024/vsichni/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](both_companies/2019-2024/vsichni/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](both_companies/2019-2024/vsichni/relative/) — na 1 000 osob
+        - [vse/](both_companies/2019-2024/vsichni/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](both_companies/2019-2024/vsichni/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](both_companies/2019-2024/vsichni/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](both_companies/2019-2024/vsichni/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+    - [muzi/](both_companies/2019-2024/muzi/) — muži
+      - [absolute/](both_companies/2019-2024/muzi/absolute/) — počty
+        - [vse/](both_companies/2019-2024/muzi/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](both_companies/2019-2024/muzi/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](both_companies/2019-2024/muzi/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](both_companies/2019-2024/muzi/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](both_companies/2019-2024/muzi/relative/) — na 1 000 osob
+        - [vse/](both_companies/2019-2024/muzi/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](both_companies/2019-2024/muzi/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](both_companies/2019-2024/muzi/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](both_companies/2019-2024/muzi/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+    - [zeny/](both_companies/2019-2024/zeny/) — ženy
+      - [absolute/](both_companies/2019-2024/zeny/absolute/) — počty
+        - [vse/](both_companies/2019-2024/zeny/absolute/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](both_companies/2019-2024/zeny/absolute/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](both_companies/2019-2024/zeny/absolute/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](both_companies/2019-2024/zeny/absolute/prvopredpisy/) — první předpis (bez preventivního heparinu)
+      - [relative/](both_companies/2019-2024/zeny/relative/) — na 1 000 osob
+        - [vse/](both_companies/2019-2024/zeny/relative/vse/) — všechny předpisy
+        - [jen_vyssi_davky/](both_companies/2019-2024/zeny/relative/jen_vyssi_davky/) — jen terapeutické dávky
+        - [bez_heparinu/](both_companies/2019-2024/zeny/relative/bez_heparinu/) — bez B01AB
+        - [prvopredpisy/](both_companies/2019-2024/zeny/relative/prvopredpisy/) — první předpis (bez preventivního heparinu)
+  - [vax_period/](both_companies/vax_period/) — očkování po dávkách
+    - [vsichni/](both_companies/vax_period/vsichni/) — všichni
+    - [muzi/](both_companies/vax_period/muzi/) — muži
+    - [zeny/](both_companies/vax_period/zeny/) — ženy
   - [histogram_vyssi_davky/](both_companies/histogram_vyssi_davky/) — kolikrát měl kdo předpis (2019–2022)
 
 ## Co znamenají zkratky léků
@@ -127,13 +313,12 @@ Platí stejný filtr jako `jen_vyssi_davky` (příloha na konci). Člověk s nul
 
 ## Prvopředpisy
 
-`prvopredpisy/<období>/<věk>.png` — kolik lidí dostalo v daném měsíci svůj **první** předpis B01 v datech. Očkovaní jsou nahoře, neočkovaní dole, osa x je sdílená (stejně jako `crosstab/nad_sebou`). Barva čáry je ATC skupina toho prvního předpisu, černá čárkovaná je součet.
+`<období>/<pohlaví>/<absolute|relative>/prvopredpisy/<věk>.png` — leží vedle dávkových variant. Kolik lidí dostalo v daném měsíci svůj **první** předpis B01 v datech. Očkovaní jsou nahoře, neočkovaní dole, osa x je sdílená (stejně jako `crosstab/nad_sebou`). Barva čáry je ATC skupina toho prvního předpisu, černá čárkovaná je součet.
 
 - Preventivní heparin se nepočítá. To je každý B01AB, který není ve `jen_vyssi_davky` (příloha na konci), např. Fraxiparin 0,3 a 0,4 ml nebo enoxaparin. Bývá po zlomenině nebo operaci. Kdo měl nejdřív preventivní heparin a pak třeba warfarin, má prvopředpis v den warfarinu. Kdo měl jen preventivní heparin, v grafu není.
 - Ostatní léky se berou bez filtru síly.
 - „První“ znamená první v našich datech, ta začínají v lednu 2015. Lidé, kteří už léky brali před rokem 2015, mají „prvopředpis“ v prvních měsících roku 2015, takže začátek grafu `2015-2024` je uměle vysoký.
-- Věk je věk při prvním předpisu. N v titulku = počet lidí s prvopředpisem v té skupině.
-- Muži a ženy se tu nerozlišují.
+- Věk je věk při prvním předpisu. V `absolute/` je N v titulku počet lidí s prvopředpisem v té skupině. V `relative/` je to prvopředpisů na 1 000 osob se stejným jmenovatelem jako u ostatních relativních grafů (dané pohlaví, věková skupina a očkovaní/neočkovaní).
 
 ## Specializace
 

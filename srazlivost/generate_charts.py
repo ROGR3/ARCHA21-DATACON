@@ -18,7 +18,12 @@ Pro každou pojišťovnu (cpzp, ozp, both_companies) generuje strukturu:
       pro roky 2019–2022: osa x = kolik předpisů dané ATC skupiny měl
       jeden člověk v tom roce, osa y = kolik takových lidí. Sloupec =
       ATC skupina. Jen varianta vyšších dávek (Fraxiparin ≥0,6 ml a
-      terapeutické síly NOAC, viz příloha v charts/README.md).
+      terapeutické síly NOAC, viz příloha v charts/README.md). Černý
+      sloupec "B01 celkem" = předpisy všech skupin u člověka sečtené.
+  charts/<company>/prvopredpisy/<období>/<scope>.png
+      první předpis B01 u člověka v datech, po měsících, očkovaní nad
+      neočkovanými. Preventivní heparin (B01AB mimo jen_vyssi_davky) se
+      nepočítá.
 
 <období>:
   - "2015-2024" — celý rozsah dat, roční popisky osy x
@@ -151,10 +156,10 @@ MONTH_END = date(2023, 12, 1)
 RECENT_START = date(2019, 1, 1)
 
 
-def _read_one(path: Path, id_prefix: str | None) -> pl.LazyFrame:
+def _read_one(path: Path, id_prefix: str | None, cols: list[str]) -> pl.LazyFrame:
     df = (
         pl.scan_csv(path, null_values=["", "NA"], infer_schema_length=20_000)
-        .select(NEEDED_COLS)
+        .select(cols)
         .with_columns(
             pl.col("Id_pojistence").cast(pl.Utf8),
             pl.col("Rok_narozeni").cast(pl.Int64, strict=False),
@@ -169,13 +174,14 @@ def _read_one(path: Path, id_prefix: str | None) -> pl.LazyFrame:
     )
 
 
-def load_company(company: str) -> pl.LazyFrame:
+def load_company(company: str, extra_cols: list[str] | None = None) -> pl.LazyFrame:
+    cols = NEEDED_COLS + (extra_cols or [])
     if company == "both_companies":
-        cpzp = _read_one(OUT_DIR / "CPZP_preskladane.csv", "cpzp:")
-        ozp = _read_one(OUT_DIR / "OZP_preskladane.csv", "ozp:")
+        cpzp = _read_one(OUT_DIR / "CPZP_preskladane.csv", "cpzp:", cols)
+        ozp = _read_one(OUT_DIR / "OZP_preskladane.csv", "ozp:", cols)
         return pl.concat([cpzp, ozp])
     fname = "CPZP_preskladane.csv" if company == "cpzp" else "OZP_preskladane.csv"
-    return _read_one(OUT_DIR / fname, None)
+    return _read_one(OUT_DIR / fname, None, cols)
 
 
 def _sex_agg() -> pl.Expr:
@@ -260,8 +266,8 @@ def build_prescriptions(df: pl.LazyFrame) -> pl.DataFrame:
         )
         .with_columns(_higher_dose_expr().alias("is_higher_dose"))
         .select(
-            "Id_pojistence", "month", "atc5", "age_bucket", "is_vax", "Specializace",
-            "is_higher_dose", "Pohlavi",
+            "Id_pojistence", "Datum_udalosti", "month", "atc5", "age_bucket", "is_vax",
+            "Specializace", "is_higher_dose", "Pohlavi",
         )
     )
     return presc.collect()
@@ -858,6 +864,52 @@ def process_company(
     if extras:
         process_vax_timelines(company)
         process_histograms(company, presc_raw)
+        process_first_prescriptions(company, presc_raw)
+
+
+def first_prescriptions(presc: pl.DataFrame) -> pl.DataFrame:
+    """Jeden řádek na člověka: jeho první předpis z ATC_SUBGROUPS v datech.
+
+    Preventivní heparin se nepočítá (B01AB mimo jen_vyssi_davky, např.
+    Fraxiparin pod 0,6 ml). Kdo má jen ten, prvopředpis nemá. Věk a ATC
+    jsou z toho prvního předpisu."""
+    return (
+        presc.filter(
+            pl.col("atc5").is_in(ATC_SUBGROUPS)
+            & ~((pl.col("atc5") == "B01AB") & ~pl.col("is_higher_dose"))
+        )
+        .sort("Datum_udalosti", "atc5")
+        .unique("Id_pojistence", keep="first", maintain_order=True)
+    )
+
+
+def process_first_prescriptions(company: str, presc_raw: pl.DataFrame | None = None) -> None:
+    label = COMPANY_LABELS[company]
+    print(f"=== {company}: prvopředpisy ===")
+    if presc_raw is None:
+        presc_raw = build_prescriptions(load_company(company))
+    first = first_prescriptions(presc_raw)
+    print(f"  {first.height:,} osob s prvopředpisem")
+    series = atc_series(ATC_SUBGROUPS)
+    for period_slug, period_label, start, monthly_ticks in PERIODS:
+        out_dir = CHARTS_DIR / company / "prvopredpisy" / period_slug
+        for slug, desc, age_scope in AGE_SCOPES:
+            vax_scope = _and(age_scope, pl.col("is_vax"))
+            novax_scope = _and(age_scope, ~pl.col("is_vax"))
+            plot_crosstab_stacked(
+                monthly_atc_counts(first, vax_scope, start=start),
+                monthly_atc_counts(first, novax_scope, start=start),
+                series,
+                f"{label} — první B01 předpis měsíčně: očkovaní vs. neočkovaní "
+                f"({desc}, {period_label}) — bez preventivního heparinu",
+                "Očkovaní",
+                "Neočkovaní",
+                out_dir / f"{slug}.png",
+                n_top=population_size(first, vax_scope),
+                n_bottom=population_size(first, novax_scope),
+                monthly_ticks=monthly_ticks,
+                ylabel="Počet prvopředpisů",
+            )
 
 
 HIST_YEARS = (2019, 2020, 2021, 2022)
@@ -869,15 +921,21 @@ HIST_BIN_CAP = 12
 def prescription_count_bins(
     presc: pl.DataFrame, year: int, subgroups: list[str]
 ) -> dict[str, list[int]]:
-    """Pro každou ATC skupinu počty lidí v koších 1, 2, …, CAP, CAP+.
+    """Pro každou ATC skupinu a pro TOTAL_LABEL počty lidí v koších 1, 2, …, CAP, CAP+.
 
     Člověk s nulou předpisů v dané skupině v tom roce tu není. Kdo má
-    předpisy ve dvou skupinách, je v každé skupině zvlášť (nesčítá se)."""
+    předpisy ve dvou skupinách, je v každé skupině zvlášť. V TOTAL_LABEL
+    se jeho předpisy ze všech `subgroups` sečtou."""
     n_bins = HIST_BIN_CAP + 1
+    year_presc = presc.filter(
+        (pl.col("month").dt.year() == year) & pl.col("atc5").is_in(subgroups)
+    )
+    per_group = year_presc.group_by("Id_pojistence", "atc5").len()
+    per_person = (
+        year_presc.group_by("Id_pojistence").len().with_columns(pl.lit(TOTAL_LABEL).alias("atc5"))
+    )
     counts = (
-        presc.filter((pl.col("month").dt.year() == year) & pl.col("atc5").is_in(subgroups))
-        .group_by("Id_pojistence", "atc5")
-        .len()
+        pl.concat([per_group, per_person.select(per_group.columns)])
         .with_columns(
             pl.when(pl.col("len") > HIST_BIN_CAP)
             .then(pl.lit(HIST_BIN_CAP + 1))
@@ -888,7 +946,7 @@ def prescription_count_bins(
         .len()
         .rename({"len": "people"})
     )
-    out = {atc: [0] * n_bins for atc in subgroups}
+    out = {atc: [0] * n_bins for atc in subgroups + [TOTAL_LABEL]}
     for atc, bin_id, people in zip(
         counts["atc5"].to_list(), counts["bin"].to_list(), counts["people"].to_list()
     ):
@@ -904,16 +962,17 @@ def plot_prescription_count_hist(
 ) -> None:
     labels = [str(i) for i in range(1, HIST_BIN_CAP + 1)] + [f"{HIST_BIN_CAP + 1}+"]
     n_bins = len(labels)
-    width = 0.15
+    bars = subgroups + [TOTAL_LABEL]
+    width = 0.8 / len(bars)
     fig, ax = plt.subplots(figsize=(12, 5))
-    for i, atc in enumerate(subgroups):
-        offset = (i - (len(subgroups) - 1) / 2) * width
+    for i, atc in enumerate(bars):
+        offset = (i - (len(bars) - 1) / 2) * width
         ax.bar(
             [x + offset for x in range(n_bins)],
             bins[atc],
             width=width,
             label=atc,
-            color=ATC_COLORS[atc],
+            color=ATC_COLORS.get(atc, "black"),
         )
     ax.set_xticks(range(n_bins), labels)
     ax.set_title(title)
@@ -966,6 +1025,11 @@ def main() -> None:
         help="Jen histogramy počtu předpisů na osobu (charts/<company>/histogram_vyssi_davky/)",
     )
     parser.add_argument(
+        "--only-first",
+        action="store_true",
+        help="Jen prvopředpisy (charts/<company>/prvopredpisy/)",
+    )
+    parser.add_argument(
         "--variants",
         nargs="+",
         choices=[slug for slug, _, _ in DOSE_VARIANTS],
@@ -975,12 +1039,14 @@ def main() -> None:
     parser.add_argument(
         "--no-extras",
         action="store_true",
-        help="Nepřekreslovat vax_period ani histogramy",
+        help="Nepřekreslovat vax_period, histogramy ani prvopředpisy",
     )
     args = parser.parse_args()
     for company in args.companies:
         if args.only_histogram:
             process_histograms(company)
+        elif args.only_first:
+            process_first_prescriptions(company)
         elif args.only_vax:
             process_vax_timelines(company)
         else:

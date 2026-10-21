@@ -2,6 +2,47 @@
 
 Tady jsou grafy počtu předpisů léků na ředění krve (ATC skupina B01) po měsících.
 
+## Rozcestník
+
+Kliknutím se dostaneš rovnou do složky. U každé dávkové varianty jsou uvnitř ještě podsložky `crosstab/vedle_sebe` a `crosstab/nad_sebou` (očkovaní vs. neočkovaní). Co který graf znamená, je popsané níž.
+
+- **[cpzp/](cpzp/)** — ČPZP
+  - [2015-2024/](cpzp/2015-2024/)
+    - [vsichni/](cpzp/2015-2024/vsichni/) — [absolute](cpzp/2015-2024/vsichni/absolute/): [vse](cpzp/2015-2024/vsichni/absolute/vse/) · [jen_vyssi_davky](cpzp/2015-2024/vsichni/absolute/jen_vyssi_davky/) · [bez_heparinu](cpzp/2015-2024/vsichni/absolute/bez_heparinu/) | [relative](cpzp/2015-2024/vsichni/relative/): [vse](cpzp/2015-2024/vsichni/relative/vse/) · [jen_vyssi_davky](cpzp/2015-2024/vsichni/relative/jen_vyssi_davky/) · [bez_heparinu](cpzp/2015-2024/vsichni/relative/bez_heparinu/)
+    - [muzi/](cpzp/2015-2024/muzi/) — [absolute](cpzp/2015-2024/muzi/absolute/): [vse](cpzp/2015-2024/muzi/absolute/vse/) · [jen_vyssi_davky](cpzp/2015-2024/muzi/absolute/jen_vyssi_davky/) · [bez_heparinu](cpzp/2015-2024/muzi/absolute/bez_heparinu/) | [relative](cpzp/2015-2024/muzi/relative/): [vse](cpzp/2015-2024/muzi/relative/vse/) · [jen_vyssi_davky](cpzp/2015-2024/muzi/relative/jen_vyssi_davky/) · [bez_heparinu](cpzp/2015-2024/muzi/relative/bez_heparinu/)
+    - [zeny/](cpzp/2015-2024/zeny/) — [absolute](cpzp/2015-2024/zeny/absolute/): [vse](cpzp/2015-2024/zeny/absolute/vse/) · [jen_vyssi_davky](cpzp/2015-2024/zeny/absolute/jen_vyssi_davky/) · [bez_heparinu](cpzp/2015-2024/zeny/absolute/bez_heparinu/) | [relative](cpzp/2015-2024/zeny/relative/): [vse](cpzp/2015-2024/zeny/relative/vse/) · [jen_vyssi_davky](cpzp/2015-2024/zeny/relative/jen_vyssi_davky/) · [bez_heparinu](cpzp/2015-2024/zeny/relative/bez_heparinu/)
+  - [2019-2024/](cpzp/2019-2024/)
+    - [vsichni/](cpzp/2019-2024/vsichni/) — [absolute](cpzp/2019-2024/vsichni/absolute/): [vse](cpzp/2019-2024/vsichni/absolute/vse/) · [jen_vyssi_davky](cpzp/2019-2024/vsichni/absolute/jen_vyssi_davky/) · [bez_heparinu](cpzp/2019-2024/vsichni/absolute/bez_heparinu/) | [relative](cpzp/2019-2024/vsichni/relative/): [vse](cpzp/2019-2024/vsichni/relative/vse/) · [jen_vyssi_davky](cpzp/2019-2024/vsichni/relative/jen_vyssi_davky/) · [bez_heparinu](cpzp/2019-2024/vsichni/relative/bez_heparinu/)
+    - [muzi/](cpzp/2019-2024/muzi/) — [absolute](cpzp/2019-2024/muzi/absolute/): [vse](cpzp/2019-2024/muzi/absolute/vse/) · [jen_vyssi_davky](cpzp/2019-2024/muzi/absolute/jen_vyssi_davky/) · [bez_heparinu](cpzp/2019-2024/muzi/absolute/bez_heparinu/) | [relative](cpzp/2019-2024/muzi/relative/): [vse](cpzp/2019-2024/muzi/relative/vse/) · [jen_vyssi_davky](cpzp/2019-2024/muzi/relative/jen_vyssi_davky/) · [bez_heparinu](cpzp/2019-2024/muzi/relative/bez_heparinu/)
+    - [zeny/](cpzp/2019-2024/zeny/) — [absolute](cpzp/2019-2024/zeny/absolute/): [vse](cpzp/2019-2024/zeny/absolute/vse/) · [jen_vyssi_davky](cpzp/2019-2024/zeny/absolute/jen_vyssi_davky/) · [bez_heparinu](cpzp/2019-2024/zeny/absolute/bez_heparinu/) | [relative](cpzp/2019-2024/zeny/relative/): [vse](cpzp/2019-2024/zeny/relative/vse/) · [jen_vyssi_davky](cpzp/2019-2024/zeny/relative/jen_vyssi_davky/) · [bez_heparinu](cpzp/2019-2024/zeny/relative/bez_heparinu/)
+  - [vax_period/](cpzp/vax_period/) — očkování po dávkách: [vsichni](cpzp/vax_period/vsichni/) · [muzi](cpzp/vax_period/muzi/) · [zeny](cpzp/vax_period/zeny/)
+  - [prvopredpisy/](cpzp/prvopredpisy/) — první předpis: [2015-2024](cpzp/prvopredpisy/2015-2024/) · [2019-2024](cpzp/prvopredpisy/2019-2024/)
+  - [histogram_vyssi_davky/](cpzp/histogram_vyssi_davky/) — kolikrát měl kdo předpis (2019–2022)
+- **[ozp/](ozp/)** — OZP
+  - [2015-2024/](ozp/2015-2024/)
+    - [vsichni/](ozp/2015-2024/vsichni/) — [absolute](ozp/2015-2024/vsichni/absolute/): [vse](ozp/2015-2024/vsichni/absolute/vse/) · [jen_vyssi_davky](ozp/2015-2024/vsichni/absolute/jen_vyssi_davky/) · [bez_heparinu](ozp/2015-2024/vsichni/absolute/bez_heparinu/) | [relative](ozp/2015-2024/vsichni/relative/): [vse](ozp/2015-2024/vsichni/relative/vse/) · [jen_vyssi_davky](ozp/2015-2024/vsichni/relative/jen_vyssi_davky/) · [bez_heparinu](ozp/2015-2024/vsichni/relative/bez_heparinu/)
+    - [muzi/](ozp/2015-2024/muzi/) — [absolute](ozp/2015-2024/muzi/absolute/): [vse](ozp/2015-2024/muzi/absolute/vse/) · [jen_vyssi_davky](ozp/2015-2024/muzi/absolute/jen_vyssi_davky/) · [bez_heparinu](ozp/2015-2024/muzi/absolute/bez_heparinu/) | [relative](ozp/2015-2024/muzi/relative/): [vse](ozp/2015-2024/muzi/relative/vse/) · [jen_vyssi_davky](ozp/2015-2024/muzi/relative/jen_vyssi_davky/) · [bez_heparinu](ozp/2015-2024/muzi/relative/bez_heparinu/)
+    - [zeny/](ozp/2015-2024/zeny/) — [absolute](ozp/2015-2024/zeny/absolute/): [vse](ozp/2015-2024/zeny/absolute/vse/) · [jen_vyssi_davky](ozp/2015-2024/zeny/absolute/jen_vyssi_davky/) · [bez_heparinu](ozp/2015-2024/zeny/absolute/bez_heparinu/) | [relative](ozp/2015-2024/zeny/relative/): [vse](ozp/2015-2024/zeny/relative/vse/) · [jen_vyssi_davky](ozp/2015-2024/zeny/relative/jen_vyssi_davky/) · [bez_heparinu](ozp/2015-2024/zeny/relative/bez_heparinu/)
+  - [2019-2024/](ozp/2019-2024/)
+    - [vsichni/](ozp/2019-2024/vsichni/) — [absolute](ozp/2019-2024/vsichni/absolute/): [vse](ozp/2019-2024/vsichni/absolute/vse/) · [jen_vyssi_davky](ozp/2019-2024/vsichni/absolute/jen_vyssi_davky/) · [bez_heparinu](ozp/2019-2024/vsichni/absolute/bez_heparinu/) | [relative](ozp/2019-2024/vsichni/relative/): [vse](ozp/2019-2024/vsichni/relative/vse/) · [jen_vyssi_davky](ozp/2019-2024/vsichni/relative/jen_vyssi_davky/) · [bez_heparinu](ozp/2019-2024/vsichni/relative/bez_heparinu/)
+    - [muzi/](ozp/2019-2024/muzi/) — [absolute](ozp/2019-2024/muzi/absolute/): [vse](ozp/2019-2024/muzi/absolute/vse/) · [jen_vyssi_davky](ozp/2019-2024/muzi/absolute/jen_vyssi_davky/) · [bez_heparinu](ozp/2019-2024/muzi/absolute/bez_heparinu/) | [relative](ozp/2019-2024/muzi/relative/): [vse](ozp/2019-2024/muzi/relative/vse/) · [jen_vyssi_davky](ozp/2019-2024/muzi/relative/jen_vyssi_davky/) · [bez_heparinu](ozp/2019-2024/muzi/relative/bez_heparinu/)
+    - [zeny/](ozp/2019-2024/zeny/) — [absolute](ozp/2019-2024/zeny/absolute/): [vse](ozp/2019-2024/zeny/absolute/vse/) · [jen_vyssi_davky](ozp/2019-2024/zeny/absolute/jen_vyssi_davky/) · [bez_heparinu](ozp/2019-2024/zeny/absolute/bez_heparinu/) | [relative](ozp/2019-2024/zeny/relative/): [vse](ozp/2019-2024/zeny/relative/vse/) · [jen_vyssi_davky](ozp/2019-2024/zeny/relative/jen_vyssi_davky/) · [bez_heparinu](ozp/2019-2024/zeny/relative/bez_heparinu/)
+  - [vax_period/](ozp/vax_period/) — očkování po dávkách: [vsichni](ozp/vax_period/vsichni/) · [muzi](ozp/vax_period/muzi/) · [zeny](ozp/vax_period/zeny/)
+  - [prvopredpisy/](ozp/prvopredpisy/) — první předpis: [2015-2024](ozp/prvopredpisy/2015-2024/) · [2019-2024](ozp/prvopredpisy/2019-2024/)
+  - [histogram_vyssi_davky/](ozp/histogram_vyssi_davky/) — kolikrát měl kdo předpis (2019–2022)
+- **[both_companies/](both_companies/)** — obě pojišťovny
+  - [2015-2024/](both_companies/2015-2024/)
+    - [vsichni/](both_companies/2015-2024/vsichni/) — [absolute](both_companies/2015-2024/vsichni/absolute/): [vse](both_companies/2015-2024/vsichni/absolute/vse/) · [jen_vyssi_davky](both_companies/2015-2024/vsichni/absolute/jen_vyssi_davky/) · [bez_heparinu](both_companies/2015-2024/vsichni/absolute/bez_heparinu/) | [relative](both_companies/2015-2024/vsichni/relative/): [vse](both_companies/2015-2024/vsichni/relative/vse/) · [jen_vyssi_davky](both_companies/2015-2024/vsichni/relative/jen_vyssi_davky/) · [bez_heparinu](both_companies/2015-2024/vsichni/relative/bez_heparinu/)
+    - [muzi/](both_companies/2015-2024/muzi/) — [absolute](both_companies/2015-2024/muzi/absolute/): [vse](both_companies/2015-2024/muzi/absolute/vse/) · [jen_vyssi_davky](both_companies/2015-2024/muzi/absolute/jen_vyssi_davky/) · [bez_heparinu](both_companies/2015-2024/muzi/absolute/bez_heparinu/) | [relative](both_companies/2015-2024/muzi/relative/): [vse](both_companies/2015-2024/muzi/relative/vse/) · [jen_vyssi_davky](both_companies/2015-2024/muzi/relative/jen_vyssi_davky/) · [bez_heparinu](both_companies/2015-2024/muzi/relative/bez_heparinu/)
+    - [zeny/](both_companies/2015-2024/zeny/) — [absolute](both_companies/2015-2024/zeny/absolute/): [vse](both_companies/2015-2024/zeny/absolute/vse/) · [jen_vyssi_davky](both_companies/2015-2024/zeny/absolute/jen_vyssi_davky/) · [bez_heparinu](both_companies/2015-2024/zeny/absolute/bez_heparinu/) | [relative](both_companies/2015-2024/zeny/relative/): [vse](both_companies/2015-2024/zeny/relative/vse/) · [jen_vyssi_davky](both_companies/2015-2024/zeny/relative/jen_vyssi_davky/) · [bez_heparinu](both_companies/2015-2024/zeny/relative/bez_heparinu/)
+  - [2019-2024/](both_companies/2019-2024/)
+    - [vsichni/](both_companies/2019-2024/vsichni/) — [absolute](both_companies/2019-2024/vsichni/absolute/): [vse](both_companies/2019-2024/vsichni/absolute/vse/) · [jen_vyssi_davky](both_companies/2019-2024/vsichni/absolute/jen_vyssi_davky/) · [bez_heparinu](both_companies/2019-2024/vsichni/absolute/bez_heparinu/) | [relative](both_companies/2019-2024/vsichni/relative/): [vse](both_companies/2019-2024/vsichni/relative/vse/) · [jen_vyssi_davky](both_companies/2019-2024/vsichni/relative/jen_vyssi_davky/) · [bez_heparinu](both_companies/2019-2024/vsichni/relative/bez_heparinu/)
+    - [muzi/](both_companies/2019-2024/muzi/) — [absolute](both_companies/2019-2024/muzi/absolute/): [vse](both_companies/2019-2024/muzi/absolute/vse/) · [jen_vyssi_davky](both_companies/2019-2024/muzi/absolute/jen_vyssi_davky/) · [bez_heparinu](both_companies/2019-2024/muzi/absolute/bez_heparinu/) | [relative](both_companies/2019-2024/muzi/relative/): [vse](both_companies/2019-2024/muzi/relative/vse/) · [jen_vyssi_davky](both_companies/2019-2024/muzi/relative/jen_vyssi_davky/) · [bez_heparinu](both_companies/2019-2024/muzi/relative/bez_heparinu/)
+    - [zeny/](both_companies/2019-2024/zeny/) — [absolute](both_companies/2019-2024/zeny/absolute/): [vse](both_companies/2019-2024/zeny/absolute/vse/) · [jen_vyssi_davky](both_companies/2019-2024/zeny/absolute/jen_vyssi_davky/) · [bez_heparinu](both_companies/2019-2024/zeny/absolute/bez_heparinu/) | [relative](both_companies/2019-2024/zeny/relative/): [vse](both_companies/2019-2024/zeny/relative/vse/) · [jen_vyssi_davky](both_companies/2019-2024/zeny/relative/jen_vyssi_davky/) · [bez_heparinu](both_companies/2019-2024/zeny/relative/bez_heparinu/)
+  - [vax_period/](both_companies/vax_period/) — očkování po dávkách: [vsichni](both_companies/vax_period/vsichni/) · [muzi](both_companies/vax_period/muzi/) · [zeny](both_companies/vax_period/zeny/)
+  - [prvopredpisy/](both_companies/prvopredpisy/) — první předpis: [2015-2024](both_companies/prvopredpisy/2015-2024/) · [2019-2024](both_companies/prvopredpisy/2019-2024/)
+  - [histogram_vyssi_davky/](both_companies/histogram_vyssi_davky/) — kolikrát měl kdo předpis (2019–2022)
+
 ## Co znamenají zkratky léků
 
 - **B01AA** — warfarin
@@ -80,7 +121,19 @@ Je rozdělený stejně na `vsichni/`, `muzi/` a `zeny/`. Soubory jsou po stejný
 
 `histogram_vyssi_davky/<rok>.png` — roky 2019, 2020, 2021 a 2022, zvlášť. Tady se muži a ženy nerozlišují. Osa x je počet předpisů **jedné** ATC skupiny u jednoho člověka v tom roce (1, 2, … 12, poslední sloupec je 13 a víc). Osa y je počet lidí s právě tolika předpisy. Barva sloupce je ATC skupina.
 
+Černý sloupec **B01 celkem** je počet předpisů ze všech skupin u jednoho člověka sečtený dohromady. Kdo má v roce 3× warfarin a 2× rivaroxaban, je v celkem ve sloupci 5.
+
 Platí stejný filtr jako `jen_vyssi_davky` (příloha na konci). Člověk s nulou v dané skupině v grafu není. Kdo má třeba warfarin i rivaroxaban, je ve dvou skupinách zvlášť, dohromady se to nesčítá.
+
+## Prvopředpisy
+
+`prvopredpisy/<období>/<věk>.png` — kolik lidí dostalo v daném měsíci svůj **první** předpis B01 v datech. Očkovaní jsou nahoře, neočkovaní dole, osa x je sdílená (stejně jako `crosstab/nad_sebou`). Barva čáry je ATC skupina toho prvního předpisu, černá čárkovaná je součet.
+
+- Preventivní heparin se nepočítá. To je každý B01AB, který není ve `jen_vyssi_davky` (příloha na konci), např. Fraxiparin 0,3 a 0,4 ml nebo enoxaparin. Bývá po zlomenině nebo operaci. Kdo měl nejdřív preventivní heparin a pak třeba warfarin, má prvopředpis v den warfarinu. Kdo měl jen preventivní heparin, v grafu není.
+- Ostatní léky se berou bez filtru síly.
+- „První“ znamená první v našich datech, ta začínají v lednu 2015. Lidé, kteří už léky brali před rokem 2015, mají „prvopředpis“ v prvních měsících roku 2015, takže začátek grafu `2015-2024` je uměle vysoký.
+- Věk je věk při prvním předpisu. N v titulku = počet lidí s prvopředpisem v té skupině.
+- Muži a ženy se tu nerozlišují.
 
 ## Specializace
 

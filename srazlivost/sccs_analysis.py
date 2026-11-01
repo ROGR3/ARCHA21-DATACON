@@ -27,9 +27,10 @@ Věková kohorta: očkovaní podle věku při očkování, neočkovaní podle v�
 při předpisu (jako u kortikoidů).
 
 Výstupy:
-  out/<company>/sccs/results_all_periods.csv
-  out/<company>/sccs/sums/<P>/<kohorta>-dose_<N>.png
-  out/<company>/sccs/periody_14d/<kohorta>-dose_<N>.png
+  charts/<company>/sccs/vysledky.csv
+  charts/<company>/sccs/soucty_pred_po/okno_<P>_dni/<kohorta>_<N>_davka.png
+  charts/<company>/sccs/14denni_periody/<kohorta>_<N>_davka.png
+Popis v charts/README.md (sekce SCCS).
 """
 
 from __future__ import annotations
@@ -48,7 +49,7 @@ from scipy.stats import fisher_exact
 
 from generate_charts import _higher_dose_expr, first_prescriptions, load_company
 
-OUT_DIR = Path("out")
+CHARTS_DIR = Path("charts")
 
 START_DATE = date(2015, 1, 1)
 END_DATE = date(2023, 12, 31)
@@ -61,11 +62,11 @@ N_BINS = 13  # 13 × 14 = 182 dní na každou stranu
 
 # (spodní věk včetně, název) — stejné hranice jako AgeCohort u kortikoidů
 AGE_COHORTS = [
-    (0, "less_than_12"),
-    (12, "between_12_and_30"),
-    (30, "between_30_and_50"),
-    (50, "between_50_and_60"),
-    (60, "more_than_60"),
+    (0, "vek_do_12"),
+    (12, "vek_12-29"),
+    (30, "vek_30-49"),
+    (50, "vek_50-59"),
+    (60, "vek_60_plus"),
 ]
 METRICS = [("predpisy", "Předpisy (terapeutické dávky)"), ("prvopredpisy", "Prvopředpisy")]
 
@@ -216,7 +217,7 @@ def draw_bins(ax, arr: np.ndarray, title: str) -> None:
 def run(company: str) -> None:
     print(f"== {company}")
     people, presc, vax = load(company)
-    out_dir = OUT_DIR / company / "sccs"
+    out_dir = CHARTS_DIR / company / "sccs"
 
     alive = people.filter(pl.col("died_at").is_null())
     eligible = alive.filter(
@@ -289,7 +290,7 @@ def run(company: str) -> None:
         for period in PERIODS:
             fig, axes = plt.subplots(nrows=1, ncols=len(METRICS), figsize=(20, 10))
             fig.suptitle(
-                f"{company} - {period} dnů od {rozhodne.strftime('%d.%m.%Y')} - {cohort} - Dose {dose}",
+                f"{company} - {period} dnů od {rozhodne.strftime('%d.%m.%Y')} - {cohort} - {dose}. dávka",
                 fontsize=24,
             )
             for ax, (metric, label) in zip(axes, METRICS):
@@ -317,7 +318,7 @@ def run(company: str) -> None:
                     "novax_after": na,
                     "vax_vs_novax_ratio": safe_div(safe_div(va, vb), safe_div(na, nb)),
                 })
-            path = out_dir / "sums" / str(period) / f"{cohort}-dose_{dose}.png"
+            path = out_dir / "soucty_pred_po" / f"okno_{period}_dni" / f"{cohort}_{dose}_davka.png"
             path.parent.mkdir(parents=True, exist_ok=True)
             fig.tight_layout()
             fig.savefig(path)
@@ -326,7 +327,7 @@ def run(company: str) -> None:
         # 14denní periody ±182 dní
         fig, axes = plt.subplots(nrows=2, ncols=len(METRICS), figsize=(24, 12))
         fig.suptitle(
-            f"{company} - 14denní periody - {cohort} - Dose {dose} "
+            f"{company} - 14denní periody - {cohort} - {dose}. dávka "
             f"(rozhodné datum neočko {rozhodne.strftime('%d.%m.%Y')})",
             fontsize=20,
         )
@@ -334,14 +335,14 @@ def run(company: str) -> None:
             v, n = arrays(metric, N_BINS * BIN_DAYS)
             draw_bins(axes[0][col], v, f"Očkovaní - {label}")
             draw_bins(axes[1][col], n, f"Neočkovaní - {label}")
-        path = out_dir / "periody_14d" / f"{cohort}-dose_{dose}.png"
+        path = out_dir / "14denni_periody" / f"{cohort}_{dose}_davka.png"
         path.parent.mkdir(parents=True, exist_ok=True)
         fig.tight_layout()
         fig.savefig(path)
         plt.close(fig)
 
     results = pl.DataFrame(rows).sort("age_cohort", "vax_dose", "period_days", "metric")
-    results.write_csv(out_dir / "results_all_periods.csv")
+    results.write_csv(out_dir / "vysledky.csv")
     print(f"  hotovo: {out_dir}")
 
 

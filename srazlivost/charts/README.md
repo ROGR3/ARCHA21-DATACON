@@ -80,6 +80,10 @@ Kliknutím se dostaneš rovnou do složky. Ve složkách `vse/`, `jen_vyssi_davk
     - [muzi/](cpzp/vax_period/muzi/) — muži
     - [zeny/](cpzp/vax_period/zeny/) — ženy
   - [histogram_vyssi_davky/](cpzp/histogram_vyssi_davky/) — kolikrát měl kdo předpis (2019–2022)
+  - [sccs/](cpzp/sccs/) — SCCS: předpisy před a po očkování, očkovaní vs neočkovaní
+    - [vysledky.csv](cpzp/sccs/vysledky.csv) — všechna čísla v jedné tabulce
+    - [soucty_pred_po/](cpzp/sccs/soucty_pred_po/) — součty před/po podle délky okna
+    - [14denni_periody/](cpzp/sccs/14denni_periody/) — průběh po 14denních periodách
 - [ozp/](ozp/) — OZP
   - [2015-2024/](ozp/2015-2024/)
     - [vsichni/](ozp/2015-2024/vsichni/) — všichni
@@ -154,6 +158,10 @@ Kliknutím se dostaneš rovnou do složky. Ve složkách `vse/`, `jen_vyssi_davk
     - [muzi/](ozp/vax_period/muzi/) — muži
     - [zeny/](ozp/vax_period/zeny/) — ženy
   - [histogram_vyssi_davky/](ozp/histogram_vyssi_davky/) — kolikrát měl kdo předpis (2019–2022)
+  - [sccs/](ozp/sccs/) — SCCS: předpisy před a po očkování, očkovaní vs neočkovaní
+    - [vysledky.csv](ozp/sccs/vysledky.csv) — všechna čísla v jedné tabulce
+    - [soucty_pred_po/](ozp/sccs/soucty_pred_po/) — součty před/po podle délky okna
+    - [14denni_periody/](ozp/sccs/14denni_periody/) — průběh po 14denních periodách
 - [both_companies/](both_companies/) — obě pojišťovny
   - [2015-2024/](both_companies/2015-2024/)
     - [vsichni/](both_companies/2015-2024/vsichni/) — všichni
@@ -228,6 +236,10 @@ Kliknutím se dostaneš rovnou do složky. Ve složkách `vse/`, `jen_vyssi_davk
     - [muzi/](both_companies/vax_period/muzi/) — muži
     - [zeny/](both_companies/vax_period/zeny/) — ženy
   - [histogram_vyssi_davky/](both_companies/histogram_vyssi_davky/) — kolikrát měl kdo předpis (2019–2022)
+  - [sccs/](both_companies/sccs/) — SCCS: předpisy před a po očkování, očkovaní vs neočkovaní
+    - [vysledky.csv](both_companies/sccs/vysledky.csv) — všechna čísla v jedné tabulce
+    - [soucty_pred_po/](both_companies/sccs/soucty_pred_po/) — součty před/po podle délky okna
+    - [14denni_periody/](both_companies/sccs/14denni_periody/) — průběh po 14denních periodách
 
 ## Co znamenají zkratky léků
 
@@ -323,6 +335,37 @@ Platí stejný filtr jako `jen_vyssi_davky` (příloha na konci). Člověk s nul
 ## Specializace
 
 `specializace_predpisy_mesicne.png` (v každé složce `absolute/` a `relative/`, tedy pro každé období a pohlaví) — počty předpisů podle odbornosti předepisujícího lékaře, top 10 odborností + koš "ostatní". Tohle je za celé B01 (bez rozpadu na jednotlivé léky, tedy včetně AC/AD) a bez dávkového filtrování.
+
+## SCCS — předpisy před a po očkování
+
+`sccs/` (v `cpzp/`, `ozp/` i `both_companies/`) — stejná analýza jako u kortikoidů ([`kortikoidy/max_vax_analysis.ipynb`](../../kortikoidy/max_vax_analysis.ipynb)), jen na datech o srážlivosti. Generuje ji `sccs_analysis.py` (`just sccs`).
+
+Postup:
+1. **Začátek očkování** pro věkovou kohortu a dávku (1.–3.) = první den, kdy denní počet očkování dosáhl 50 % svého maxima.
+2. **Očkovaní** = dostali danou dávku do 60 dní od začátku očkování své kohorty.
+3. Jejich předpisy se počítají ve **dnech od jejich očkování** (den 0 = den očkování).
+4. Sečte se, kolik předpisů bylo **před** (den < 0) a **po** (den ≥ 0), v oknech ±30, 60, 90, 180 a 365 dní.
+5. **Rozhodné datum** = začátek očkování kohorty + 30 dní (střed 60denního okna).
+6. **Neočkovaní** (nikdy neočkovaní) se počítají stejně, jen kolem rozhodného data podle kalendáře.
+7. Porovná se **po/před v %** u očkovaných a neočkovaných, p-hodnota je z Fisherova exaktního testu.
+
+Kdo je v analýze: živí, pojištění celé období 2015–2023 a mají aspoň jeden terapeutický předpis. Očkovaní patří do kohorty podle věku při očkování, neočkovaní podle věku při předpisu (stejně jako u kortikoidů). Kohorty jsou `vek_do_12`, `vek_12-29`, `vek_30-49`, `vek_50-59` a `vek_60_plus`.
+
+Počítají se dvě věci:
+- **předpisy** — jen terapeutické dávky (stejný filtr jako `jen_vyssi_davky`, příloha na konci),
+- **prvopředpisy** — první předpis B01 v datech, bez preventivního heparinu (stejně jako v `prvopredpisy/`).
+
+Soubory:
+- `vysledky.csv` — jeden řádek na okno × kohortu × dávku × metriku. `vax_increase` a `novax_increase` jsou po/před v %, `vax_vs_novax_ratio` je jejich poměr, `p_value` je z Fisherova testu, `n_vax_persons` je počet očkovaných v kohortě.
+- `soucty_pred_po/okno_<N>_dni/<kohorta>_<dávka>_davka.png` — čtyři sloupce: očkovaní před/po a neočkovaní před/po.
+- `14denni_periody/<kohorta>_<dávka>_davka.png` — počty po 14denních periodách ±182 dní. První perioda „po“ jsou dny 0–13. Nahoře očkovaní, dole neočkovaní.
+
+Oproti kortikoidům: jiné metriky (místo prednison-ekvivalentů a imunosupresiv), injekce se neslučují, okno je u obou skupin stejně dlouhé (u kortikoidů měli neočkovaní o den víc) a přibyl graf po 14denních periodách.
+
+Pozor při čtení:
+- Těsně před očkováním bývá méně prvopředpisů. Kdo má zrovna akutní trombózu, očkování odloží (*healthy vaccinee*). Nárůst v krátkých oknech je pak částečně jen návrat z tohoto propadu.
+- Testů je hodně a p-hodnoty nejsou korigované na mnohonásobné testování.
+- `vek_do_12` má jen pár očkovaných, výsledky pro ni nic neříkají.
 
 ## Příloha: co je "vyšší dávka" ve variantě `jen_vyssi_davky/`
 

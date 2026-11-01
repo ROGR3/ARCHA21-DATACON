@@ -46,7 +46,7 @@ simulate: build
     echo "All simulations done."
 
 # SCCS analýza předpisů B01 kolem očkování (port kortikoidy/max_vax_analysis)
-# výstupy: out/<company>/sccs/, popis v out/README.md
+# výstupy: charts/<company>/sccs/, popis v charts/README.md
 sccs:
     #!/usr/bin/env bash
     set -e

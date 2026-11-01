@@ -13,3 +13,4 @@ joined_*/
 *.pkl
 **/matching_rust/target/
 kortikoidy/results_baseline.json
+!/srazlivost/out/*/sccs/*.csv

@@ -44,3 +44,12 @@ simulate: build
         done
     done
     echo "All simulations done."
+
+# SCCS analýza předpisů B01 kolem očkování (port kortikoidy/max_vax_analysis)
+# výstupy: out/<company>/sccs/, popis v out/README.md
+sccs:
+    #!/usr/bin/env bash
+    set -e
+    for company in cpzp ozp both_companies; do
+        python sccs_analysis.py --company "$company"
+    done

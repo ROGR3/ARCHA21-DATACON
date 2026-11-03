@@ -14,3 +14,4 @@ joined_*/
 **/matching_rust/target/
 kortikoidy/results_baseline.json
 !/srazlivost/charts/*/sccs/*.csv
+!/srazlivost/charts/*/sccs/**/*.csv

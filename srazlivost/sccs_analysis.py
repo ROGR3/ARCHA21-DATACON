@@ -30,6 +30,13 @@ Výstupy:
   charts/<company>/sccs/vysledky.csv
   charts/<company>/sccs/soucty_pred_po/okno_<P>_dni/<kohorta>_<N>_davka.png
   charts/<company>/sccs/14denni_periody/<kohorta>_<N>_davka.png
+  charts/<company>/sccs/14denni_periody/periody.csv  (počty po periodách)
+  charts/<company>/sccs/virtualni_ockovani/<N>_roky_drive/...  (stejný strom)
+  charts/<company>/sccs/virtualni_ockovani/srovnani.csv
+
+Virtuální očkování (--year-offsets 1 2 3 4): stejní lidé, každé očkování
+posunuté o 365 × N dní dřív. Kontrola, jestli stejný „efekt“ nevyjde i bez
+očkování (sezónnost, artefakt metody).
 Popis v charts/README.md (sekce SCCS).
 """
 
@@ -214,10 +221,25 @@ def draw_bins(ax, arr: np.ndarray, title: str) -> None:
     ax.grid(True, alpha=0.3)
 
 
-def run(company: str) -> None:
-    print(f"== {company}")
-    people, presc, vax = load(company)
-    out_dir = CHARTS_DIR / company / "sccs"
+def offset_label(years: int) -> str:
+    """1 → "1_rok_drive", 2–4 → "2_roky_drive", 5+ → "5_let_drive"."""
+    unit = "rok" if years == 1 else "roky" if years < 5 else "let"
+    return f"{years}_{unit}_drive"
+
+
+def out_dir_for(company: str, year_offset: int) -> Path:
+    base = CHARTS_DIR / company / "sccs"
+    return base if year_offset == 0 else base / "virtualni_ockovani" / offset_label(year_offset)
+
+
+def run(company: str, data: tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame], year_offset: int = 0) -> None:
+    """year_offset > 0 = virtuální očkování: každé očkování se posune o
+    365 × year_offset dní dřív. Kohorta zůstává podle věku při skutečném
+    očkování, takže jde o stejné lidi jako ve skutečné analýze."""
+    print(f"== {company}" + (f", virtuální očkování o {year_offset} r. dřív" if year_offset else ""))
+    people, presc, vax = data
+    out_dir = out_dir_for(company, year_offset)
+    title_prefix = company + (f" - VIRTUÁLNÍ očkování o {year_offset} r. dřív" if year_offset else "")
 
     alive = people.filter(pl.col("died_at").is_null())
     eligible = alive.filter(
@@ -231,7 +253,11 @@ def run(company: str) -> None:
     print(f"  {eligible.height:,} osob v analýze ({eligible['is_vax'].sum():,} očkovaných)")
 
     birth = people.select("Id_pojistence", "Rok_narozeni", "Mesic_narozeni")
-    vax = vax.join(birth, on="Id_pojistence").with_columns(age_cohort_expr("Datum_udalosti"))
+    vax = (
+        vax.join(birth, on="Id_pojistence")
+        .with_columns(age_cohort_expr("Datum_udalosti"))
+        .with_columns(pl.col("Datum_udalosti") - pl.duration(days=365 * year_offset))
+    )
 
     # Krok 1: ze všech očkování živých lidí
     starts = start_vax_dates(vax.join(alive, on="Id_pojistence", how="semi"))
@@ -277,6 +303,7 @@ def run(company: str) -> None:
     n_vax = {(c, d): n for c, d, n in vax_sel.group_by("cohort", "dose").len().iter_rows()}
 
     rows = []
+    bin_rows = []
     for (cohort, dose), start in sorted(start_map.items()):
         if dose not in DOSES or (cohort, dose) not in n_vax:
             continue
@@ -290,7 +317,7 @@ def run(company: str) -> None:
         for period in PERIODS:
             fig, axes = plt.subplots(nrows=1, ncols=len(METRICS), figsize=(20, 10))
             fig.suptitle(
-                f"{company} - {period} dnů od {rozhodne.strftime('%d.%m.%Y')} - {cohort} - {dose}. dávka",
+                f"{title_prefix} - {period} dnů od {rozhodne.strftime('%d.%m.%Y')} - {cohort} - {dose}. dávka",
                 fontsize=24,
             )
             for ax, (metric, label) in zip(axes, METRICS):
@@ -327,7 +354,7 @@ def run(company: str) -> None:
         # 14denní periody ±182 dní
         fig, axes = plt.subplots(nrows=2, ncols=len(METRICS), figsize=(24, 12))
         fig.suptitle(
-            f"{company} - 14denní periody - {cohort} - {dose}. dávka "
+            f"{title_prefix} - 14denní periody - {cohort} - {dose}. dávka "
             f"(rozhodné datum neočko {rozhodne.strftime('%d.%m.%Y')})",
             fontsize=20,
         )
@@ -335,6 +362,12 @@ def run(company: str) -> None:
             v, n = arrays(metric, N_BINS * BIN_DAYS)
             draw_bins(axes[0][col], v, f"Očkovaní - {label}")
             draw_bins(axes[1][col], n, f"Neočkovaní - {label}")
+            for group, arr in [("ockovani", v), ("neockovani", n)]:
+                for b, count in zip(range(-N_BINS, N_BINS), arr.reshape(2 * N_BINS, BIN_DAYS).sum(axis=1)):
+                    bin_rows.append({
+                        "age_cohort": cohort, "vax_dose": dose, "metric": metric,
+                        "group": group, "bin_start_day": b * BIN_DAYS, "count": float(count),
+                    })
         path = out_dir / "14denni_periody" / f"{cohort}_{dose}_davka.png"
         path.parent.mkdir(parents=True, exist_ok=True)
         fig.tight_layout()
@@ -343,13 +376,45 @@ def run(company: str) -> None:
 
     results = pl.DataFrame(rows).sort("age_cohort", "vax_dose", "period_days", "metric")
     results.write_csv(out_dir / "vysledky.csv")
+    pl.DataFrame(bin_rows).write_csv(out_dir / "14denni_periody" / "periody.csv")
     print(f"  hotovo: {out_dir}")
+
+
+def write_comparison(company: str, offsets: list[int]) -> None:
+    """virtualni_ockovani/srovnani.csv: vax_vs_novax_ratio a vax_increase
+    skutečného očkování vedle všech virtuálních, jeden řádek na okno ×
+    kohortu × dávku × metriku."""
+    keys = ["age_cohort", "vax_dose", "metric", "period_days"]
+    table = None
+    for off in [0, *offsets]:
+        name = "skutecne" if off == 0 else offset_label(off)
+        df = pl.read_csv(out_dir_for(company, off) / "vysledky.csv").select(
+            *keys,
+            pl.col("vax_vs_novax_ratio").alias(f"pomer_{name}"),
+            pl.col("vax_increase").alias(f"ocko_po_pred_{name}"),
+            pl.col("p_value").alias(f"p_{name}"),
+        )
+        table = df if table is None else table.join(df, on=keys, how="left")
+    assert table is not None
+    path = out_dir_for(company, 0) / "virtualni_ockovani" / "srovnani.csv"
+    table.sort(keys).write_csv(path)
+    print(f"  srovnání: {path}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     parser.add_argument("--company", choices=["cpzp", "ozp", "both_companies"], default="cpzp")
-    run(parser.parse_args().company)
+    parser.add_argument(
+        "--year-offsets", type=int, nargs="+", default=[0],
+        help="0 = skutečné očkování, N > 0 = virtuální očkování o N let dřív (např. 0 1 2 3 4)",
+    )
+    args = parser.parse_args()
+    data = load(args.company)
+    for off in args.year_offsets:
+        run(args.company, data, off)
+    virtual = [o for o in args.year_offsets if o > 0]
+    if virtual:
+        write_comparison(args.company, virtual)
 
 
 if __name__ == "__main__":

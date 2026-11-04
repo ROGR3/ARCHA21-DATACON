@@ -5,10 +5,11 @@ Souhrnné grafy SCCS analýzy: skutečné očkování proti virtuálnímu.
 Čte výstupy sccs_analysis.py (musí doběhnout s --year-offsets 0 1 2 3 4)
 a kreslí:
 
-  charts/<company>/sccs/souhrn/forest_okno_<P>_dni.png
-      Forest plot. Řádek = kohorta × dávka, osa x = poměr poměrů
-      (po/před očkovaní ÷ po/před neočkovaní, logaritmicky). Modrý bod
-      s 95% intervalem = skutečné očkování, šedé body = virtuální roky.
+  charts/<company>/sccs/souhrn/forest_<kohorta>_1_davka.png
+      Forest plot pro jednu kohortu a 1. dávku. Bloky = okna ±30…365 dní,
+      v bloku řádek na rok: 2021 skutečné očkování (modře), virtuální
+      2020 (prázdný kroužek, covidový rok) a 2019–2017 (šedě). Osa x =
+      poměr poměrů (po/před očkovaní ÷ po/před neočkovaní, logaritmicky).
       Poměr poměrů je odds ratio tabulky 2×2, interval je Woolfův.
 
   charts/<company>/sccs/souhrn/prubeh_<kohorta>_1_davka.png
@@ -31,8 +32,7 @@ import polars as pl
 from sccs_analysis import AGE_COHORTS, BIN_DAYS, METRICS, out_dir_for
 
 YEAR_OFFSETS = [1, 2, 3, 4]
-FOREST_PERIODS = [60, 90, 180]
-DOSES = [1, 2, 3]
+FOREST_PERIODS = [30, 60, 90, 180, 365]
 COHORTS = [name for _, name in AGE_COHORTS if name != "vek_do_12"]
 COHORT_LABELS = {
     "vek_12-29": "12–29 let",
@@ -81,33 +81,35 @@ def woolf_ci(vb: float, va: float, nb: float, na: float) -> tuple[float, float]:
     return float(np.exp(log_or - 1.96 * se)), float(np.exp(log_or + 1.96 * se))
 
 
-def draw_forest(company: str, results: pl.DataFrame, period: int, out_path) -> None:
-    rows = [(c, d) for c in COHORTS for d in DOSES]
-    fig, axes = plt.subplots(1, len(METRICS), figsize=(16, 0.55 * len(rows) + 2.6), sharey=True)
-    data = results.filter(pl.col("period_days") == period)
+def draw_forest(company: str, results: pl.DataFrame, cohort: str, out_path) -> None:
+    """Jedna kohorta, 1. dávka. Bloky = okna, v bloku řádek na každý rok
+    (2021 skutečné, pak virtuální 2020 … 2017), každý se svým 95% intervalem."""
+    offsets = [0, *YEAR_OFFSETS]
+    rows = [(p, off) for p in FOREST_PERIODS for off in offsets]
+    fig, axes = plt.subplots(1, len(METRICS), figsize=(16, 0.42 * len(rows) + 2.8), sharey=True)
+    data = results.filter((pl.col("age_cohort") == cohort) & (pl.col("vax_dose") == 1))
 
     for ax, (metric, label) in zip(axes, METRICS):
         m = data.filter(pl.col("metric") == metric)
-        for i, (cohort, dose) in enumerate(rows):
+        for i, (period, off) in enumerate(rows):
             y = len(rows) - 1 - i
-            sel = m.filter((pl.col("age_cohort") == cohort) & (pl.col("vax_dose") == dose))
-            for r in sel.filter(pl.col("year_offset") > 0).iter_rows(named=True):
-                hollow = r["year_offset"] == 1  # 2020 je sám covidový rok
-                ax.plot(
-                    r["vax_vs_novax_ratio"], y, "o", ms=7,
-                    mfc="white" if hollow else VIRTUAL_COLOR, mec=VIRTUAL_COLOR, mew=1.5, alpha=0.9,
-                )
-            real = sel.filter(pl.col("year_offset") == 0)
-            if real.height:
-                r = real.row(0, named=True)
-                lo, hi = woolf_ci(r["vax_before"], r["vax_after"], r["novax_before"], r["novax_after"])
-                ratio = r["vax_vs_novax_ratio"]
-                ax.plot([lo, hi], [y, y], color=REAL_COLOR, lw=2, solid_capstyle="round")
-                ax.plot(ratio, y, "o", ms=9, color=REAL_COLOR, mec="white", mew=1.5, zorder=3)
-                ax.annotate(
-                    f"{ratio:.2f}  ({format_p(r['p_value'])})", xy=(1.0, y), xycoords=("axes fraction", "data"),
-                    xytext=(6, 0), textcoords="offset points", va="center", fontsize=9, color=INK,
-                )
+            sel = m.filter((pl.col("period_days") == period) & (pl.col("year_offset") == off))
+            if not sel.height:
+                continue
+            r = sel.row(0, named=True)
+            lo, hi = woolf_ci(r["vax_before"], r["vax_after"], r["novax_before"], r["novax_after"])
+            ratio = r["vax_vs_novax_ratio"]
+            color = REAL_COLOR if off == 0 else VIRTUAL_COLOR
+            ax.plot([lo, hi], [y, y], color=color, lw=2, solid_capstyle="round")
+            ax.plot(
+                ratio, y, "o", ms=9 if off == 0 else 7, zorder=3, mew=1.5,
+                color=color, mfc="white" if off == 1 else color, mec=color if off == 1 else "white",
+            )
+            ax.annotate(
+                f"{ratio:.2f}  ({format_p(r['p_value'])})", xy=(1.0, y), xycoords=("axes fraction", "data"),
+                xytext=(6, 0), textcoords="offset points", va="center", fontsize=9,
+                color=INK if off == 0 else "#777777", fontweight="bold" if off == 0 else "normal",
+            )
         ax.axvline(1, color=INK, lw=1)
         ax.set_xscale("log")
         ticks = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4]
@@ -119,26 +121,23 @@ def draw_forest(company: str, results: pl.DataFrame, period: int, out_path) -> N
         ax.grid(axis="x", color="#e5e5e5")
         for s in ["top", "right"]:
             ax.spines[s].set_visible(False)
-        for k in range(1, len(COHORTS)):
-            ax.axhline(k * len(DOSES) - 0.5, color="#dddddd", lw=0.8)
+        for k in range(1, len(FOREST_PERIODS)):
+            ax.axhline(k * len(offsets) - 0.5, color="#bbbbbb", lw=0.8)
 
-    axes[0].set_yticks(
-        range(len(rows)),
-        [f"{COHORT_LABELS[c]}, {d}. dávka" for c, d in reversed(rows)],
-    )
-    handles = [
-        plt.Line2D([], [], color=REAL_COLOR, marker="o", ms=9, lw=2, label="skutečné očkování (2021), 95% interval"),
-        plt.Line2D([], [], color=VIRTUAL_COLOR, marker="o", ms=7, lw=0, label="virtuální očkování 2017–2019"),
-        plt.Line2D([], [], color=VIRTUAL_COLOR, marker="o", ms=7, lw=0, mfc="white", mew=1.5,
-                   label="virtuální očkování 2020 (covidový rok)"),
-    ]
-    fig.legend(handles=handles, loc="lower center", ncol=3, frameon=False, fontsize=10)
+    labels = []
+    for period, off in rows:
+        year = "2021 skutečné" if off == 0 else f"{2021 - off} virtuální" + (" (covid)" if off == 1 else "")
+        labels.append(f"±{period} dní   {year}" if off == 0 else year)
+    axes[0].set_yticks(range(len(rows)), list(reversed(labels)))
+    for tick, (_, off) in zip(axes[0].get_yticklabels(), reversed(rows)):
+        if off == 0:
+            tick.set_fontweight("bold")
     fig.suptitle(
-        f"{company} – SCCS, okno ±{period} dní: skutečné vs virtuální očkování\n"
-        "> 1 = očkovaným přibylo víc než neočkovaným",
+        f"{company} – {COHORT_LABELS[cohort]}, 1. dávka: skutečné očkování vs stejná analýza v minulých letech\n"
+        "> 1 = očkovaným přibylo víc než neočkovaným, úsečka = 95% interval",
         fontsize=14, color=INK,
     )
-    fig.tight_layout(rect=(0, 0.05, 0.95, 1))
+    fig.tight_layout(rect=(0, 0, 0.95, 1))
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=120)
     plt.close(fig)
@@ -200,10 +199,9 @@ def draw_timeline(company: str, bins: pl.DataFrame, cohort: str, out_path) -> No
 def run(company: str) -> None:
     out = out_dir_for(company, 0) / "souhrn"
     results = load_results(company)
-    for period in FOREST_PERIODS:
-        draw_forest(company, results, period, out / f"forest_okno_{period}_dni.png")
     bins = as_pct_of_before(load_bins(company))
     for cohort in COHORTS:
+        draw_forest(company, results, cohort, out / f"forest_{cohort}_1_davka.png")
         draw_timeline(company, bins, cohort, out / f"prubeh_{cohort}_1_davka.png")
     print(f"  hotovo: {out}")
 

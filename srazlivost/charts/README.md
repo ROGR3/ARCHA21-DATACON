@@ -81,7 +81,7 @@ Kliknutím se dostaneš rovnou do složky. Ve složkách `vse/`, `jen_vyssi_davk
     - [zeny/](cpzp/vax_period/zeny/) — ženy
   - [histogram_vyssi_davky/](cpzp/histogram_vyssi_davky/) — kolikrát měl kdo předpis (2019–2022)
   - [sccs/](cpzp/sccs/) — SCCS: předpisy před a po očkování, očkovaní vs neočkovaní
-    - [souhrn/](cpzp/sccs/souhrn/) — **začni tady**: forest ploty a průběh po 1. dávce, skutečné vs virtuální očkování
+    - [souhrn/](cpzp/sccs/souhrn/) — **začni tady**: forest ploty a průběh po 1. dávce, po kohortách, skutečné vs virtuální očkování
     - [vysledky.csv](cpzp/sccs/vysledky.csv) — všechna čísla v jedné tabulce
     - [soucty_pred_po/](cpzp/sccs/soucty_pred_po/) — součty před/po podle délky okna
     - [14denni_periody/](cpzp/sccs/14denni_periody/) — průběh po 14denních periodách
@@ -162,7 +162,7 @@ Kliknutím se dostaneš rovnou do složky. Ve složkách `vse/`, `jen_vyssi_davk
     - [zeny/](ozp/vax_period/zeny/) — ženy
   - [histogram_vyssi_davky/](ozp/histogram_vyssi_davky/) — kolikrát měl kdo předpis (2019–2022)
   - [sccs/](ozp/sccs/) — SCCS: předpisy před a po očkování, očkovaní vs neočkovaní
-    - [souhrn/](ozp/sccs/souhrn/) — **začni tady**: forest ploty a průběh po 1. dávce, skutečné vs virtuální očkování
+    - [souhrn/](ozp/sccs/souhrn/) — **začni tady**: forest ploty a průběh po 1. dávce, po kohortách, skutečné vs virtuální očkování
     - [vysledky.csv](ozp/sccs/vysledky.csv) — všechna čísla v jedné tabulce
     - [soucty_pred_po/](ozp/sccs/soucty_pred_po/) — součty před/po podle délky okna
     - [14denni_periody/](ozp/sccs/14denni_periody/) — průběh po 14denních periodách
@@ -243,7 +243,7 @@ Kliknutím se dostaneš rovnou do složky. Ve složkách `vse/`, `jen_vyssi_davk
     - [zeny/](both_companies/vax_period/zeny/) — ženy
   - [histogram_vyssi_davky/](both_companies/histogram_vyssi_davky/) — kolikrát měl kdo předpis (2019–2022)
   - [sccs/](both_companies/sccs/) — SCCS: předpisy před a po očkování, očkovaní vs neočkovaní
-    - [souhrn/](both_companies/sccs/souhrn/) — **začni tady**: forest ploty a průběh po 1. dávce, skutečné vs virtuální očkování
+    - [souhrn/](both_companies/sccs/souhrn/) — **začni tady**: forest ploty a průběh po 1. dávce, po kohortách, skutečné vs virtuální očkování
     - [vysledky.csv](both_companies/sccs/vysledky.csv) — všechna čísla v jedné tabulce
     - [soucty_pred_po/](both_companies/sccs/soucty_pred_po/) — součty před/po podle délky okna
     - [14denni_periody/](both_companies/sccs/14denni_periody/) — průběh po 14denních periodách
@@ -362,7 +362,7 @@ Kdo je v analýze: živí, pojištění celé období 2015–2023 a mají aspoň
 
 Počítají se dvě věci:
 - **předpisy** — jen terapeutické dávky (stejný filtr jako `jen_vyssi_davky`, příloha na konci),
-- **prvopředpisy** — první předpis B01 v datech, bez preventivního heparinu (stejně jako v `prvopredpisy/`).
+- **prvopředpisy** — první **terapeutický** předpis B01 u člověka v datech (stejný filtr jako u předpisů). Kdo měl dřív jen nižší dávku nebo preventivní heparin (např. po operaci), má prvopředpis až v den první terapeutické dávky. Pozor, liší se to od grafů v `prvopredpisy/`, kde se počítá první předpis bez preventivního heparinu v jakékoli síle.
 
 Soubory:
 - `vysledky.csv` — jeden řádek na okno × kohortu × dávku × metriku. `vax_increase` a `novax_increase` jsou po/před v %, `vax_vs_novax_ratio` je jejich poměr, `p_value` je z Fisherova testu, `n_vax_persons` je počet očkovaných v kohortě.
@@ -376,7 +376,7 @@ Soubory:
 - `virtualni_ockovani/srovnani.csv` — jeden řádek na okno × kohortu × dávku × metriku, sloupce `pomer_skutecne`, `pomer_1_rok_drive` … `pomer_4_roky_drive` (= `vax_vs_novax_ratio`), totéž pro `ocko_po_pred_*` a `p_*`.
 
 **Souhrn** (`souhrn/`, generuje `sccs_souhrn.py`) — dva typy grafů, kde je vidět všechno najednou:
-- `forest_okno_<60|90|180>_dni.png` — řádek = kohorta × dávka, vlevo terapeutické předpisy, vpravo prvopředpisy. Osa x je poměr poměrů (po/před očkovaní ÷ po/před neočkovaní), logaritmicky, 1 = žádný rozdíl. Modrý bod s úsečkou = skutečné očkování s 95% intervalem (poměr poměrů je odds ratio tabulky 2×2, interval je Woolfův). Šedé body = virtuální roky 2017–2019, prázdný šedý kroužek = 2020. Napravo je hodnota a p z Fisherova testu. **Signál = modrý bod mimo šedé body a úsečka nepřekrývá 1.**
+- `forest_<kohorta>_1_davka.png` — jedna kohorta, 1. dávka. Vlevo terapeutické předpisy, vpravo prvopředpisy. Bloky jsou okna ±30, 60, 90, 180 a 365 dní, v každém bloku je řádek na rok: **2021 skutečné očkování** (modře), pod ním stejná analýza s virtuálním očkováním v roce 2020 (prázdný kroužek, covidový rok), 2019, 2018 a 2017 (šedě). Osa x je poměr poměrů (po/před očkovaní ÷ po/před neočkovaní), logaritmicky, 1 = žádný rozdíl. Úsečka je 95% interval (poměr poměrů je odds ratio tabulky 2×2, interval je Woolfův), napravo hodnota a p z Fisherova testu. **Signál = modrý řádek se liší od šedých řádků pod ním.**
 - `prubeh_<kohorta>_1_davka.png` — průběh po 14denních periodách po 1. dávce, v % průměru období před očkováním (100 = jako před). Modrá = skutečně očkovaní, šedý pás = rozsah virtuálních let 2017–2020, oranžová čárkovaná = neočkovaní. Je vidět, kdy přesně se co děje.
 
 Počty po 14denních periodách, ze kterých se průběh kreslí, jsou v `14denni_periody/periody.csv`.

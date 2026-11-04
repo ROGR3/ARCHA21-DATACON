@@ -15,8 +15,8 @@ Postup (stejný jako u kortikoidů):
 
 Rozdíly proti kortikoidům:
   - metriky: "predpisy" = jen terapeutické dávky (jen_vyssi_davky
-    z generate_charts.py), "prvopredpisy" = první B01 předpis bez
-    preventivního heparinu (stejně jako charts/.../prvopredpisy/).
+    z generate_charts.py), "prvopredpisy" = první terapeutický předpis
+    B01 u člověka v datech (stejný filtr jako "predpisy").
   - do analýzy jdou jen lidi s ≥1 terapeutickým předpisem.
   - pojištění celé období 2015-01-01 až 2023-12-31 (konec dat).
   - okno je u obou skupin [-P, P), u kortikoidů měli neočkovaní o den víc.
@@ -54,7 +54,7 @@ import numpy as np
 import polars as pl
 from scipy.stats import fisher_exact
 
-from generate_charts import _higher_dose_expr, first_prescriptions, load_company
+from generate_charts import _higher_dose_expr, load_company
 
 CHARTS_DIR = Path("charts")
 
@@ -75,7 +75,7 @@ AGE_COHORTS = [
     (50, "vek_50-59"),
     (60, "vek_60_plus"),
 ]
-METRICS = [("predpisy", "Předpisy (terapeutické dávky)"), ("prvopredpisy", "Prvopředpisy")]
+METRICS = [("predpisy", "Předpisy (terapeutické dávky)"), ("prvopredpisy", "Prvopředpisy (terapeutické dávky)")]
 
 EXTRA_COLS = [
     "Mesic_narozeni",
@@ -249,7 +249,13 @@ def run(company: str, data: tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame], yea
     ther = presc.filter(pl.col("is_higher_dose"))
     with_ther = ther.select("Id_pojistence").unique()
     eligible = eligible.join(with_ther, on="Id_pojistence", how="semi")
-    first = first_prescriptions(presc).select("Id_pojistence", "Datum_udalosti")
+    # první terapeutický předpis; kdo měl dřív jen nižší dávku nebo
+    # preventivní heparin, má prvopředpis až v den první terapeutické dávky
+    first = (
+        ther.sort("Datum_udalosti")
+        .unique("Id_pojistence", keep="first")
+        .select("Id_pojistence", "Datum_udalosti")
+    )
     print(f"  {eligible.height:,} osob v analýze ({eligible['is_vax'].sum():,} očkovaných)")
 
     birth = people.select("Id_pojistence", "Rok_narozeni", "Mesic_narozeni")

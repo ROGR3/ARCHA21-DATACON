@@ -87,6 +87,8 @@ Kliknutím se dostaneš rovnou do složky. Ve složkách `vse/`, `jen_vyssi_davk
     - [14denni_periody/](cpzp/sccs/14denni_periody/) — průběh po 14denních periodách
     - [virtualni_ockovani/](cpzp/sccs/virtualni_ockovani/) — kontrola: totéž s očkováním posunutým o 1–4 roky dřív
       - [srovnani.csv](cpzp/sccs/virtualni_ockovani/srovnani.csv) — skutečné vs virtuální vedle sebe
+  - [sccs_bez_28_dni_pred/](cpzp/sccs_bez_28_dni_pred/) — totéž, ale bez posledních 28 dní před očkováním v „před“ (oprava na HVE)
+    - [souhrn/](cpzp/sccs_bez_28_dni_pred/souhrn/) — **začni tady**
 - [ozp/](ozp/) — OZP
   - [2015-2024/](ozp/2015-2024/)
     - [vsichni/](ozp/2015-2024/vsichni/) — všichni
@@ -168,6 +170,8 @@ Kliknutím se dostaneš rovnou do složky. Ve složkách `vse/`, `jen_vyssi_davk
     - [14denni_periody/](ozp/sccs/14denni_periody/) — průběh po 14denních periodách
     - [virtualni_ockovani/](ozp/sccs/virtualni_ockovani/) — kontrola: totéž s očkováním posunutým o 1–4 roky dřív
       - [srovnani.csv](ozp/sccs/virtualni_ockovani/srovnani.csv) — skutečné vs virtuální vedle sebe
+  - [sccs_bez_28_dni_pred/](ozp/sccs_bez_28_dni_pred/) — totéž, ale bez posledních 28 dní před očkováním v „před“ (oprava na HVE)
+    - [souhrn/](ozp/sccs_bez_28_dni_pred/souhrn/) — **začni tady**
 - [both_companies/](both_companies/) — obě pojišťovny
   - [2015-2024/](both_companies/2015-2024/)
     - [vsichni/](both_companies/2015-2024/vsichni/) — všichni
@@ -249,6 +253,8 @@ Kliknutím se dostaneš rovnou do složky. Ve složkách `vse/`, `jen_vyssi_davk
     - [14denni_periody/](both_companies/sccs/14denni_periody/) — průběh po 14denních periodách
     - [virtualni_ockovani/](both_companies/sccs/virtualni_ockovani/) — kontrola: totéž s očkováním posunutým o 1–4 roky dřív
       - [srovnani.csv](both_companies/sccs/virtualni_ockovani/srovnani.csv) — skutečné vs virtuální vedle sebe
+  - [sccs_bez_28_dni_pred/](both_companies/sccs_bez_28_dni_pred/) — totéž, ale bez posledních 28 dní před očkováním v „před“ (oprava na HVE)
+    - [souhrn/](both_companies/sccs_bez_28_dni_pred/souhrn/) — **začni tady**
 
 ## Co znamenají zkratky léků
 
@@ -380,6 +386,14 @@ Soubory:
 - `prubeh_<kohorta>_1_davka.png` — průběh po 14denních periodách po 1. dávce, v % průměru období před očkováním (100 = jako před). Modrá = skutečně očkovaní, šedý pás = rozsah virtuálních let 2017–2020, oranžová čárkovaná = neočkovaní. Je vidět, kdy přesně se co děje.
 
 Počty po 14denních periodách, ze kterých se průběh kreslí, jsou v `14denni_periody/periody.csv`.
+
+**Normalizace na celkovou spotřebu** (kvůli covidovým vlnám, které má každá kohorta v jiné fázi). Kromě srovnání s neočkovanými se počítá i srovnání s **celou populací v analýze stejné věkové kohorty** (očkovaní i neočkovaní, věk při předpisu). Pro každého očkovaného se vezme, kolik předpisů měla celá populace v kalendářních dnech jeho okna „před“ a „po“, a sečte se to přes všechny očkované. Z toho je **očekávaný poměr po/před**, tedy jak by se poměr změnil jen kvůli kalendáři (vlny, sezóna, otevírání nemocnic).
+- `vysledky.csv`: `expected_before`, `expected_after`, `vax_vs_expected_ratio` = (po/před očkovaní) ÷ (po/před očekávané), `p_value_expected` = binomický test počtu „po“ při očekávaném podílu.
+- `souhrn/forest_<kohorta>_1_davka_normalizace.png` a `souhrn/prubeh_<kohorta>_1_davka_normalizace.png` — stejné grafy jako výš, jen se srovnáním s populací místo s neočkovanými. V průběhu je v každé periodě skutečné ÷ očekávané, v % průměru před očkováním.
+- `14denni_periody/periody.csv` má navíc skupinu `ocekavani` (očekávaný počet v periodě).
+- Populace zahrnuje i samotné očkované (v kohortách je jich většina), takže kdyby očkování opravdu něco dělalo, část efektu se schová i do „očekávaného“. Normalizace je tedy spíš opatrná: co přežije ji, přežije i bez ní.
+
+**Bez 28 dní před očkováním** (`sccs_bez_28_dni_pred/`, kvůli *healthy vaccinee* efektu). Kdo měl zdravotní problém, očkování odložil, takže těsně před očkováním je uměle málo událostí a „po“ pak vypadá jako nárůst. Tady se okno „před“ posouvá: místo `[-P, 0)` je `[-P-28, -28)`, stejně dlouhé, jen bez posledních 28 dní. U neočkovaných stejně vůči rozhodnému datu. Struktura složky je stejná jako u `sccs/` (včetně virtuálního očkování, normalizace a souhrnu). V průběhu je vynechané období šrafované a do průměru „před“ se nepočítá.
 
 Oproti kortikoidům: jiné metriky (místo prednison-ekvivalentů a imunosupresiv), injekce se neslučují, okno je u obou skupin stejně dlouhé (u kortikoidů měli neočkovaní o den víc) a přibyl graf po 14denních periodách.
 

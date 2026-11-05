@@ -37,6 +37,17 @@ Výstupy:
 Virtuální očkování (--year-offsets 1 2 3 4): stejní lidé, každé očkování
 posunuté o 365 × N dní dřív. Kontrola, jestli stejný „efekt“ nevyjde i bez
 očkování (sezónnost, artefakt metody).
+
+HVE (--hve-days 28): posledních 28 dní před očkováním (u neočkovaných před
+rozhodným datem) se do „před“ nepočítá, okno „před“ je [-P-28, -28).
+Výstupy jdou do charts/<company>/sccs_bez_28_dni_pred/ (stejný strom).
+
+Normalizace na celkovou spotřebu (vždy): pro každého očkovaného se z celé
+populace v analýze stejné věkové kohorty (věk při předpisu, očkovaní
+i neočkovaní) spočítá, kolik předpisů padlo do jeho okna před a po.
+Očekávaný poměr po/před = tyto součty přes všechny očkované. Sloupec
+vax_vs_expected_ratio = (po/před očkovaní) ÷ (po/před očekávané),
+p_value_expected = binomický test počtu „po“ při očekávaném podílu.
 Popis v charts/README.md (sekce SCCS).
 """
 
@@ -52,7 +63,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
-from scipy.stats import fisher_exact
+from scipy.stats import binomtest, fisher_exact
 
 from generate_charts import _higher_dose_expr, load_company
 
@@ -171,19 +182,47 @@ def daily_counts(rows: pl.DataFrame, keys: list[str], day_col: str) -> dict:
     return out
 
 
-def window(counts: dict, offset: int, period: int) -> np.ndarray:
-    """Pole délky 2P pro dny -P..P-1, kde den = klíč - offset."""
-    arr = np.zeros(2 * period)
+def window(counts: dict, lo: int, hi: int) -> np.ndarray:
+    """Pole pro dny lo..hi-1 (klíč = den)."""
+    arr = np.zeros(hi - lo)
     for d, n in counts.items():
-        i = d - offset + period
-        if 0 <= i < 2 * period:
-            arr[i] = n
+        if lo <= d < hi:
+            arr[d - lo] = n
     return arr
 
 
 def before_after(arr: np.ndarray) -> tuple[float, float]:
     half = len(arr) // 2
     return float(arr[:half].sum()), float(arr[half:].sum())
+
+
+def sums_before_after(counts: dict, period: int, hve_days: int) -> tuple[float, float]:
+    """Před = dny [-P-hve, -hve), po = dny [0, P)."""
+    return (
+        float(window(counts, -period - hve_days, -hve_days).sum()),
+        float(window(counts, 0, period).sum()),
+    )
+
+
+class PopulationRate:
+    """Denní počty událostí v celé populaci jedné kohorty, kumulativně,
+    aby šlo rychle sečíst libovolné kalendářní okno."""
+
+    def __init__(self, counts: dict):
+        n = (END_DATE - START_DATE).days + 1
+        daily = np.zeros(n)
+        for d, c in counts.items():
+            i = (d - START_DATE).days
+            if 0 <= i < n:
+                daily[i] = c
+        self.cum = np.concatenate([[0.0], np.cumsum(daily)])
+        self.n = n
+
+    def total(self, start_idx: np.ndarray, end_idx: np.ndarray) -> np.ndarray:
+        """Součet dnů [start, end) pro pole indexů (dny od START_DATE)."""
+        a = np.clip(start_idx, 0, self.n)
+        b = np.clip(end_idx, 0, self.n)
+        return self.cum[b] - self.cum[a]
 
 
 def safe_div(a: float, b: float) -> float:
@@ -227,19 +266,38 @@ def offset_label(years: int) -> str:
     return f"{years}_{unit}_drive"
 
 
-def out_dir_for(company: str, year_offset: int) -> Path:
-    base = CHARTS_DIR / company / "sccs"
+def sccs_root(company: str, hve_days: int = 0) -> Path:
+    name = "sccs" if hve_days == 0 else f"sccs_bez_{hve_days}_dni_pred"
+    return CHARTS_DIR / company / name
+
+
+def out_dir_for(company: str, year_offset: int, hve_days: int = 0) -> Path:
+    base = sccs_root(company, hve_days)
     return base if year_offset == 0 else base / "virtualni_ockovani" / offset_label(year_offset)
 
 
-def run(company: str, data: tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame], year_offset: int = 0) -> None:
+def run(
+    company: str,
+    data: tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame],
+    year_offset: int = 0,
+    hve_days: int = 0,
+) -> None:
     """year_offset > 0 = virtuální očkování: každé očkování se posune o
     365 × year_offset dní dřív. Kohorta zůstává podle věku při skutečném
-    očkování, takže jde o stejné lidi jako ve skutečné analýze."""
-    print(f"== {company}" + (f", virtuální očkování o {year_offset} r. dřív" if year_offset else ""))
+    očkování, takže jde o stejné lidi jako ve skutečné analýze.
+    hve_days > 0 = posledních hve_days dní před dnem 0 se do „před“ nepočítá."""
+    print(
+        f"== {company}"
+        + (f", virtuální očkování o {year_offset} r. dřív" if year_offset else "")
+        + (f", bez {hve_days} dní před" if hve_days else "")
+    )
     people, presc, vax = data
-    out_dir = out_dir_for(company, year_offset)
-    title_prefix = company + (f" - VIRTUÁLNÍ očkování o {year_offset} r. dřív" if year_offset else "")
+    out_dir = out_dir_for(company, year_offset, hve_days)
+    title_prefix = (
+        company
+        + (f" - VIRTUÁLNÍ očkování o {year_offset} r. dřív" if year_offset else "")
+        + (f" - bez {hve_days} dní před" if hve_days else "")
+    )
 
     alive = people.filter(pl.col("died_at").is_null())
     eligible = alive.filter(
@@ -308,6 +366,36 @@ def run(company: str, data: tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame], yea
     }
     n_vax = {(c, d): n for c, d, n in vax_sel.group_by("cohort", "dose").len().iter_rows()}
 
+    # Normalizace: celá populace v analýze, kohorta podle věku při předpisu
+    def population_events(events: pl.DataFrame) -> pl.DataFrame:
+        return (
+            events.join(eligible, on="Id_pojistence", how="semi")
+            .join(birth, on="Id_pojistence")
+            .with_columns(age_cohort_expr("Datum_udalosti"))
+        )
+
+    population = {
+        metric: {
+            key[0]: PopulationRate(c)
+            for key, c in daily_counts(population_events(ev), ["cohort"], "Datum_udalosti").items()
+        }
+        for metric, ev in [("predpisy", ther), ("prvopredpisy", first)]
+    }
+    vax_days = {}
+    for (c, d), grp in vax_sel.group_by("cohort", "dose"):
+        per_day = grp.group_by("vax_date").len()
+        idx = np.array([(v - START_DATE).days for v in per_day["vax_date"]])
+        vax_days[(c, d)] = (idx, per_day["len"].to_numpy().astype(float))
+
+    def expected(metric: str, cohort: str, dose: int, lo: int, hi: int) -> float:
+        """Kolik událostí by očkovaní měli ve dnech [lo, hi) od svého očkování,
+        kdyby se chovali jako celá populace (sečteno přes kalendář)."""
+        rate = population[metric].get(cohort)
+        if rate is None:
+            return 0.0
+        idx, n = vax_days[(cohort, dose)]
+        return float((rate.total(idx + lo, idx + hi) * n).sum())
+
     rows = []
     bin_rows = []
     for (cohort, dose), start in sorted(start_map.items()):
@@ -315,10 +403,10 @@ def run(company: str, data: tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame], yea
             continue
         rozhodne = start + timedelta(days=VAX_PERIOD_IN_DAYS)
 
-        def arrays(metric: str, period: int) -> tuple[np.ndarray, np.ndarray]:
-            v = window(vax_counts[metric].get((cohort, dose), {}), 0, period)
+        def counts(metric: str) -> tuple[dict, dict]:
+            v = vax_counts[metric].get((cohort, dose), {})
             n_map = {(d - rozhodne).days: c for d, c in novax_counts[metric].get((cohort,), {}).items()}
-            return v, window(n_map, 0, period)
+            return v, n_map
 
         for period in PERIODS:
             fig, axes = plt.subplots(nrows=1, ncols=len(METRICS), figsize=(20, 10))
@@ -327,9 +415,11 @@ def run(company: str, data: tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame], yea
                 fontsize=24,
             )
             for ax, (metric, label) in zip(axes, METRICS):
-                v, n = arrays(metric, period)
-                vb, va = before_after(v)
-                nb, na = before_after(n)
+                v, n = counts(metric)
+                vb, va = sums_before_after(v, period, hve_days)
+                nb, na = sums_before_after(n, period, hve_days)
+                eb = expected(metric, cohort, dose, -period - hve_days, -hve_days)
+                ea = expected(metric, cohort, dose, 0, period)
                 draw_sums(ax, label, vb, va, nb, na)
                 vax_inc = safe_div(va, vb) * 100
                 novax_inc = safe_div(na, nb) * 100
@@ -350,6 +440,14 @@ def run(company: str, data: tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame], yea
                     "novax_before": nb,
                     "novax_after": na,
                     "vax_vs_novax_ratio": safe_div(safe_div(va, vb), safe_div(na, nb)),
+                    "expected_before": eb,
+                    "expected_after": ea,
+                    "vax_vs_expected_ratio": safe_div(safe_div(va, vb), safe_div(ea, eb)),
+                    "p_value_expected": (
+                        binomtest(int(va), int(va + vb), ea / (ea + eb)).pvalue
+                        if va + vb > 0 and ea + eb > 0 else np.nan
+                    ),
+                    "hve_days": hve_days,
                 })
             path = out_dir / "soucty_pred_po" / f"okno_{period}_dni" / f"{cohort}_{dose}_davka.png"
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -364,11 +462,18 @@ def run(company: str, data: tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame], yea
             f"(rozhodné datum neočko {rozhodne.strftime('%d.%m.%Y')})",
             fontsize=20,
         )
+        half = N_BINS * BIN_DAYS
         for col, (metric, label) in enumerate(METRICS):
-            v, n = arrays(metric, N_BINS * BIN_DAYS)
+            v_map, n_map = counts(metric)
+            v = window(v_map, -half, half)
+            n = window(n_map, -half, half)
+            e = np.concatenate([
+                [expected(metric, cohort, dose, b * BIN_DAYS, (b + 1) * BIN_DAYS)] + [0.0] * (BIN_DAYS - 1)
+                for b in range(-N_BINS, N_BINS)
+            ])
             draw_bins(axes[0][col], v, f"Očkovaní - {label}")
             draw_bins(axes[1][col], n, f"Neočkovaní - {label}")
-            for group, arr in [("ockovani", v), ("neockovani", n)]:
+            for group, arr in [("ockovani", v), ("neockovani", n), ("ocekavani", e)]:
                 for b, count in zip(range(-N_BINS, N_BINS), arr.reshape(2 * N_BINS, BIN_DAYS).sum(axis=1)):
                     bin_rows.append({
                         "age_cohort": cohort, "vax_dose": dose, "metric": metric,
@@ -386,7 +491,7 @@ def run(company: str, data: tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame], yea
     print(f"  hotovo: {out_dir}")
 
 
-def write_comparison(company: str, offsets: list[int]) -> None:
+def write_comparison(company: str, offsets: list[int], hve_days: int = 0) -> None:
     """virtualni_ockovani/srovnani.csv: vax_vs_novax_ratio a vax_increase
     skutečného očkování vedle všech virtuálních, jeden řádek na okno ×
     kohortu × dávku × metriku."""
@@ -394,15 +499,16 @@ def write_comparison(company: str, offsets: list[int]) -> None:
     table = None
     for off in [0, *offsets]:
         name = "skutecne" if off == 0 else offset_label(off)
-        df = pl.read_csv(out_dir_for(company, off) / "vysledky.csv").select(
+        df = pl.read_csv(out_dir_for(company, off, hve_days) / "vysledky.csv").select(
             *keys,
             pl.col("vax_vs_novax_ratio").alias(f"pomer_{name}"),
+            pl.col("vax_vs_expected_ratio").alias(f"pomer_norm_{name}"),
             pl.col("vax_increase").alias(f"ocko_po_pred_{name}"),
             pl.col("p_value").alias(f"p_{name}"),
         )
         table = df if table is None else table.join(df, on=keys, how="left")
     assert table is not None
-    path = out_dir_for(company, 0) / "virtualni_ockovani" / "srovnani.csv"
+    path = out_dir_for(company, 0, hve_days) / "virtualni_ockovani" / "srovnani.csv"
     table.sort(keys).write_csv(path)
     print(f"  srovnání: {path}")
 
@@ -414,13 +520,18 @@ def main() -> None:
         "--year-offsets", type=int, nargs="+", default=[0],
         help="0 = skutečné očkování, N > 0 = virtuální očkování o N let dřív (např. 0 1 2 3 4)",
     )
+    parser.add_argument(
+        "--hve-days", type=int, nargs="+", default=[0],
+        help="kolik dní před očkováním vynechat z „před“ (0 = nic, 28 = HVE varianta)",
+    )
     args = parser.parse_args()
     data = load(args.company)
-    for off in args.year_offsets:
-        run(args.company, data, off)
     virtual = [o for o in args.year_offsets if o > 0]
-    if virtual:
-        write_comparison(args.company, virtual)
+    for hve in args.hve_days:
+        for off in args.year_offsets:
+            run(args.company, data, off, hve)
+        if virtual:
+            write_comparison(args.company, virtual, hve)
 
 
 if __name__ == "__main__":

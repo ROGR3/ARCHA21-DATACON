@@ -15,3 +15,5 @@ joined_*/
 kortikoidy/results_baseline.json
 !/srazlivost/charts/*/sccs/*.csv
 !/srazlivost/charts/*/sccs/**/*.csv
+!/srazlivost/charts/*/sccs_bez_28_dni_pred/*.csv
+!/srazlivost/charts/*/sccs_bez_28_dni_pred/**/*.csv

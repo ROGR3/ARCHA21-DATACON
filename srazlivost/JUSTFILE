@@ -46,12 +46,13 @@ simulate: build
     echo "All simulations done."
 
 # SCCS analýza předpisů B01 kolem očkování (port kortikoidy/max_vax_analysis)
-# + virtuální očkování o 1–4 roky dřív
+# + virtuální očkování o 1–4 roky dřív, varianta bez 28 dní před očkováním (HVE)
+# a normalizace na celou populaci stejného věku
 # výstupy: charts/<company>/sccs/, popis v charts/README.md
 sccs:
     #!/usr/bin/env bash
     set -e
     for company in cpzp ozp both_companies; do
-        python sccs_analysis.py --company "$company" --year-offsets 0 1 2 3 4
-        python sccs_souhrn.py --company "$company"
+        python sccs_analysis.py --company "$company" --year-offsets 0 1 2 3 4 --hve-days 0 28
+        python sccs_souhrn.py --company "$company" --hve-days 0 28
     done

@@ -16,6 +16,16 @@ a kreslí:
       Průběh po 14denních periodách po 1. dávce, v % průměru období před
       očkováním. Modrá = skutečně očkovaní, šedý pás = rozsah virtuálních
       let, oranžová čárkovaná = neočkovaní.
+
+  ..._normalizace.png
+      Totéž, ale srovnání s očekávaným počtem podle celé populace stejné
+      kohorty místo s neočkovanými (forest: po/před očkovaní ÷ po/před
+      očekávané, interval z Poissonova rozdělení; průběh: skutečné ÷
+      očekávané v každé periodě, v % průměru před očkováním).
+
+S --hve-days 28 čte a kreslí do charts/<company>/sccs_bez_28_dni_pred/.
+Posledních 28 dní před očkováním se pak do „před“ nepočítá (ani do
+průměru, ke kterému se vztahuje průběh) a v průběhu je to období šrafované.
 """
 
 from __future__ import annotations
@@ -29,7 +39,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
 
-from sccs_analysis import AGE_COHORTS, BIN_DAYS, METRICS, out_dir_for
+from sccs_analysis import AGE_COHORTS, BIN_DAYS, METRICS, out_dir_for, sccs_root
 
 YEAR_OFFSETS = [1, 2, 3, 4]
 FOREST_PERIODS = [30, 60, 90, 180, 365]
@@ -47,22 +57,22 @@ VIRTUAL_COLOR = "#9a9a9a"
 INK = "#333333"
 
 
-def load_results(company: str) -> pl.DataFrame:
+def load_results(company: str, hve_days: int) -> pl.DataFrame:
     frames = []
     for off in [0, *YEAR_OFFSETS]:
         frames.append(
-            pl.read_csv(out_dir_for(company, off) / "vysledky.csv").with_columns(
+            pl.read_csv(out_dir_for(company, off, hve_days) / "vysledky.csv").with_columns(
                 pl.lit(off).alias("year_offset")
             )
         )
     return pl.concat(frames, how="diagonal_relaxed")
 
 
-def load_bins(company: str) -> pl.DataFrame:
+def load_bins(company: str, hve_days: int) -> pl.DataFrame:
     frames = []
     for off in [0, *YEAR_OFFSETS]:
         frames.append(
-            pl.read_csv(out_dir_for(company, off) / "14denni_periody" / "periody.csv").with_columns(
+            pl.read_csv(out_dir_for(company, off, hve_days) / "14denni_periody" / "periody.csv").with_columns(
                 pl.lit(off).alias("year_offset")
             )
         )
@@ -81,9 +91,40 @@ def woolf_ci(vb: float, va: float, nb: float, na: float) -> tuple[float, float]:
     return float(np.exp(log_or - 1.96 * se)), float(np.exp(log_or + 1.96 * se))
 
 
-def draw_forest(company: str, results: pl.DataFrame, cohort: str, out_path) -> None:
+def poisson_ci(vb: float, va: float, ratio: float) -> tuple[float, float]:
+    """Interval pro (po/před očkovaní) ÷ (po/před očekávané); očekávané je
+    z celé populace, takže jeho nejistota se zanedbává."""
+    if min(vb, va) <= 0 or not np.isfinite(ratio):
+        return np.nan, np.nan
+    se = np.sqrt(1 / vb + 1 / va)
+    return float(ratio * np.exp(-1.96 * se)), float(ratio * np.exp(1.96 * se))
+
+
+# (sloupec poměru, sloupec p, funkce intervalu, popis srovnání)
+COMPARISONS = {
+    "neockovani": (
+        "vax_vs_novax_ratio", "p_value",
+        lambda r: woolf_ci(r["vax_before"], r["vax_after"], r["novax_before"], r["novax_after"]),
+        "neočkovaní", "(po/před očkovaní) ÷ (po/před neočkovaní)",
+    ),
+    "normalizace": (
+        "vax_vs_expected_ratio", "p_value_expected",
+        lambda r: poisson_ci(r["vax_before"], r["vax_after"], r["vax_vs_expected_ratio"]),
+        "celá populace stejného věku", "(po/před očkovaní) ÷ (po/před očekávané podle populace)",
+    ),
+}
+
+
+def hve_note(hve_days: int) -> str:
+    return f", bez {hve_days} dní před očkováním" if hve_days else ""
+
+
+def draw_forest(
+    company: str, results: pl.DataFrame, cohort: str, out_path, comparison: str = "neockovani", hve_days: int = 0,
+) -> None:
     """Jedna kohorta, 1. dávka. Bloky = okna, v bloku řádek na každý rok
     (2021 skutečné, pak virtuální 2020 … 2017), každý se svým 95% intervalem."""
+    ratio_col, p_col, ci_fn, ref_label, axis_label = COMPARISONS[comparison]
     offsets = [0, *YEAR_OFFSETS]
     rows = [(p, off) for p in FOREST_PERIODS for off in offsets]
     fig, axes = plt.subplots(1, len(METRICS), figsize=(16, 0.42 * len(rows) + 2.8), sharey=True)
@@ -97,8 +138,8 @@ def draw_forest(company: str, results: pl.DataFrame, cohort: str, out_path) -> N
             if not sel.height:
                 continue
             r = sel.row(0, named=True)
-            lo, hi = woolf_ci(r["vax_before"], r["vax_after"], r["novax_before"], r["novax_after"])
-            ratio = r["vax_vs_novax_ratio"]
+            lo, hi = ci_fn(r)
+            ratio = r[ratio_col]
             color = REAL_COLOR if off == 0 else VIRTUAL_COLOR
             ax.plot([lo, hi], [y, y], color=color, lw=2, solid_capstyle="round")
             ax.plot(
@@ -106,7 +147,7 @@ def draw_forest(company: str, results: pl.DataFrame, cohort: str, out_path) -> N
                 color=color, mfc="white" if off == 1 else color, mec=color if off == 1 else "white",
             )
             ax.annotate(
-                f"{ratio:.2f}  ({format_p(r['p_value'])})", xy=(1.0, y), xycoords=("axes fraction", "data"),
+                f"{ratio:.2f}  ({format_p(r[p_col])})", xy=(1.0, y), xycoords=("axes fraction", "data"),
                 xytext=(6, 0), textcoords="offset points", va="center", fontsize=9,
                 color=INK if off == 0 else "#777777", fontweight="bold" if off == 0 else "normal",
             )
@@ -117,7 +158,7 @@ def draw_forest(company: str, results: pl.DataFrame, cohort: str, out_path) -> N
         ax.minorticks_off()
         ax.set_xlim(0.25, 4)
         ax.set_title(label, fontsize=13, color=INK)
-        ax.set_xlabel("poměr poměrů: (po/před očkovaní) ÷ (po/před neočkovaní)", color=INK)
+        ax.set_xlabel(f"poměr poměrů: {axis_label}", color=INK)
         ax.grid(axis="x", color="#e5e5e5")
         for s in ["top", "right"]:
             ax.spines[s].set_visible(False)
@@ -133,8 +174,9 @@ def draw_forest(company: str, results: pl.DataFrame, cohort: str, out_path) -> N
         if off == 0:
             tick.set_fontweight("bold")
     fig.suptitle(
-        f"{company} – {COHORT_LABELS[cohort]}, 1. dávka: skutečné očkování vs stejná analýza v minulých letech\n"
-        "> 1 = očkovaným přibylo víc než neočkovaným, úsečka = 95% interval",
+        f"{company} – {COHORT_LABELS[cohort]}, 1. dávka{hve_note(hve_days)}: "
+        "skutečné očkování vs stejná analýza v minulých letech\n"
+        f"srovnání: {ref_label}; > 1 = očkovaným přibylo víc, úsečka = 95% interval",
         fontsize=14, color=INK,
     )
     fig.tight_layout(rect=(0, 0, 0.95, 1))
@@ -143,19 +185,32 @@ def draw_forest(company: str, results: pl.DataFrame, cohort: str, out_path) -> N
     plt.close(fig)
 
 
-def as_pct_of_before(df: pl.DataFrame) -> pl.DataFrame:
-    """count → % průměru period před očkováním (bin_start_day < 0)."""
+def as_pct_of_before(df: pl.DataFrame, value: str, hve_days: int) -> pl.DataFrame:
+    """value → % průměru period před očkováním (perioda začíná před -hve_days)."""
     keys = ["year_offset", "age_cohort", "vax_dose", "metric", "group"]
     return df.with_columns(
         (
-            pl.col("count")
-            / pl.col("count").filter(pl.col("bin_start_day") < 0).mean().over(keys)
+            pl.col(value)
+            / pl.col(value).filter(pl.col("bin_start_day") < -hve_days).mean().over(keys)
             * 100
         ).alias("pct")
     )
 
 
-def draw_timeline(company: str, bins: pl.DataFrame, cohort: str, out_path) -> None:
+def observed_over_expected(bins: pl.DataFrame) -> pl.DataFrame:
+    """Řádky skupin očkovaní, kde count = skutečné ÷ očekávané v periodě."""
+    keys = ["year_offset", "age_cohort", "vax_dose", "metric", "bin_start_day"]
+    exp = bins.filter(pl.col("group") == "ocekavani").select(*keys, pl.col("count").alias("expected"))
+    return (
+        bins.filter(pl.col("group") == "ockovani")
+        .join(exp, on=keys)
+        .with_columns((pl.col("count") / pl.col("expected")).alias("oe"))
+    )
+
+
+def draw_timeline(
+    company: str, bins: pl.DataFrame, cohort: str, out_path, comparison: str = "neockovani", hve_days: int = 0,
+) -> None:
     fig, axes = plt.subplots(1, len(METRICS), figsize=(16, 6), sharey=False)
     d = bins.filter((pl.col("age_cohort") == cohort) & (pl.col("vax_dose") == 1))
     for ax, (metric, label) in zip(axes, METRICS):
@@ -170,46 +225,65 @@ def draw_timeline(company: str, bins: pl.DataFrame, cohort: str, out_path) -> No
         )
         ax.fill_between(x_of(virt), virt["lo"], virt["hi"], color=VIRTUAL_COLOR, alpha=0.25, lw=0,
                         label="virtuální očkování 2017–2020 (rozsah)")
-        novax = m.filter((pl.col("group") == "neockovani") & (pl.col("year_offset") == 0)).sort("bin_start_day")
-        ax.plot(x_of(novax), novax["pct"], color=NOVAX_COLOR, lw=1.5, ls="--", label="neočkovaní (2021)")
+        if comparison == "neockovani":
+            novax = m.filter((pl.col("group") == "neockovani") & (pl.col("year_offset") == 0)).sort("bin_start_day")
+            ax.plot(x_of(novax), novax["pct"], color=NOVAX_COLOR, lw=1.5, ls="--", label="neočkovaní (2021)")
         real = m.filter((pl.col("group") == "ockovani") & (pl.col("year_offset") == 0)).sort("bin_start_day")
-        ax.plot(x_of(real), real["pct"], color=REAL_COLOR, lw=2, marker="o", ms=5, label="očkovaní (2021)")
+        real_label = "očkovaní (2021)" if comparison == "neockovani" else "očkovaní ÷ očekávané (2021)"
+        ax.plot(x_of(real), real["pct"], color=REAL_COLOR, lw=2, marker="o", ms=5, label=real_label)
+        if hve_days:
+            ax.axvspan(-hve_days, 0, facecolor="none", edgecolor="#bbbbbb", hatch="//", lw=0,
+                       label=f"{hve_days} dní před (mimo průměr „před“)")
 
         ax.axhline(100, color=INK, lw=0.8)
         ax.axvline(0, color=INK, lw=1, ls=":")
         ax.set_title(label, fontsize=13, color=INK)
         ax.set_xlabel("dny od očkování (14denní periody)", color=INK)
-        ax.set_ylabel("% průměru před očkováním", color=INK)
+        ax.set_ylabel(
+            "% průměru před očkováním" if comparison == "neockovani"
+            else "skutečné ÷ očekávané, % průměru před očkováním",
+            color=INK,
+        )
         ax.set_xticks(range(-168, 169, 28))
         ax.grid(color="#eeeeee")
         for s in ["top", "right"]:
             ax.spines[s].set_visible(False)
         n_real = int(real.filter(pl.col("bin_start_day") >= 0)["count"].sum())
-        n_before = int(real.filter(pl.col("bin_start_day") < 0)["count"].sum())
+        n_before = int(real.filter(pl.col("bin_start_day") < -hve_days)["count"].sum())
         ax.text(0.01, 0.98, f"očkovaní: před {n_before:,}, po {n_real:,}", transform=ax.transAxes,
                 va="top", fontsize=9, color=INK)
     axes[0].legend(loc="lower left", frameon=False, fontsize=9)
-    fig.suptitle(f"{company} – {COHORT_LABELS[cohort]}, 1. dávka: průběh kolem očkování", fontsize=14, color=INK)
+    what = "průběh kolem očkování" if comparison == "neockovani" else "průběh normalizovaný na celou populaci stejného věku"
+    fig.suptitle(f"{company} – {COHORT_LABELS[cohort]}, 1. dávka{hve_note(hve_days)}: {what}", fontsize=14, color=INK)
     fig.tight_layout()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=120)
     plt.close(fig)
 
 
-def run(company: str) -> None:
-    out = out_dir_for(company, 0) / "souhrn"
-    results = load_results(company)
-    bins = as_pct_of_before(load_bins(company))
+def run(company: str, hve_days: int = 0) -> None:
+    out = sccs_root(company, hve_days) / "souhrn"
+    results = load_results(company, hve_days)
+    raw = load_bins(company, hve_days)
+    bins = {
+        "neockovani": as_pct_of_before(raw, "count", hve_days),
+        "normalizace": as_pct_of_before(observed_over_expected(raw), "oe", hve_days),
+    }
     for cohort in COHORTS:
-        draw_forest(company, results, cohort, out / f"forest_{cohort}_1_davka.png")
-        draw_timeline(company, bins, cohort, out / f"prubeh_{cohort}_1_davka.png")
+        for comparison, suffix in [("neockovani", ""), ("normalizace", "_normalizace")]:
+            draw_forest(company, results, cohort, out / f"forest_{cohort}_1_davka{suffix}.png", comparison, hve_days)
+            draw_timeline(company, bins[comparison], cohort, out / f"prubeh_{cohort}_1_davka{suffix}.png",
+                          comparison, hve_days)
     print(f"  hotovo: {out}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     parser.add_argument("--company", choices=["cpzp", "ozp", "both_companies"], default="both_companies")
-    run(parser.parse_args().company)
+    parser.add_argument("--hve-days", type=int, nargs="+", default=[0])
+    args = parser.parse_args()
+    for hve in args.hve_days:
+        run(args.company, hve)
 
 
 if __name__ == "__main__":
